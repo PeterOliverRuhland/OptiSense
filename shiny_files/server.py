@@ -2,6 +2,8 @@ import os
 import platform
 import random
 import sys
+import shutil
+import tempfile
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -1955,38 +1957,74 @@ def server(input, output, session):
             notification_popup("Please check your file for correct content before importing.",
                                message_type="error")
 
-    # Function if the sensitivity analysis button is clicked
-    @reactive.effect
-    @reactive.event(input.btn_sens_ana)
-    def sensitivity_analysis():
-
-
+# Function if the sensitivity analysis button is clicked
+@reactive.effect
+@reactive.event(input.btn_sens_ana)
+def sensitivity_analysis():
+    try:
         # Base path relative to server.py
         base_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        lp_solve_paths = {
-            "darwin": os.path.join(base_directory, "lp_solve_5.5", "lp_solve", "bin", "mac", "lp_solve"),
-            "windows": os.path.join(base_directory, "lp_solve_5.5", "lp_solve", "bin", "windows64", "lp_solve.exe"),
-            "linux": os.path.join(base_directory, "lp_solve_5.5", "lp_solve", "bin", "linux", "lp_solve")
-        }
 
-        # Access the path for the current operating system
-        # Recognise current operating system
-        executable_lp = None
+        # Detect current operating system
         current_os = sys.platform
+
         if current_os.startswith("linux"):
-            executable_lp = lp_solve_paths["linux"]
+            # On Render/Linux, use the lp_solve installed inside the Docker image via apt-get.
+            executable_lp = shutil.which("lp_solve")
+
+            if executable_lp is None:
+                notification_popup(
+                    "lp_solve was not found on the Linux server. Please check the Dockerfile installation.",
+                    message_type="error",
+                    message_duration=8.0,
+                )
+                return
+
         elif current_os == "darwin":
-            executable_lp = lp_solve_paths["darwin"]
+            executable_lp = os.path.join(
+                base_directory,
+                "lp_solve_5.5",
+                "lp_solve",
+                "bin",
+                "mac",
+                "lp_solve",
+            )
+
         elif current_os.startswith("win"):
-            executable_lp = lp_solve_paths["windows"]
+            executable_lp = os.path.join(
+                base_directory,
+                "lp_solve_5.5",
+                "lp_solve",
+                "bin",
+                "windows64",
+                "lp_solve.exe",
+            )
 
-        lp_problem_saving_path = os.path.join(base_directory, "shiny_files", "lp_file.lp")
+        else:
+            notification_popup(
+                f"Unsupported operating system: {current_os}",
+                message_type="error",
+                message_duration=8.0,
+            )
+            return
 
-        generate_lp_file(list_reactive_selected_obj_func.get()[0],
-                         list_reactive_selected_constraints.get(),
-                         string_reactive_problem_type.get(), lp_problem_saving_path)
+        # Important for multiple users:
+        # Use a temporary file instead of always writing to shiny_files/lp_file.lp.
+        with tempfile.TemporaryDirectory() as tmpdir:
+            lp_problem_saving_path = os.path.join(tmpdir, "lp_file.lp")
 
-        lp_solve_output = solve_sensitivity_analysis(executable_lp, lp_problem_saving_path, "-S5")
+            generate_lp_file(
+                list_reactive_selected_obj_func.get()[0],
+                list_reactive_selected_constraints.get(),
+                string_reactive_problem_type.get(),
+                lp_problem_saving_path,
+            )
+
+            lp_solve_output = solve_sensitivity_analysis(
+                executable_lp,
+                lp_problem_saving_path,
+                "-S5",
+            )
 
         sens_ana_binding_slack = binding_constraints_and_slack(lp_solve_output.stdout)
         list_reactive_sens_ana_slack.set(sens_ana_binding_slack)
@@ -1998,6 +2036,14 @@ def server(input, output, session):
         list_reactive_sens_ana_limits.set(sens_ana_coeff_limits)
 
         notification_popup("Sensitivity analysis completed successfully.")
+
+    except Exception as e:
+        notification_popup(
+            f"Sensitivity analysis failed: {e}",
+            message_type="error",
+            message_duration=10.0,
+        )
+        raise
 
 
     # Render data frame
