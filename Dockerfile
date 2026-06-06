@@ -2,14 +2,17 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    lp-solve \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN find /app/lp_solve_5.5 -type f -name "lp_solve" -exec chmod +x {} \; || true
+EXPOSE 10000
 
-EXPOSE 8000
-
-CMD ["sh", "-c", "shiny run --host 0.0.0.0 --port ${PORT:-8000} shiny_files/app.py"]
+CMD ["sh", "-c", "shiny run --host 0.0.0.0 --port ${PORT:-10000} shiny_files/app.py"]
