@@ -339,12 +339,9 @@ def server(input, output, session):
                 ui.column(4, ui.HTML("<b>Name of graph</b>")),
                 ui.column(8, ui.input_text("name_graph", None, placeholder="Enter name of graph")),
             ),
+            ui.HTML("<br>"),
             ui.row(
-                ui.column(4, ui.HTML("<b>Directory path</b>")),
-                ui.column(8, ui.input_text("directory_path_graph", None, placeholder="Bsp.: C:/Users/.../Desktop")),
-            ),
-            ui.row(
-                ui.column(4, ui.HTML("<b>Please choose:</b>")),
+                ui.column(4, ui.HTML("<b>Please choose DPI:</b>")),
                 ui.column(8,
                           ui.input_radio_buttons(
                               "radio_graph_dpi",
@@ -353,7 +350,7 @@ def server(input, output, session):
                           )),
             ),
             ui.row(
-                ui.column(4, ui.HTML("<b>Choose:</b>")),
+                ui.column(4, ui.HTML("<b>Predefined DPI:</b>")),
                 ui.column(8,
                           ui.input_select(
                               "select_dpi",
@@ -366,13 +363,14 @@ def server(input, output, session):
                 ui.HTML("<br><br>")
             ),
             ui.row(
-                ui.column(4, ui.HTML("<b>Please enter DPI</b>")),
+                ui.column(4, ui.HTML("<b>Own DPI:</b>")),
                 ui.column(8,
-                          ui.input_numeric("numeric_dpi", None, 1, min=1, max=None, step=1)),
+                          ui.input_numeric("numeric_dpi", None, 150, min=1, max=None, step=1)),
             ),
+            ui.HTML("<br>"),
+            ui.download_button("download_graph_png", "Download PNG"),
             footer=ui.div(
                 ui.input_action_button(id="cancel_button_7", label="Cancel"),
-                ui.input_action_button(id="submit_button_7", label="Submit"),
             ),
             title="Save graph as PNG",
             easy_close=False,
@@ -386,30 +384,37 @@ def server(input, output, session):
     def modal8():
         m8 = ui.modal(
             ui.row(
-                ui.column(4, ui.HTML("<b>Name of lp file (for export only)</b>")),
-                ui.column(8, ui.input_text("name_export", None, placeholder="Enter name of file")),
-            ),
-            ui.HTML("<br><br>"),
-            ui.row(
-                ui.column(4, ui.HTML("<b>File path / saving path</b>")),
-                ui.column(8,
-                          ui.input_text("saving_path_import_export", None,
-                                        placeholder="Bsp.: C:/Users/.../Desktop/lp_file.lp")),
-            ),
-            ui.HTML("<br><br>"),
-            ui.row(
                 ui.column(4, ui.HTML("<b>Please choose</b>")),
                 ui.column(8,
                           ui.input_radio_buttons(
                               "radio_import_export",
                               None,
-                              {"import": "import from lp file", "export": "export to lp file"},
+                              {"export": "export to lp file", "import": "import from lp file"},
                           )),
             ),
-
+            ui.HTML("<br>"),
+            # --- Export section ---
+            ui.panel_conditional(
+                "input.radio_import_export === 'export'",
+                ui.row(
+                    ui.column(4, ui.HTML("<b>File name</b>")),
+                    ui.column(8, ui.input_text("name_export", None, placeholder="Enter file name (without .lp)")),
+                ),
+                ui.HTML("<br>"),
+                ui.download_button("download_lp_file", "Download .lp file"),
+            ),
+            # --- Import section ---
+            ui.panel_conditional(
+                "input.radio_import_export === 'import'",
+                ui.row(
+                    ui.column(4, ui.HTML("<b>Select .lp file</b>")),
+                    ui.column(8, ui.input_file("upload_lp_file", None, accept=[".lp"])),
+                ),
+                ui.HTML("<br>"),
+                ui.input_action_button(id="submit_button_8", label="Import"),
+            ),
             footer=ui.div(
                 ui.input_action_button(id="cancel_button_8", label="Cancel"),
-                ui.input_action_button(id="submit_button_8", label="Submit"),
             ),
             title="Import or export lp file",
             easy_close=False,
@@ -1754,41 +1759,20 @@ def server(input, output, session):
             return ui.HTML(
                 '<div style="text-align: center;"><b>Please select objective function and constraint(s).</b></div>')
 
-    # submit button 7
-    @reactive.effect
-    @reactive.event(input.submit_button_7)
-    def save_graph_png():
-
+    # Download handler for graph PNG
+    @render.download(filename=lambda: (input.name_graph() or "graph") + ".png")
+    def download_graph_png():
+        import io
         try:
-
-            if input.name_graph() == "" or input.directory_path_graph() == "":
-                notification_popup("Please enter a valid name and directory path.", message_type="error")
-            elif input.numeric_dpi() == "" or input.numeric_dpi() <= 0 or not isinstance(input.numeric_dpi(),
-                                                                                         (int, float)):
-                notification_popup("Please enter a valid DPI number.", message_type="error")
-            else:
-
-                fig = reactive_plot_fig.get()
-                directory = input.directory_path_graph()
-                if directory[-1] != "/":
-                    directory += "/"
-
-                selected_dpi = 0
-
-                if input.radio_graph_dpi() == "predefined_dpi":
-                    selected_dpi = input.select_dpi()
-                elif input.radio_graph_dpi() == "own_dpi":
-                    selected_dpi = input.numeric_dpi()
-
-                fig.savefig(directory + input.name_graph() + ".png", dpi=int(selected_dpi))
-
-                notification_popup("Graph saved successfully")
-
-                ui.modal_remove()
-
-        except FileNotFoundError:
-            notification_popup("Please enter a valid directory path.", message_type="error")
-        except TypeError:
+            fig = reactive_plot_fig.get()
+            if fig is None:
+                return
+            selected_dpi = int(input.select_dpi()) if input.radio_graph_dpi() == "predefined_dpi" else int(input.numeric_dpi())
+            buf = io.BytesIO()
+            fig.savefig(buf, format="png", dpi=selected_dpi)
+            buf.seek(0)
+            yield buf.read()
+        except Exception:
             notification_popup("Please check your entries.", message_type="error")
 
     def notification_popup(text_message, message_type="message", message_duration=4.0):
@@ -1798,159 +1782,137 @@ def server(input, output, session):
             duration=message_duration,
         )
 
-    # submit button 8
-    @reactive.effect
-    @reactive.event(input.submit_button_8)
-    def import_export_lp_file():
+    # Download handler for LP export
+    @render.download(filename=lambda: (input.name_export() or "lp_problem") + ".lp")
+    def download_lp_file():
+        import io
         try:
-
-            status_x1_x2_value_range = check_coeff_value_ranges()
-
-            if (input.radio_import_export() == "export" and input.name_export() == "") or (
-                    input.radio_import_export() == "export" and input.saving_path_import_export() == "") or (
-                    input.radio_import_export() == "export" and input.saving_path_import_export().endswith(
-                ".lp") == True):
-                notification_popup(
-                    "When exporting, please enter a valid name and select a directory path.",
-                    message_type="error")
-
-            elif (input.radio_import_export() == "import" and input.saving_path_import_export() == "") or (
-                    input.radio_import_export() == "import" and not input.saving_path_import_export().endswith(".lp")):
-                notification_popup("Please select a valid file in .lp format.", message_type="error")
-            elif (input.radio_import_export() == "export" and not list_reactive_selected_obj_func.get()) or (
-                    input.radio_import_export() == "export" and not list_reactive_selected_constraints.get()):
+            if not list_reactive_selected_obj_func.get() or not list_reactive_selected_constraints.get():
                 notification_popup("Please select an objective function and constraint(s) before exporting.",
                                    message_type="error")
-            elif input.radio_import_export() == "export" and (
-                    status_x1_x2_value_range[0] != 1 or status_x1_x2_value_range[1] != 1):
-                notification_popup("Please select the same value range for each x1 and x2.",
-                                   message_type="error")
+                return
+            status_x1_x2_value_range = check_coeff_value_ranges()
+            if status_x1_x2_value_range[0] != 1 or status_x1_x2_value_range[1] != 1:
+                notification_popup("Please select the same value range for each x1 and x2.", message_type="error")
+                return
+            obj_func = list_reactive_selected_obj_func.get()[0]
+            constraints = list_reactive_selected_constraints.get()
+            problem_type = string_reactive_problem_type.get()
+            buf = io.StringIO()
+            buf.write(f"{obj_func[5]}: {obj_func[1]} x1 + {obj_func[3]} x2;\n")
+            for constraint in constraints:
+                symbol = "<=" if constraint[5] == "≤" else ("=" if constraint[5] == "=" else ">=")
+                buf.write(f"{constraint[1]} x1 + {constraint[3]} x2 {symbol} {constraint[6]};\n")
+            if problem_type == "LP":
+                buf.write("x1 >= 0;\nx2 >= 0;")
+            elif problem_type == "ILP":
+                buf.write("x1 >= 0;\nx2 >= 0;\nint x1, x2;")
+            elif problem_type == "MILP_x1_int_x2_con":
+                buf.write("x1 >= 0;\nx2 >= 0;\nint x1;")
+            elif problem_type == "MILP_x1_con_x2_int":
+                buf.write("x1 >= 0;\nx2 >= 0;\nint x2;")
+            yield buf.getvalue().encode()
+        except Exception:
+            notification_popup("Export failed. Please check your inputs.", message_type="error")
 
+    # submit button 8 - Import only
+    @reactive.effect
+    @reactive.event(input.submit_button_8)
+    def import_lp_file():
+        try:
+            uploaded = input.upload_lp_file()
+            if not uploaded:
+                notification_popup("Please select a valid .lp file.", message_type="error")
+                return
 
-            else:
+            import_list = []
+            with open(uploaded[0]["datapath"], "r") as file:
+                for line in file:
+                    elements = line.strip().split()
+                    if elements:
+                        import_list.append(elements)
 
-                user_operating_system = platform.system()
-                memory_path_separation_symbol = None
-                if user_operating_system == "Windows" or user_operating_system.startswith(
-                        "win") or user_operating_system.startswith("Win"):
-                    memory_path_separation_symbol = "\\"
-                elif user_operating_system == "Linux":
-                    memory_path_separation_symbol = "/"
-                # For Mac OS
-                elif user_operating_system == "Darwin":
-                    memory_path_separation_symbol = "/"
+            type_of_optimization_import = None
+            x1_type = None
+            x2_type = None
+            last = import_list[-1]
+            if last[0] == "int" and last[-1] == "x2;" and last[-2] == "x1,":
+                type_of_optimization_import = "ILP"
+                x1_type = "int"
+                x2_type = "int"
+            elif last[0] == "int" and last[-1] == "x1;":
+                type_of_optimization_import = "MILP_x1_int_x2_con"
+                x1_type = "int"
+                x2_type = "con"
+            elif last[0] == "int" and last[-1] == "x2;" and last[-2] != "x1,":
+                type_of_optimization_import = "MILP_x1_con_x2_int"
+                x1_type = "con"
+                x2_type = "int"
+            elif len(last) > 1 and last[1] in ["=", "<=", ">="]:
+                type_of_optimization_import = "LP"
+                x1_type = "con"
+                x2_type = "con"
 
-                if input.radio_import_export() == "export":
-                    generate_lp_file(list_reactive_selected_obj_func.get()[0],
-                                     list_reactive_selected_constraints.get(), string_reactive_problem_type.get(),
-                                     memory_path=(
-                                             input.saving_path_import_export() + memory_path_separation_symbol + input.name_export() + ".lp"))
-                    notification_popup("File successfully exported to .lp format.")
+            imported_obj_func = []
+            imported_constraints = []
+            counter = 1
+            for element in import_list:
+                if element[0] == "max:" or element[0] == "min:":
+                    imported_obj_func = ["Function", float(element[1]), x1_type, float(element[4]), x2_type,
+                                         element[0][0:3]]
+                elif element[0] not in ["max:", "min:", "x1", "x2", "int"]:
+                    operator = None
+                    if element[5] == "<=":
+                        operator = "≤"
+                    elif element[5] == ">=":
+                        operator = "≥"
+                    elif element[5] == "=":
+                        operator = "="
+                    imported_constraint = ["Constraint_" + str(counter), float(element[0]), x1_type,
+                                           float(element[3]), x2_type, operator, float(element[6][:-1])]
+                    imported_constraints.append(imported_constraint)
+                    counter += 1
 
-                elif input.radio_import_export() == "import":
-                    import_list = []
-                    with open(input.saving_path_import_export(), "r") as file:
-                        for line in file:
-                            elements = line.strip().split()
+            list_reactive_obj_func.set([imported_obj_func])
+            list_reactive_constraints.set(imported_constraints)
 
-                            import_list.append(elements)
+            dict_reactive_obj_func.set({})
+            copy_dict_obj_func = dict_reactive_obj_func.get().copy()
+            for obj_func in list_reactive_obj_func.get():
+                copy_dict_obj_func[obj_func[0]] = obj_func[0]
+            dict_reactive_obj_func.set(copy_dict_obj_func)
 
-                    type_of_optimization_import = None
-                    x1_type = None
-                    x2_type = None
-                    if import_list[(len(import_list) - 1)][0] == "int" and import_list[(len(import_list) - 1)][
-                        (len(import_list[(len(import_list) - 1)]) - 1)] == "x2;" and \
-                            import_list[(len(import_list) - 1)][
-                                (len(import_list[(len(import_list) - 1)]) - 2)] == "x1,":
-                        type_of_optimization_import = "ILP"
-                        x1_type = "int"
-                        x2_type = "int"
-                    elif import_list[(len(import_list) - 1)][0] == "int" and import_list[(len(import_list) - 1)][
-                        (len(import_list[(len(import_list) - 1)]) - 1)] == "x1;":
-                        type_of_optimization_import = "MILP_x1_int_x2_con"
-                        x1_type = "int"
-                        x2_type = "con"
-                    elif import_list[(len(import_list) - 1)][0] == "int" and import_list[(len(import_list) - 1)][
-                        (len(import_list[(len(import_list) - 1)]) - 1)] == "x2;" and not \
-                            import_list[(len(import_list) - 1)][(
-                                    len(import_list[(len(import_list) - 1)]) - 2)] == "x1,":
-                        type_of_optimization_import = "MILP_x1_con_x2_int"
-                        x1_type = "con"
-                        x2_type = "int"
-                    elif import_list[(len(import_list) - 1)][1] == "=" or import_list[(len(import_list) - 1)][
-                        1] == "<=" or \
-                            import_list[(len(import_list) - 1)][1] == ">=":
-                        type_of_optimization_import = "LP"
-                        x1_type = "con"
-                        x2_type = "con"
+            all_names_constraints = []
+            dict_reactive_constraints.set({})
+            copy_dict_reactive_constraints = dict_reactive_constraints.get().copy()
+            for constraint in list_reactive_constraints.get():
+                copy_dict_reactive_constraints[constraint[0]] = constraint[0]
+                all_names_constraints.append(constraint[0])
+            dict_reactive_constraints.set(copy_dict_reactive_constraints)
 
-                    imported_obj_func = []
-                    imported_constraints = []
-                    counter = 1
-                    for element in import_list:
-                        if element[0] == "max:" or element[0] == "min:":
+            list_reactive_selected_obj_func.set([imported_obj_func])
+            list_reactive_selected_constraints.set(imported_constraints)
+            string_reactive_problem_type.set(type_of_optimization_import)
 
-                            imported_obj_func = ["Function", float(element[1]), x1_type, float(element[4]), x2_type,
-                                                 element[0][0:3]]
-                        elif element[0] not in ["max:", "min:", "x1", "x2", "int"]:
-                            operator = None
+            bool_reactive_import_statement.set(True)
 
-                            if element[5] == "<=":
-                                operator = "≤"
-                            elif element[5] == ">=":
-                                operator = "≥"
-                            elif element[5] == "=":
-                                operator = "="
+            ui.update_action_button("btn_change_obj_func", disabled=False)
+            ui.update_action_button("btn_delete_obj_func", disabled=False)
+            ui.update_action_button("btn_change_constraint", disabled=False)
+            ui.update_action_button("btn_delete_constraint", disabled=False)
+            ui.update_action_button("btn_lin_opt", disabled=False)
+            ui.update_selectize("selectize_constraints", choices=dict_reactive_constraints.get(),
+                                selected=all_names_constraints)
+            ui.update_select("select_obj_func", choices=dict_reactive_obj_func.get())
+            ui.update_action_button("btn_sens_ana", disabled=True)
 
-                            imported_constraint = ["Constraint_" + str(counter), float(element[0]), x1_type,
-                                                   float(element[3]), x2_type, operator, float(element[6][:-1])]
-                            imported_constraints.append(imported_constraint)
+            notification_popup("Data imported successfully.")
+            ui.modal_remove()
 
-                            counter += 1
-
-                    list_reactive_obj_func.set([imported_obj_func])
-                    list_reactive_constraints.set(imported_constraints)
-
-                    dict_reactive_obj_func.set({})
-                    copy_dict_obj_func = dict_reactive_obj_func.get().copy()
-                    for obj_func in list_reactive_obj_func.get():
-                        copy_dict_obj_func[obj_func[0]] = obj_func[0]
-                    dict_reactive_obj_func.set(copy_dict_obj_func)
-
-                    all_names_constraints = []
-                    dict_reactive_constraints.set({})
-                    copy_dict_reactive_constraints = dict_reactive_constraints.get().copy()
-                    for constraint in list_reactive_constraints.get():
-                        copy_dict_reactive_constraints[constraint[0]] = constraint[0]
-                        all_names_constraints.append(constraint[0])
-                    dict_reactive_constraints.set(copy_dict_reactive_constraints)
-
-                    list_reactive_selected_obj_func.set([imported_obj_func])
-                    list_reactive_selected_constraints.set(imported_constraints)
-                    string_reactive_problem_type.set(type_of_optimization_import)
-
-                    bool_reactive_import_statement.set(True)
-
-                    ui.update_action_button("btn_change_obj_func", disabled=False)
-                    ui.update_action_button("btn_delete_obj_func", disabled=False)
-                    ui.update_action_button("btn_change_constraint", disabled=False)
-                    ui.update_action_button("btn_delete_constraint", disabled=False)
-                    ui.update_action_button("btn_lin_opt", disabled=False)
-                    ui.update_selectize("selectize_constraints", choices=dict_reactive_constraints.get(),
-                                        selected=all_names_constraints)
-                    ui.update_select("select_obj_func", choices=dict_reactive_obj_func.get())
-                    ui.update_action_button("btn_sens_ana", disabled=True)
-
-                    notification_popup("Data imported successfully.")
-
-                ui.modal_remove()
         except FileNotFoundError:
-            if input.radio_import_export() == "export":
-                notification_popup("Please enter a valid directory path.", message_type="error")
-            else:
-                notification_popup("Please select a valid file.", message_type="error")
+            notification_popup("Please select a valid file.", message_type="error")
         except IndexError:
-            notification_popup("Please select at least one objective function before exporting.", message_type="error")
+            notification_popup("Please check your file for correct content before importing.", message_type="error")
         except ValueError:
             notification_popup("Please check your file for correct content before importing.",
                                message_type="error")
