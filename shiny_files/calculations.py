@@ -57,10 +57,10 @@ def solve_sensitivity_analysis(lp_solve_path, saved_lp_problem_path, parameter=N
     result = subprocess.run(
         [lp_solve_path, parameter, saved_lp_problem_path],
         capture_output=True,
-        text=True
+        text=True,
+        timeout=30
     )
     return result
-
 
 def binding_constraints_and_slack(solved_lp_problem):
     lines_list = solved_lp_problem.splitlines()

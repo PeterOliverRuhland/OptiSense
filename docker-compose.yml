@@ -1,0 +1,30 @@
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    # Kein "ports:" - die App ist nur ueber Caddy erreichbar,
+    # nicht direkt von aussen auf Port 8000.
+    expose:
+      - "8000"
+    environment:
+      LP_SOLVE_BIN: /usr/local/bin/lp_solve
+      MPLBACKEND: Agg
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - app
+
+volumes:
+  caddy_data:
+  caddy_config:

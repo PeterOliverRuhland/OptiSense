@@ -1,7 +1,11 @@
 import os
 import platform
 import random
+import shutil
+import subprocess
 import sys
+import tempfile
+import uuid
 import matplotlib.lines as mlines
 import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
@@ -1955,11 +1959,10 @@ def server(input, output, session):
             notification_popup("Please check your file for correct content before importing.",
                                message_type="error")
 
-    # Function if the sensitivity analysis button is clicked
+       # Function if the sensitivity analysis button is clicked
     @reactive.effect
     @reactive.event(input.btn_sens_ana)
     def sensitivity_analysis():
-
 
         # Base path relative to server.py
         base_directory = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1970,23 +1973,41 @@ def server(input, output, session):
         }
 
         # Access the path for the current operating system
-        # Recognise current operating system
-        executable_lp = None
-        current_os = sys.platform
-        if current_os.startswith("linux"):
-            executable_lp = lp_solve_paths["linux"]
-        elif current_os == "darwin":
-            executable_lp = lp_solve_paths["darwin"]
-        elif current_os.startswith("win"):
-            executable_lp = lp_solve_paths["windows"]
+        # Priority: environment variable (Docker/server) -> lp_solve in PATH ->
+        # bundled binaries (local development)
+        executable_lp = os.environ.get("LP_SOLVE_BIN") or shutil.which("lp_solve")
 
-        lp_problem_saving_path = os.path.join(base_directory, "shiny_files", "lp_file.lp")
+        if not executable_lp:
+            current_os = sys.platform
+            if current_os.startswith("linux"):
+                executable_lp = lp_solve_paths["linux"]
+            elif current_os == "darwin":
+                executable_lp = lp_solve_paths["darwin"]
+            elif current_os.startswith("win"):
+                executable_lp = lp_solve_paths["windows"]
+
+        # Own file per call, otherwise parallel users overwrite each other
+        lp_problem_saving_path = os.path.join(
+            tempfile.gettempdir(), f"lp_file_{uuid.uuid4().hex}.lp"
+        )
 
         generate_lp_file(list_reactive_selected_obj_func.get()[0],
                          list_reactive_selected_constraints.get(),
                          string_reactive_problem_type.get(), lp_problem_saving_path)
 
-        lp_solve_output = solve_sensitivity_analysis(executable_lp, lp_problem_saving_path, "-S5")
+        try:
+            lp_solve_output = solve_sensitivity_analysis(executable_lp, lp_problem_saving_path, "-S5")
+        except subprocess.TimeoutExpired:
+            notification_popup("The problem took too long to solve.", message_type="error")
+            return
+        except (OSError, TypeError):
+            notification_popup("lp_solve could not be started on this system.", message_type="error")
+            return
+        finally:
+            try:
+                os.remove(lp_problem_saving_path)
+            except OSError:
+                pass
 
         sens_ana_binding_slack = binding_constraints_and_slack(lp_solve_output.stdout)
         list_reactive_sens_ana_slack.set(sens_ana_binding_slack)

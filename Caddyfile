@@ -1,0 +1,22 @@
+# Die Adresse kommt aus der Datei .env (Variable SITE_ADDRESS).
+# WebSockets muss man bei Caddy nicht konfigurieren - reverse_proxy
+# reicht Upgrade-Verbindungen automatisch durch. Genau das braucht Shiny.
+
+{$SITE_ADDRESS} {
+	reverse_proxy app:8000
+
+	encode zstd gzip
+
+	header {
+		X-Content-Type-Options "nosniff"
+		X-Frame-Options "SAMEORIGIN"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 10MiB
+			roll_keep 5
+		}
+	}
+}
