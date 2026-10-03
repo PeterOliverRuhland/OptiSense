@@ -82,43 +82,50 @@ To install and run OptiSense locally, follow these steps:
 After installing the dependencies, launch the application with:
 
 ```bash
-python shiny_files/app.py
+cd shiny_files
+shiny run --port 8000 app.py
 ```
 
-Then, open your browser and go to `http://localhost:5000` to use OptiSense.
+Then open `http://localhost:8000` in your browser. With Docker: `docker compose up --build` (see `Dockerfile`, `Caddyfile`).
 
-### Features:
+### Features
 
-- **Define optimization models** – Set an objective function and constraints.
-- **Solve problems** – Compute optimal solutions using `scipy.optimize` and `lp_solve`.
-- **Perform sensitivity analysis** – Evaluate parameter impact on the solution.
-- **Visualize results** – View solutions graphically and numerically.
-- **Import & Export** – Save and load problem configurations.
+- **Workflow in three steps** – enter the problem, choose the value range, solve and analyse. Each step shows its status and what is still missing.
+- **One list for all functions** – the objective function and constraints appear as rows with their graph colour; tap a row to edit or delete it, and use the switch to include or exclude it. Only one objective function is active at a time.
+- **Value range once per variable** – x1 and x2 are set to continuous or integer once; OptiSense derives LP, ILP or MILP.
+- **Exact graph** – the feasible region is computed geometrically (LP polygon, integer lattice points, MILP lines), constraints have fixed colours and are labelled directly in the graph.
+- **Solve** with `scipy.optimize.milp`; infeasible and unbounded problems are explained instead of failing.
+- **Sensitivity analysis** with `lp_solve`: shadow prices with their valid range of b, objective-coefficient ranges, and a sentence explaining each result.
+- **Three languages** – English, German and Filipino, switchable at any time without losing input.
+- **Import & export** in the LP format (files from earlier versions still import) and **PNG export** of the graph.
+- Built for student laptops and iPads from 12 inch (works from 1024 × 650 px, touch targets ≥ 44 px).
 
 ## Application Structure
 
-OptiSense provides an intuitive user interface with structured panels:
+![Model & solution tab](docs/screenshots/arbeitsseite-de.png)
 
-### **Main Interface (Problem Definition & Solution)**
-![OptiSense Main Interface](./path-to-screenshot1.png)  
-This screen allows users to:
-- **Define the objective function** (Enter, Change, or Delete).
-- **Add constraints** to the problem.
-- **Perform calculations**, including:
-  - **Linear Optimization**
-  - **Sensitivity Analysis**
-- **Export and import models** for later use.
-- **Visualize results** graphically and numerically.
-- **Reset all inputs** to start a new problem.
+**Model & solution**: left, the three workflow steps; middle, the graphical solution; right, the results in the tabs *Solution*, *Sensitivity* and *Description*. On narrower screens (e.g. iPad portrait) the results move below the graph.
 
-### **Help & Guide Interface**
-![OptiSense Guide Interface](./path-to-screenshot2.png)  
-The guide section provides step-by-step instructions for using OptiSense. Users can:
-- **Learn about Linear Programming** and Sensitivity Analysis.
-- **Follow a structured workflow** from setup to solving the problem.
-- **Understand each function with detailed descriptions.**
+![Guide tab](docs/screenshots/anleitung-fil.png)
 
-These sections make OptiSense a **powerful yet easy-to-use educational tool** for optimization problems.
+**Guide**: how to use OptiSense, short introductions to linear programming and sensitivity analysis, the textbook example (loadable with one click) and import/export. The **?** next to each step opens the matching section in place.
+
+### Code layout
+
+| File | Purpose |
+| --- | --- |
+| `shiny_files/app.py` | Entry point |
+| `shiny_files/user_interface.py` | Page layout (bslib navbar, sidebar, cards) |
+| `shiny_files/server.py` | Reactive state, modals, results |
+| `shiny_files/lp_core.py` | Solver, feasible region, LP file import/export, lp_solve sensitivity analysis (no Shiny code) |
+| `shiny_files/plotting.py` | The matplotlib graph |
+| `shiny_files/i18n.py` | All texts in English, German and Filipino |
+| `shiny_files/www/optisense.css`, `optisense.js` | Design-system styles; language switching and list interactions in the browser |
+| `tests/test_lp_core.py` | Unit tests: `python -m unittest discover -s tests` |
+
+### Adding or changing a language
+
+All texts live in `shiny_files/i18n.py`. Add a language code to `LANGS` and a translation to every entry of `TEXT` and `GUIDE`; the unit tests check that no entry is missing and that placeholders such as `{name}` match. The Filipino texts are a first draft and should be reviewed by a native speaker.
 
 ## Contributing
 

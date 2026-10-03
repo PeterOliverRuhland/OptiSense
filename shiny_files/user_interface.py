@@ -1,399 +1,147 @@
 from shiny import ui
 
-app_ui = ui.page_fillable(
-    # Add custom CSS-styles
-    ui.tags.style("""
-    .background-color-LightSkyBlue1 {
-        background-color: #CCECFF;
-    }
-    .background-color-LightSkyBlue {
-        background-color: #B0E2FF;
-    }
-    .background-color-White {
-        background-color: #FFFFFF;
-    }
-    .background-color-SnowGrey {
-        background-color: #FFF2E6;
-    }
-"""),
+from i18n import GUIDE_ORDER, LANGS, client_dictionary
 
-    ui.page_navbar(
 
-        ui.nav_panel("Linear Programming and sensitivity analysis",
-                     ui.layout_sidebar(
-                         # Sidebar
-                         ui.sidebar(
-                             ui.row(
-                                 ui.card(
-                                     ui.tooltip(
-                                         ui.card_header("User inputs"),
-                                         "In this section you can enter your objective function and constraints."),
-                                     ui.tooltip(
-                                         ui.HTML(
-                                             '<div style="text-align: center;"><b>Non-negativity required</b></div>'),
-                                         "All inputs must be non-negative."),
-                                     ui.card(
-                                         ui.tooltip(
-                                             ui.input_action_button(id="btn_enter_obj_func",
-                                                                    label="Enter objective function",
-                                                                    class_="background-color-White"
-                                                                    ),
-                                             "Enter your objective function. The objective function is the function that is to be optimised."),
-                                         ui.tooltip(
-                                             ui.input_action_button(id="btn_change_obj_func",
-                                                                    label="Change objective function",
-                                                                    disabled=True,
-                                                                    class_="background-color-White"
-                                                                    ), "Change the objective function."),
-                                         ui.tooltip(
-                                             ui.input_action_button(id="btn_delete_obj_func",
-                                                                    label="Delete objective function",
-                                                                    disabled=True,
-                                                                    class_="background-color-White"
-                                                                    ), "Delete the objective function."),
-                                         class_="background-color-LightSkyBlue"
-                                     ),
-                                     ui.card(
-                                         ui.tooltip(
-                                             ui.input_action_button(id="btn_enter_constraint",
-                                                                    label="Enter constraint",
-                                                                    disabled=False,
-                                                                    class_="background-color-White"
-                                                                    ),
-                                             "Enter your constraints. Constraints are functions that restrict the target function."),
-                                         ui.tooltip(
-                                             ui.input_action_button(id="btn_change_constraint",
-                                                                    label="Change constraint",
-                                                                    disabled=True,
-                                                                    class_="background-color-White"
-                                                                    ),
-                                             "Change the constraints."),
-                                         ui.tooltip(
-                                             ui.input_action_button(id="btn_delete_constraint",
-                                                                    label="Delete constraint",
-                                                                    disabled=True,
-                                                                    class_="background-color-White"
-                                                                    ),
-                                             "Delete the constraints."),
-                                         class_="background-color-LightSkyBlue"
-                                     ),
-                                     ui.card(
-                                         ui.tooltip(
-                                             ui.input_action_button(id="set_x1_x2_value_range",
-                                                                    label="Set value range for x1 and x2",
-                                                                    disabled=True,
-                                                                    class_="background-color-White"
-                                                                    ),
-                                             "Change the value range of x1 and x2 at once instead of individually using the ‘change’ buttons."),
-                                         class_="background-color-LightSkyBlue"
-                                     ),
-                                     class_="background-color-LightSkyBlue1"
+def tr(key, tag="span", **attrs):
+    """Static text translated in the browser (see www/optisense.js). English is the fallback content."""
+    from i18n import t
+    return getattr(ui.tags, tag)(t("en", key), {"data-i18n": key}, **attrs)
 
-                                 ),
-                             ),
-                             ui.card(
-                                 ui.tooltip(
-                                     ui.card_header("Main functions"),
-                                     "Further options are provided in this panel."),
-                                 ui.card(
-                                     ui.tooltip(
-                                         ui.card_header("Calculations"),
-                                         "Select the type of calculation. NOTE: Sensitivity analysis is only possible after linear optimization."),
-                                     ui.tooltip(
-                                         ui.input_action_button(id="btn_lin_opt",
-                                                                label="Linear optimization",
-                                                                disabled=True,
-                                                                class_="background-color-White"
-                                                                ),
-                                         "Start the linear optimization for your problem."),
-                                     ui.tooltip(
-                                         ui.input_action_button(id="btn_sens_ana",
-                                                                label="Sensitivity analysis",
-                                                                disabled=True,
-                                                                class_="background-color-White"
-                                                                ),
-                                         "Start the sensitivity analysis for your problem."),
-                                     class_="background-color-LightSkyBlue"
 
-                                 ),
-                                 ui.card(
-                                     ui.card_header("Extras"),
-                                     ui.tooltip(
-                                         ui.input_action_button(id="btn_save_graph",
-                                                                label="Save graph as PNG",
-                                                                disabled=True,
-                                                                class_="background-color-White"
-                                                                ),
-                                         "Save the graph as a png file."),
-                                     ui.tooltip(
-                                         ui.input_action_button(id="btn_import_export",
-                                                                label="Import & export",
-                                                                disabled=False,
-                                                                class_="background-color-White"
-                                                                ),
-                                         "Import or export your data using the LP format."),
+def help_button(topic):
+    return ui.tags.button("?", type="button", class_="os-help", **{"data-help": topic, "data-i18n-aria": "help",
+                                                                    "aria-label": "Help"})
 
-                                     class_="background-color-LightSkyBlue"
-                                 ),
-                                 class_="background-color-LightSkyBlue1"
-                             ),
-                             ui.card(
-                                 ui.card(
-                                     ui.tooltip(
-                                         ui.input_action_button(id="btn_reset",
-                                                                label="Reset all",
-                                                                disabled=False,
-                                                                class_="background-color-White"
-                                                                ),
-                                         "Reset all entries."),
-                                     class_="background-color-LightSkyBlue"
-                                 ),
-                                 class_="background-color-LightSkyBlue1"
-                             ),
-                             ui.HTML('<div style="text-align: center;"><b>OptiSense Version 1.0</b></div>'),
-                             ui.HTML('<div style="text-align: center;"><b>by Peter Oliver Ruhland</b></div>'),
 
-                             width="20%"),
-                         # Transmitted data and main content
-                         ui.layout_column_wrap(
-                             ui.card(
-                                 ui.tooltip(
-                                     ui.card_header("Transmitted data"),
-                                     "Your transmitted data is displayed in this section. You can use this data for linear optimization and the following sensitivity analysis."),
-                                 ui.layout_column_wrap(
-                                     ui.card(
-                                         ui.tooltip(
-                                             ui.card_header("Overview of the functions"),
-                                             "This panel displays all the functions entered for your overview."),
-                                         ui.card(
-                                             ui.HTML("<b>Objective function(s):</b>"),
-                                             ui.output_ui("txt_obj_func"),
-                                         ),
+def step_card(number, title_key, status_id, help_topic, *body):
+    return ui.div(
+        ui.div(
+            ui.span(str(number), class_="os-num"),
+            tr(title_key, class_="os-step-title"),
+            ui.output_text(status_id, inline=True, container=ui.tags.span).add_class("os-step-status"),
+            help_button(help_topic),
+            class_="os-step-head",
+        ),
+        ui.div(*body, class_="os-step-body"),
+        class_="os-card os-step",
+        id=f"os-step-{number}",
+    )
 
-                                         ui.card(
-                                             ui.HTML("<b>Constraint(s):</b>"),
-                                             ui.output_ui("txt_constraint"),
-                                         ),
-                                         class_="background-color-LightSkyBlue"
-                                     ),
-                                     ui.card(
-                                         ui.tooltip(
-                                             ui.card_header("Selecting the functions"),
-                                             "In this panel, select the functions you want to use for linear optimization and sensitivity analysis."),
-                                         ui.input_select(
-                                             "select_obj_func",
-                                             "Choose an objective function:",
-                                             choices=[],
 
-                                         ),
-                                         ui.input_selectize(
-                                             "selectize_constraints",
-                                             "Choose constraint(s):",
-                                             choices=[],
-
-                                             multiple=True,
-                                         ),
-
-                                         ui.HTML("<br><br>"),
-                                         class_="background-color-LightSkyBlue"
-                                     ),
-                                     ui.card(
-                                         ui.tooltip(
-                                             ui.card_header("Overview of the value ranges"),
-                                             "This panel shows the value ranges of the individual functions and the resulting problem type per function."),
-                                         ui.card(
-                                             ui.output_data_frame("df_output_value_ranges"),
-                                         ),
-                                         class_="background-color-LightSkyBlue"
-                                     ),
-                                     ui.card(
-                                         ui.tooltip(
-                                             ui.card_header("Linear Programming - Information"),
-                                             "This panel displays the type of linear programming based on the transmitted data and the corresponding numerical range."),
-                                         ui.card(
-                                             ui.output_ui("txt_lin_prog_type"),
-                                         ),
-                                         class_="background-color-LightSkyBlue"
-                                     ),
-                                     width=1 / 2,
-                                 ),
-
-                                 class_="background-color-LightSkyBlue1"
-                             ),
-                             # Graphical solution
-                             ui.card(
-                                 ui.tooltip(
-                                     ui.card_header("Graphical solution"),
-                                     "This panel displays the graph with all the data transmitted to it. The x1 and x2 axes update dynamically."),
-                                 ui.card(
-                                     ui.output_plot("plot_output_graph"),
-                                     class_="background-color-LightSkyBlue"
-                                 ),
-                                 class_="background-color-LightSkyBlue1"
-                             ),
-
-                             style="height: 66vh;",
-                             width=1 / 2,
-                         ),
-                         # Textual description and results
-                         ui.layout_column_wrap(
-                             ui.card(
-                                 ui.tooltip(
-                                     ui.card_header("Textual description "),
-                                     "This section provides properties of the functions with regard to the graph and descriptions of the results."),
-                                 ui.card(
-                                     ui.card(
-                                         ui.output_ui("txt_description"),
-                                     ),
-                                     class_="background-color-LightSkyBlue"
-                                 ),
-                                 class_="background-color-LightSkyBlue1"
-                             ),
-                             ui.card(
-                                 ui.tooltip(
-                                     ui.card_header("Results"),
-                                     "The results of the linear optimization and sensitivity analysis are presented in tabular form in this section."),
-                                 ui.row(
-                                     ui.column(4, ui.card(
-                                         ui.tooltip(
-                                             ui.card_header("Linear optimization"),
-                                             "Here you can see the results of the linear optimization with the optimum values for x1 and x2 and the result of the objective function."),
-                                         ui.card(
-                                             ui.output_data_frame("df_lp_results"),
-                                         ),
-                                         class_="background-color-LightSkyBlue"
-                                     )),
-                                     ui.column(8, ui.card(
-                                         ui.tooltip(
-                                             ui.card_header("Sensitivity analysis"),
-                                             "Here you can see the results of the sensitivity analysis."),
-                                         ui.tooltip(
-                                             ui.HTML("<b>(Non-)Binding constraints and slack</b>"),
-                                             "Shows how intensely the constraints are being used at the optimum point. The 'slack' indicates how much of the capacity remains unused."),
-                                         ui.card(
-                                             ui.output_data_frame("df_sens_ana_slack"),
-                                         ),
-                                         ui.tooltip(
-                                             ui.HTML("<b>Shadow prices / Dual prices</b>"),
-                                             "The shadow price indicates how much the objective function value improves when a constraint is relaxed by one unit. A value of 0 means that the constraint has no influence on the objective function."),
-                                         ui.card(
-                                             ui.output_data_frame("df_sens_ana_shadow"),
-                                         ),
-                                         ui.tooltip(
-                                             ui.HTML("<b>Objective function coefficient limits</b>"),
-                                             "Describes the range in which the objective function or constraints can be changed without invalidating the optimal solution."),
-                                         ui.card(
-                                             ui.output_data_frame("df_sens_ana_limits"),
-                                         ),
-                                         class_="background-color-LightSkyBlue"
-                                     )),
-                                 ),
-                                 class_="background-color-LightSkyBlue1"
-                             ),
-
-                             style="height: 34vh;",
-                             width=1 / 2,
-                         ),
-
-                     ),
-
-                     ),
-        ui.nav_panel("How to use OptiSense",
-
-                     ui.layout_sidebar(
-                         ui.sidebar(ui.card(
-                             ui.HTML(
-                                 '<div style="text-align: center;"><b>Guide</b></div>'),
-                             ui.card(
-                                 ui.row(
-                                     ui.input_action_button(id="btn_about",
-                                                            label="About OptiSense",
-                                                            class_="background-color-White"
-                                                            ),
-                                 ),
-                                 ui.row(
-                                     ui.input_action_button(id="btn_about_lp",
-                                                            label="About Linear Programming",
-                                                            class_="background-color-White"
-                                                            ),
-                                 ),
-                                 ui.row(
-                                     ui.input_action_button(id="btn_about_sens_ana",
-                                                            label="About sensitivity analysis",
-                                                            class_="background-color-White"
-                                                            ),
-                                 ),
-
-                                 ui.row(
-                                     ui.input_action_button(id="btn_example",
-                                                            label="Example problem",
-                                                            class_="background-color-White"
-                                                            ),
-                                 ),
-                                 ui.row(
-                                     ui.input_action_button(id="btn_step_1",
-                                                            label="Step 1: Set up",
-                                                            class_="background-color-White"
-                                                            ),
-                                 ),
-                                 ui.row(
-                                     ui.input_action_button(id="btn_step_2",
-                                                            label="Step 2: Select functions",
-                                                            class_="background-color-White"
-                                                            ),
-                                 ),
-                                 ui.row(
-                                     ui.input_action_button(id="btn_step_3",
-                                                            label="Step 3: Solving with linear optimization",
-                                                            class_="background-color-White"
-                                                            ),
-                                 ),
-                                 ui.row(
-                                     ui.input_action_button(id="btn_step_4",
-                                                            label="Step 4: Sensitivity analysis",
-                                                            class_="background-color-White"
-                                                            ),
-                                 ),
-                                 ui.row(
-                                     ui.input_action_button(id="btn_step_5",
-                                                            label="Step 5: Save graph as PNG",
-                                                            class_="background-color-White"
-                                                            ),
-                                 ),
-                                 ui.row(
-                                     ui.input_action_button(id="btn_step_6",
-                                                            label="Step 6: Import or Export",
-                                                            class_="background-color-White"
-                                                            ),
-                                 ),
-                                 ui.row(
-                                     ui.input_action_button(id="btn_step_7",
-                                                            label="Reset and adjust",
-                                                            class_="background-color-White"
-                                                            ),
-                                 ),
-                                 class_="background-color-LightSkyBlue"
-                             ),
-                             class_="background-color-LightSkyBlue1"
-                         ), width="20%",
-                         ),
-                         ui.card(ui.card(
-                             ui.card(None,
-                                     ui.output_ui("txt_how_to_use"),
-                                     bg="#f8f8f8"),
-                             class_="background-color-LightSkyBlue"
-                         ),
-                             class_="background-color-LightSkyBlue1"
-                         ),
-                     ),
-
-                     ),
-
-        title="OptiSense",
-        id="page",
-
-        bg="#B0E2FF"
+sidebar = ui.sidebar(
+    step_card(
+        1, "step1", "status_step1", "steps",
+        ui.output_ui("problem_list"),
+        ui.div(
+            ui.input_action_button("btn_add_obj", tr("add_objective_short"), class_="os-btn",
+                                   **{"data-i18n-aria": "add_objective", "aria-label": "Add objective function"}),
+            ui.input_action_button("btn_add_con", tr("add_constraint_short"), class_="os-btn",
+                                   **{"data-i18n-aria": "add_constraint", "aria-label": "Add constraint"}),
+            class_="os-btn-row",
+        ),
+        ui.div(
+            ui.input_action_link("btn_import_export", tr("import_export"), class_="os-link"),
+            ui.input_action_link("btn_example", tr("load_example"), class_="os-link"),
+            ui.input_action_link("btn_reset", tr("reset_all"), class_="os-link"),
+            class_="os-links",
+        ),
     ),
-    style="height: 100vh;",
-    class_="background-color-SnowGrey"
+    step_card(
+        2, "step2", "status_step2", "lp",
+        ui.div(
+            ui.span("x1", class_="os-var"),
+            ui.input_radio_buttons("vt_x1", None, {"con": tr("continuous"), "int": tr("integer")}, inline=True),
+            class_="os-vt-row",
+        ),
+        ui.div(
+            ui.span("x2", class_="os-var"),
+            ui.input_radio_buttons("vt_x2", None, {"con": tr("continuous"), "int": tr("integer")}, inline=True),
+            class_="os-vt-row",
+        ),
+        ui.output_ui("problem_type"),
+    ),
+    step_card(
+        3, "step3", "status_step3", "sens",
+        ui.input_action_button("btn_opt", tr("run_opt"), class_="os-btn os-btn-primary", disabled=True),
+        ui.input_action_button("btn_sens", tr("run_sens"), class_="os-btn", disabled=True),
+        ui.output_ui("solve_hint"),
+    ),
+    tr("credit", tag="div", class_="os-credit"),
+    width=340,
+    open="desktop",
+    gap="12px",
+    class_="os-sidebar",
+)
+
+graph_card = ui.card(
+    ui.card_header(
+        tr("graph"),
+        ui.input_action_button("btn_png", tr("save_png"), class_="btn-link os-header-action", disabled=True),
+        class_="os-card-header",
+    ),
+    ui.output_plot("plot", height="100%", fill=True),
+    full_screen=True,
+    class_="os-card os-graph",
+)
+
+results_card = ui.navset_card_tab(
+    ui.nav_panel(tr("tab_solution"), ui.output_ui("solution_view"), value="solution"),
+    ui.nav_panel(tr("tab_sensitivity"), ui.output_ui("sensitivity_view"), value="sensitivity"),
+    ui.nav_panel(tr("tab_description"), ui.output_ui("description_view"), value="description"),
+    id="results_tabs",
+    title=tr("results"),
+)
+
+work_panel = ui.nav_panel(
+    tr("tab_work"),
+    ui.layout_sidebar(
+        sidebar,
+        ui.div(graph_card, ui.div(results_card, class_="os-results"), class_="os-main"),
+        class_="os-layout",
+        border=False,
+    ),
+    value="work",
+)
+
+guide_panel = ui.nav_panel(
+    tr("tab_guide"),
+    ui.div(
+        ui.div(
+            *[ui.tags.button(tr(label_key), type="button", class_="os-guide-tab", **{"data-guide": topic})
+              for topic, label_key in GUIDE_ORDER],
+            class_="os-guide-nav os-card",
+            role="tablist",
+        ),
+        ui.div(ui.output_ui("guide_view"), class_="os-guide-body os-card"),
+        class_="os-guide",
+    ),
+    value="guide",
+)
+
+language_switch = ui.nav_control(
+    ui.div(
+        ui.input_radio_buttons("lang", None, LANGS, selected="en", inline=True),
+        class_="os-lang",
+        **{"data-i18n-aria": "language", "aria-label": "Language"},
+    )
+)
+
+app_ui = ui.page_navbar(
+    work_panel,
+    guide_panel,
+    ui.nav_spacer(),
+    language_switch,
+    title=ui.span("OptiSense", class_="os-brand"),
+    id="page",
+    window_title="OptiSense",
+    header=ui.head_content(
+        ui.tags.meta(name="viewport", content="width=device-width, initial-scale=1"),
+        ui.tags.link(rel="stylesheet", href="optisense.css"),
+        ui.tags.script(f"window.OS_I18N = {client_dictionary()};"),
+        ui.tags.script(src="optisense.js"),
+    ),
+    bg="#b0e2ff",
+    fillable=["work"],
+    lang="en",
 )
