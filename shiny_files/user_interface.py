@@ -68,7 +68,7 @@ sidebar = ui.sidebar(
         ui.output_ui("solve_hint"),
     ),
     tr("credit", tag="div", class_="os-credit"),
-    width=340,
+    width="var(--sidebar-width)",
     open="desktop",
     gap="12px",
     class_="os-sidebar",
@@ -76,6 +76,9 @@ sidebar = ui.sidebar(
 
 graph_card = ui.card(
     ui.card_header(
+        ui.tags.button("‹", type="button", class_="os-sidebar-btn", title="Show or hide the steps",
+                       **{"data-sidebar-toggle": "1", "data-i18n-aria": "toggle_sidebar", "aria-label": "Show or hide the steps",
+                          "aria-expanded": "true"}),
         tr("graph"),
         ui.input_action_button("btn_png", tr("save_png"), class_="btn-link os-header-action", disabled=True),
         class_="os-card-header",
@@ -121,7 +124,7 @@ guide_panel = ui.nav_panel(
 
 language_switch = ui.nav_control(
     ui.div(
-        ui.input_radio_buttons("lang", None, LANGS, selected="en", inline=True),
+        ui.input_select("lang", None, LANGS, selected="en", selectize=False, width="auto"),
         class_="os-lang",
         **{"data-i18n-aria": "language", "aria-label": "Language"},
     )

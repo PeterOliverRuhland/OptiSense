@@ -16,6 +16,7 @@ TEXT = {
     "tab_work": {"en": "Model & solution", "de": "Modell & Lösung", "fil": "Modelo at solusyon"},
     "tab_guide": {"en": "Guide", "de": "Anleitung", "fil": "Gabay"},
     "language": {"en": "Language", "de": "Sprache", "fil": "Wika"},
+    "toggle_sidebar": {"en": "Show or hide the steps", "de": "Schritte ein- oder ausblenden", "fil": "Ipakita o itago ang mga hakbang"},
     "help": {"en": "Help", "de": "Hilfe", "fil": "Tulong"},
     "credit": {"en": "OptiSense 2.0 · by Peter Oliver Ruhland", "de": "OptiSense 2.0 · von Peter Oliver Ruhland",
                "fil": "OptiSense 2.0 · gawa ni Peter Oliver Ruhland"},

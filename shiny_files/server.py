@@ -445,7 +445,7 @@ def server(input, output, session):
             tag = tags.span(tr("binding" if act["binding"] else "non_binding"),
                             class_="os-tag" + (" is-binding" if act["binding"] else ""))
             rows.append(tags.tr(
-                tags.td(con_swatch(con), con["name"]), tags.td(tag),
+                tags.td(tags.div(con_swatch(con), con["name"]), tag, class_="os-cell-name"),
                 tags.td(f"{num(act['lhs'])} {con['op']} {num(con['b'])}", class_="num"),
                 tags.td(num(act["slack"]), class_="num")))
         binding = [con["name"] for con, act in zip(cons, activity) if act["binding"]]
@@ -457,7 +457,7 @@ def server(input, output, session):
                 class_="os-kpis",
             ),
             tags.table(
-                tags.thead(tags.tr(tags.th(tr("col_constraint")), tags.th(tr("col_status")),
+                tags.thead(tags.tr(tags.th(tr("col_constraint")),
                                    tags.th(tr("col_lhs"), class_="num"), tags.th(tr("col_slack"), class_="num"))),
                 tags.tbody(*rows), class_="os-table"),
             tags.p(tr("solution_sentence", x1=num(sol["x1"]), x2=num(sol["x2"]), name=obj["name"], value=num(sol["value"]))),

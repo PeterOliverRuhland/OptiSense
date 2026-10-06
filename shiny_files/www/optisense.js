@@ -2,7 +2,7 @@
    language, list-row interactions, help buttons and the guide navigation. */
 (function () {
   "use strict";
-  var LANGS = ["en", "de", "fil"];
+  var LANGS = Object.keys(window.OS_I18N || { en: 1 });
   var current = "en";
 
   function storedLang() {
@@ -36,7 +36,7 @@
   // Shiny's own language radio buttons drive everything
   document.addEventListener("change", function (ev) {
     var t = ev.target;
-    if (t && t.name === "lang") setLang(t.value);
+    if (t && t.id === "lang") setLang(t.value);
     if (t && t.matches && t.matches("[data-toggle-kind]")) {
       Shiny.setInputValue("row_toggle", { kind: t.getAttribute("data-toggle-kind"), id: +t.getAttribute("data-id"),
         on: t.checked, n: Date.now() }, { priority: "event" });
@@ -56,6 +56,8 @@
     if (row) { rowActivate(row); return; }
     var help = el.closest("[data-help]");
     if (help) { Shiny.setInputValue("help_topic", { topic: help.getAttribute("data-help"), n: Date.now() }, { priority: "event" }); return; }
+    var tg = el.closest("[data-sidebar-toggle]");
+    if (tg) { var native = document.querySelector(".bslib-sidebar-layout > .collapse-toggle"); if (native) native.click(); [50, 400].forEach(function (d) { setTimeout(syncSidebarBtn, d); }); return; }
     var g = el.closest("[data-guide]");
     if (g) { selectGuide(g.getAttribute("data-guide")); }
   });
@@ -64,6 +66,15 @@
     var row = ev.target && ev.target.closest && ev.target.closest(".os-row[data-kind]");
     if (row && (ev.key === "Enter" || ev.key === " ") && !ev.target.closest(".os-switch")) { ev.preventDefault(); rowActivate(row); }
   });
+
+  function syncSidebarBtn() {
+    var layout = document.querySelector(".bslib-sidebar-layout");
+    var open = !layout || !layout.classList.contains("sidebar-collapsed");
+    document.querySelectorAll("[data-sidebar-toggle]").forEach(function (b) {
+      b.textContent = open ? "‹" : "›";
+      b.setAttribute("aria-expanded", open ? "true" : "false");
+    });
+  }
 
   function selectGuide(topic) {
     document.querySelectorAll(".os-guide-tab").forEach(function (b) {
@@ -86,10 +97,13 @@
 
   $(document).on("shiny:connected", function () {
     var lang = storedLang();
-    var radio = document.querySelector('input[name="lang"][value="' + lang + '"]');
-    if (radio && !radio.checked) { radio.checked = true; $(radio).trigger("change"); }
+    var sel = document.getElementById("lang");
+    if (sel && sel.value !== lang) { sel.value = lang; $(sel).trigger("change"); }
     setLang(lang);
     selectGuide("steps");
+    setTimeout(syncSidebarBtn, 300);
+    var native = document.querySelector(".bslib-sidebar-layout > .collapse-toggle");
+    if (native) new MutationObserver(syncSidebarBtn).observe(native, { attributes: true, attributeFilter: ["aria-expanded"] });
   });
 
   // a step's "?" may ask the server to switch to the guide tab; the server sends this message

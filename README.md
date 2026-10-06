@@ -96,7 +96,7 @@ Then open `http://localhost:8000` in your browser. With Docker: `docker compose 
 - **Exact graph** – the feasible region is computed geometrically (LP polygon, integer lattice points, MILP lines), constraints have fixed colours and are labelled directly in the graph.
 - **Solve** with `scipy.optimize.milp`; infeasible and unbounded problems are explained instead of failing.
 - **Sensitivity analysis** with `lp_solve`: shadow prices with their valid range of b, objective-coefficient ranges, and a sentence explaining each result.
-- **Three languages** – English, German and Filipino, switchable at any time without losing input.
+- **Languages** – English, German and Filipino in a compact language menu (more can be added), switchable at any time without losing input.
 - **Import & export** in the LP format (files from earlier versions still import) and **PNG export** of the graph.
 - Built for student laptops and iPads from 12 inch (works from 1024 × 650 px, touch targets ≥ 44 px).
 
@@ -104,7 +104,7 @@ Then open `http://localhost:8000` in your browser. With Docker: `docker compose 
 
 ![Model & solution tab](docs/screenshots/arbeitsseite-de.png)
 
-**Model & solution**: left, the three workflow steps; middle, the graphical solution; right, the results in the tabs *Solution*, *Sensitivity* and *Description*. On narrower screens (e.g. iPad portrait) the results move below the graph.
+**Model & solution**: the graphical solution is the central element; left, the three workflow steps (can be hidden with the ‹ button in the graph header); right, the results in the tabs *Solution*, *Sensitivity* and *Description*. All three columns stay side by side from 1024 px width.
 
 ![Guide tab](docs/screenshots/anleitung-fil.png)
 
