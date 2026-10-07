@@ -10,8 +10,8 @@ import unittest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shiny_files"))
 
-import i18n  # noqa: E402
-import lp_core  # noqa: E402
+from optisense import core as lp_core  # noqa: E402
+from optisense import i18n  # noqa: E402
 
 OBJ = {"name": "F", "c1": 10, "c2": 20, "sense": "max"}
 CONS = [

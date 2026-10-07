@@ -112,20 +112,30 @@ Then open `http://localhost:8000` in your browser. With Docker: `docker compose 
 
 ### Code layout
 
-| File | Purpose |
-| --- | --- |
-| `shiny_files/app.py` | Entry point |
-| `shiny_files/user_interface.py` | Page layout (bslib navbar, sidebar, cards) |
-| `shiny_files/server.py` | Reactive state, modals, results |
-| `shiny_files/lp_core.py` | Solver, feasible region, LP file import/export, lp_solve sensitivity analysis (no Shiny code) |
-| `shiny_files/plotting.py` | The matplotlib graph |
-| `shiny_files/i18n.py` | All texts in English, German and Filipino |
-| `shiny_files/www/optisense.css`, `optisense.js` | Design-system styles; language switching and list interactions in the browser |
-| `tests/test_lp_core.py` | Unit tests: `python -m unittest discover -s tests` |
+```
+shiny_files/
+├── app.py                     entry point (shiny run app.py)
+├── www/                       optisense.css (design system, fluid sizing), optisense.js (language, list, sidebar)
+└── optisense/
+    ├── config.py              limits (2 objective functions, 5 constraints), example names, graph colours
+    ├── plotting.py            the matplotlib graph
+    ├── core/                  maths, no Shiny code
+    │   ├── model.py           problem type, integrality, slack / binding
+    │   ├── solver.py          scipy.optimize.milp
+    │   ├── geometry.py        axis bounds, feasible region, lines, dummy objective line
+    │   ├── lp_format.py       .lp import / export
+    │   └── sensitivity.py     lp_solve call and output parsing
+    ├── i18n/                  all texts: texts.py (interface), guide_texts.py (guide), __init__.py (t, fmt_num)
+    ├── ui/                    components.py (step card, translated text), layout.py (page)
+    └── server/                context.py (shared state) and one module per area:
+                               problem (step 1), value_range (step 2), solving (step 3),
+                               graph, results, files (import/export, example, reset), guide
+tests/test_core.py             unit tests: python -m unittest discover -s tests
+```
 
 ### Adding or changing a language
 
-All texts live in `shiny_files/i18n.py`. Add a language code to `LANGS` and a translation to every entry of `TEXT` and `GUIDE`; the unit tests check that no entry is missing and that placeholders such as `{name}` match. The Filipino texts are a first draft and should be reviewed by a native speaker.
+All texts live in `shiny_files/optisense/i18n/` (`texts.py`, `guide_texts.py`). Add a language code to `LANGS` and a translation to every entry of `TEXT` and `GUIDE`; the unit tests check that no entry is missing and that placeholders such as `{name}` match. The Filipino texts are a first draft and should be reviewed by a native speaker.
 
 ## Contributing
 

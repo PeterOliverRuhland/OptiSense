@@ -78,6 +78,14 @@
     });
   }
 
+  // tell the server how much the page is scaled (root font size / 16) so the graph's labels grow with it
+  var lastScale = null, scaleTimer = null;
+  function sendScale() {
+    var scale = Math.round(parseFloat(getComputedStyle(document.documentElement).fontSize) / 16 * 100) / 100;
+    if (scale !== lastScale && window.Shiny && Shiny.setInputValue) { lastScale = scale; Shiny.setInputValue("ui_scale", scale); }
+  }
+  window.addEventListener("resize", function () { clearTimeout(scaleTimer); scaleTimer = setTimeout(sendScale, 250); });
+
   function selectGuide(topic) {
     document.querySelectorAll(".os-guide-tab").forEach(function (b) {
       var on = b.getAttribute("data-guide") === topic;
@@ -103,6 +111,7 @@
     if (sel && sel.value !== lang) { sel.value = lang; $(sel).trigger("change"); }
     setLang(lang);
     selectGuide("steps");
+    sendScale();
     setTimeout(syncSidebarBtn, 300);
     var native = document.querySelector(".bslib-sidebar-layout > .collapse-toggle");
     if (native) new MutationObserver(syncSidebarBtn).observe(native, { attributes: true, attributeFilter: ["aria-expanded"] });
