@@ -19,8 +19,8 @@
   --radius-modal: 0.5rem;
   --space-card: 1rem;
   --touch-target: 44px;
-  --sidebar-width: clamp(268px, 23vw, 320px);
-  --results-width: clamp(296px, 26vw, 380px);
+  --sidebar-width: clamp(284px, 24vw, 340px);
+  --results-width: clamp(320px, 30vw, 460px);
 
   --bs-primary: #00629b;
   --bs-primary-rgb: 0, 98, 155;
@@ -242,3 +242,35 @@ body { background: var(--surface-page); color: var(--ink); }
   background: var(--surface-content); color: var(--ink); font-size: 1.25rem; line-height: 1; padding: 0 0 2px; font-weight: 400; }
 .os-sidebar-btn:hover { border-color: var(--primary); color: var(--primary); }
 .os-sidebar-btn:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+
+/* ---- step 1: compact list with "+ New" in the section headings ---- */
+.os-step-title { white-space: nowrap; }
+.os-head-link { margin-left: auto; min-height: 32px; font-size: 0.8125rem; }
+.os-head-link + .os-help { margin-left: 4px; }
+.os-list-label { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 38px; padding: 4px 6px 2px 12px; }
+.os-add { flex: none; display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border: 0; border-radius: 15px;
+  background: var(--surface-panel); color: var(--primary); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.os-add:hover { background: var(--surface-group); }
+.os-add:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.os-row { gap: 8px; padding: 3px 10px 3px 12px; }
+.os-formula { font-size: 0.8125rem; }
+.os-switch { width: 36px; height: 22px; }
+.os-switch span::after { width: 16px; height: 16px; }
+.os-switch input:checked + span::after { transform: translateX(14px); }
+.os-links { justify-content: space-between; margin-top: -2px; }
+.os-links .os-link { min-height: 36px; }
+.os-step-head { min-height: 42px; padding-top: 5px; padding-bottom: 5px; gap: 8px; }
+.os-step-body { gap: 6px; }
+/* ---- step 2: two compact rows ---- */
+#os-step-2 .os-step-body { padding-bottom: 10px; }
+.os-vt-row .radio-inline input + span { min-height: 36px; font-size: 0.8125rem; padding: 2px 6px; white-space: nowrap; }
+.os-type { font-size: 0.8125rem; color: var(--ink-muted); margin: 0; }
+/* short laptop screens: slightly lower list rows so step 3 stays in view (tablets keep 44 px) */
+@media (max-height: 820px) and (min-width: 1024px) {
+  .os-row { min-height: 40px; }
+  .os-list-label { min-height: 32px; padding-top: 2px; }
+  .os-step-head { min-height: 38px; padding-top: 3px; padding-bottom: 3px; }
+  .os-step-body { padding-bottom: 10px; }
+  .os-links .os-link { min-height: 32px; }
+  .bslib-sidebar-layout > .sidebar > .sidebar-content { padding-top: 12px; }
+}

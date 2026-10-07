@@ -6,7 +6,7 @@ from shiny import reactive, render, req, ui
 
 import lp_core
 import plotting
-from i18n import DEFAULT_NAMES, EXAMPLE_NAMES, GUIDE_ORDER, fmt_num, guide, norm_lang, t
+from i18n import DEFAULT_NAMES, EXAMPLE_NAMES, GUIDE_ORDER, MAX_CONSTRAINTS, MAX_OBJECTIVES, fmt_num, guide, norm_lang, t
 
 
 def server(input, output, session):
@@ -93,15 +93,24 @@ def server(input, output, session):
     @render.ui
     def problem_list():
         lc = lang()
-        rows = [tags.div(tr("objective_function"), class_="os-list-label")]
+
+        def heading(key, kind, count, limit):
+            add = None
+            if count < limit:
+                add_label = tr("add_objective" if kind == "obj" else "add_constraint")
+                add = tags.button(tr("add_new"), type="button", class_="os-add", title=add_label,
+                                  **{"data-add": kind, "aria-label": add_label})
+            return tags.div(tags.span(tr(key)), add, class_="os-list-label")
+
         objs = objectives()
+        rows = [heading("objective_function", "obj", len(objs), MAX_OBJECTIVES)]
         if not objs:
             rows.append(tags.div(tr("no_objective"), class_="os-empty"))
         for obj in objs:
             rows.append(_row("obj", obj, swatch(plotting.OPTIMIZED),
                              HTML(f"<b>{_esc(obj['name'])}</b> = {formula(obj['c1'], obj['c2'], lc)} → {obj['sense']}")))
-        rows.append(tags.div(tr("constraints"), class_="os-list-label"))
         cons = constraints()
+        rows.append(heading("constraints", "con", len(cons), MAX_CONSTRAINTS))
         if not cons:
             rows.append(tags.div(tr("no_constraints"), class_="os-empty"))
         for con in cons:
@@ -120,15 +129,9 @@ def server(input, output, session):
                 tags.span(),
                 class_="os-switch", title=tr("toggle_active"),
             ),
-            tags.span("›", class_="os-chev", **{"aria-hidden": "true"}),
             class_="os-row" + ("" if item["active"] else " is-off"),
             role="button", tabindex="0", title=label, **{"aria-label": label, "data-kind": kind, "data-id": str(item["id"])},
         )
-
-    @render.text
-    def status_step1():
-        n = (1 if active_objective() else 0) + len(active_constraints())
-        return tr("n_functions", n=n)
 
     @reactive.effect
     @reactive.event(input.row_toggle)
@@ -225,14 +228,13 @@ def server(input, output, session):
         return tags.div(tags.ul(*[tags.li(e) for e in errs]), class_="os-errors", role="alert")
 
     @reactive.effect
-    @reactive.event(input.btn_add_obj)
-    def _add_obj():
-        show_function_modal("obj")
-
-    @reactive.effect
-    @reactive.event(input.btn_add_con)
-    def _add_con():
-        show_function_modal("con")
+    @reactive.event(input.add_click)
+    def _add():
+        kind = input.add_click()["kind"]
+        if kind == "obj" and len(objectives()) < MAX_OBJECTIVES:
+            show_function_modal("obj")
+        elif kind == "con" and len(constraints()) < MAX_CONSTRAINTS:
+            show_function_modal("con")
 
     @reactive.effect
     @reactive.event(input.row_click)
@@ -275,6 +277,10 @@ def server(input, output, session):
             errs.append(tr("err_both_zero"))
         if errs:
             modal_errors.set(errs)
+            return
+        if item_id is None and len(items) >= (MAX_OBJECTIVES if kind == "obj" else MAX_CONSTRAINTS):
+            editing.set(None)
+            ui.modal_remove()
             return
         if kind == "obj":
             data = {"name": name, "c1": values["f_a1"], "c2": values["f_a2"], "sense": input.f_sense()}
@@ -344,7 +350,7 @@ def server(input, output, session):
         bounds = []
         for v in ("x1", "x2"):
             bounds.append(f"{v} ∈ ℕ0" if var_types()[v] == "int" else f"{v} ≥ 0")
-        return tags.p(tags.b(tr(f"type_{ptype()}")), " · ", "; ".join(bounds), class_="os-type")
+        return tags.p(tr(f"type_{ptype()}"), class_="os-type")
 
     # ------------------------------------------------------------------ step 3: solve
     @reactive.effect
@@ -373,17 +379,6 @@ def server(input, output, session):
         if not hints:
             return None
         return TagList(*[tags.p(h, class_="os-hint") for h in hints])
-
-    @render.text
-    def status_step3():
-        if sensitivity():
-            return tr("status_analysed")
-        sol = solution()
-        if sol and sol.get("status") == "optimal":
-            return tr("status_solved")
-        if active_objective() and active_constraints():
-            return tr("status_ready")
-        return tr("status_open")
 
     @reactive.effect
     @reactive.event(input.btn_opt)
@@ -662,9 +657,8 @@ def server(input, output, session):
     def load_example():
         names = EXAMPLE_NAMES[lang()]
         load_problem({"name": "F", "c1": 10, "c2": 20, "sense": "max"},
-                     [{"name": names[0], "a1": 1, "a2": 1, "op": "≤", "b": 100},
-                      {"name": names[1], "a1": 6, "a2": 9, "op": "≤", "b": 720},
-                      {"name": names[2], "a1": 0, "a2": 1, "op": "≤", "b": 60}],
+                     [{"name": names[0], "a1": 6, "a2": 9, "op": "≤", "b": 720},
+                      {"name": names[1], "a1": 0, "a2": 1, "op": "≤", "b": 60}],
                      {"x1": "con", "x2": "con"})
         notify("n_example")
 

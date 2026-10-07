@@ -14,12 +14,14 @@ def help_button(topic):
                                                                     "aria-label": "Help"})
 
 
-def step_card(number, title_key, status_id, help_topic, *body):
+def step_card(number, title_key, status_id, help_topic, *body, extra=None):
+    status = ui.output_text(status_id, inline=True, container=ui.tags.span).add_class("os-step-status") if status_id else None
     return ui.div(
         ui.div(
             ui.span(str(number), class_="os-num"),
             tr(title_key, class_="os-step-title"),
-            ui.output_text(status_id, inline=True, container=ui.tags.span).add_class("os-step-status"),
+            extra,
+            status,
             help_button(help_topic),
             class_="os-step-head",
         ),
@@ -31,38 +33,32 @@ def step_card(number, title_key, status_id, help_topic, *body):
 
 sidebar = ui.sidebar(
     step_card(
-        1, "step1", "status_step1", "steps",
+        1, "step1", None, "steps",
         ui.output_ui("problem_list"),
         ui.div(
-            ui.input_action_button("btn_add_obj", tr("add_objective_short"), class_="os-btn",
-                                   **{"data-i18n-aria": "add_objective", "aria-label": "Add objective function"}),
-            ui.input_action_button("btn_add_con", tr("add_constraint_short"), class_="os-btn",
-                                   **{"data-i18n-aria": "add_constraint", "aria-label": "Add constraint"}),
-            class_="os-btn-row",
-        ),
-        ui.div(
             ui.input_action_link("btn_import_export", tr("import_export"), class_="os-link"),
-            ui.input_action_link("btn_example", tr("load_example"), class_="os-link"),
             ui.input_action_link("btn_reset", tr("reset_all"), class_="os-link"),
             class_="os-links",
         ),
+        extra=ui.input_action_link("btn_example", tr("example_short"), class_="os-link os-head-link",
+                                 **{"data-i18n-aria": "load_example", "aria-label": "Load example"}),
     ),
     step_card(
         2, "step2", "status_step2", "lp",
         ui.div(
             ui.span("x1", class_="os-var"),
-            ui.input_radio_buttons("vt_x1", None, {"con": tr("continuous"), "int": tr("integer")}, inline=True),
+            ui.input_radio_buttons("vt_x1", None, {"con": tr("continuous_short"), "int": tr("integer_short")}, inline=True),
             class_="os-vt-row",
         ),
         ui.div(
             ui.span("x2", class_="os-var"),
-            ui.input_radio_buttons("vt_x2", None, {"con": tr("continuous"), "int": tr("integer")}, inline=True),
+            ui.input_radio_buttons("vt_x2", None, {"con": tr("continuous_short"), "int": tr("integer_short")}, inline=True),
             class_="os-vt-row",
         ),
         ui.output_ui("problem_type"),
     ),
     step_card(
-        3, "step3", "status_step3", "sens",
+        3, "step3", None, "sens",
         ui.input_action_button("btn_opt", tr("run_opt"), class_="os-btn os-btn-primary", disabled=True),
         ui.input_action_button("btn_sens", tr("run_sens"), class_="os-btn", disabled=True),
         ui.output_ui("solve_hint"),

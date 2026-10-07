@@ -75,7 +75,7 @@ def draw(objective, constraints, var_types, solution, lang, figsize=None):
 
     if objective is None or not constraints:
         _base_axes(ax, 10, 10)
-        ax.text(5, 5, t(lang, "empty_graph"), ha="center", va="center", wrap=True, fontsize=11, color=INK,
+        ax.text(5, 5, t(lang, "empty_graph").replace(" — ", "\n").replace(" – ", "\n"), ha="center", va="center", wrap=True, fontsize=11, color=INK,
                 bbox={"boxstyle": "round,pad=0.6", "fc": "white", "ec": GRID})
         fig.set_layout_engine("tight", pad=1.2)
         return fig

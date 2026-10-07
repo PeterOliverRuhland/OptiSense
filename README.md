@@ -91,7 +91,7 @@ Then open `http://localhost:8000` in your browser. With Docker: `docker compose 
 ### Features
 
 - **Workflow in three steps** – enter the problem, choose the value range, solve and analyse. Each step shows its status and what is still missing.
-- **One list for all functions** – the objective function and constraints appear as rows with their graph colour; tap a row to edit or delete it, and use the switch to include or exclude it. Only one objective function is active at a time.
+- **One list for all functions** – up to two objective functions and up to five constraints, added with “+ New” next to the headings. Each appears as a row with its graph colour; tap a row to edit or delete it, and use the switch to include or exclude it. Only one objective function is active at a time.
 - **Value range once per variable** – x1 and x2 are set to continuous or integer once; OptiSense derives LP, ILP or MILP.
 - **Exact graph** – the feasible region is computed geometrically (LP polygon, integer lattice points, MILP lines), constraints have fixed colours and are labelled directly in the graph.
 - **Solve** with `scipy.optimize.milp`; infeasible and unbounded problems are explained instead of failing.

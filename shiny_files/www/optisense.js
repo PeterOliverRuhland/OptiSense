@@ -56,6 +56,8 @@
     if (row) { rowActivate(row); return; }
     var help = el.closest("[data-help]");
     if (help) { Shiny.setInputValue("help_topic", { topic: help.getAttribute("data-help"), n: Date.now() }, { priority: "event" }); return; }
+    var add = el.closest("[data-add]");
+    if (add) { Shiny.setInputValue("add_click", { kind: add.getAttribute("data-add"), n: Date.now() }, { priority: "event" }); return; }
     var tg = el.closest("[data-sidebar-toggle]");
     if (tg) { var native = document.querySelector(".bslib-sidebar-layout > .collapse-toggle"); if (native) native.click(); [50, 400].forEach(function (d) { setTimeout(syncSidebarBtn, d); }); return; }
     var g = el.closest("[data-guide]");

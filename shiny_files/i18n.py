@@ -45,6 +45,10 @@ TEXT = {
     # ------------------------------------------------------------------ step 2
     "step2": {"en": "Value range", "de": "Wertebereich", "fil": "Saklaw ng halaga"},
     "continuous": {"en": "continuous ≥ 0", "de": "stetig ≥ 0", "fil": "tuloy-tuloy ≥ 0"},
+    "continuous_short": {"en": "continuous (ℝ≥0)", "de": "stetig (ℝ≥0)", "fil": "tuloy-tuloy (ℝ≥0)"},
+    "integer_short": {"en": "integer (ℕ0)", "de": "ganzzahlig (ℕ0)", "fil": "integer (ℕ0)"},
+    "example_short": {"en": "Example", "de": "Beispiel", "fil": "Halimbawa"},
+    "add_new": {"en": "+ New", "de": "+ Neu", "fil": "+ Bago"},
     "integer": {"en": "integer ℕ0", "de": "ganzzahlig ℕ0", "fil": "integer ℕ0"},
     "type_LP": {"en": "Linear programming (LP)", "de": "Lineare Optimierung (LP)", "fil": "Linear programming (LP)"},
     "type_ILP": {"en": "Integer linear programming (ILP)", "de": "Ganzzahlige lineare Optimierung (ILP)",
@@ -327,57 +331,54 @@ GUIDE = {
         "en": """<p>The example comes from Domschke et al., <i>Einführung in Operations Research</i>, 9th edition (2015).</p>
 <p>A company makes two products, P1 and P2. Production is limited by a shared machine, a perishable raw material (720 units in stock) and the assembly capacity for P2. The contribution margin is 10 per unit of P1 and 20 per unit of P2.</p>
 <ul><li>Objective function: F = 10·x1 + 20·x2 → max</li>
-<li>C1 (machine): x1 + x2 ≤ 100</li>
-<li>C2 (raw material): 6·x1 + 9·x2 ≤ 720</li>
-<li>C3 (assembly P2): x2 ≤ 60</li>
+<li>C1 (raw material): 6·x1 + 9·x2 ≤ 720</li>
+<li>C2 (assembly P2): x2 ≤ 60</li>
 <li>x1, x2 ≥ 0, both continuous</li></ul>
-<p>The optimum is x1 = 30, x2 = 60 with F = 1,500. C2 and C3 are binding.</p>""",
+<p>The machine constraint of the textbook (x1 + x2 ≤ 100) is left out here because it does not limit the optimum. The optimum is x1 = 30, x2 = 60 with F = 1,500; both constraints are binding.</p>""",
         "de": """<p>Das Beispiel stammt aus Domschke et al., <i>Einführung in Operations Research</i>, 9. Auflage (2015).</p>
 <p>Ein Unternehmen stellt zwei Produkte her, P1 und P2. Die Produktion ist begrenzt durch eine gemeinsam genutzte Maschine, einen verderblichen Rohstoff (720 Einheiten auf Lager) und die Montagekapazität für P2. Der Deckungsbeitrag beträgt 10 je Einheit P1 und 20 je Einheit P2.</p>
 <ul><li>Zielfunktion: F = 10·x1 + 20·x2 → max</li>
-<li>NB1 (Maschine): x1 + x2 ≤ 100</li>
-<li>NB2 (Rohstoff): 6·x1 + 9·x2 ≤ 720</li>
-<li>NB3 (Montage P2): x2 ≤ 60</li>
+<li>NB1 (Rohstoff): 6·x1 + 9·x2 ≤ 720</li>
+<li>NB2 (Montage P2): x2 ≤ 60</li>
 <li>x1, x2 ≥ 0, beide stetig</li></ul>
-<p>Das Optimum liegt bei x1 = 30, x2 = 60 mit F = 1.500. NB2 und NB3 sind bindend.</p>""",
+<p>Die Maschinen-Nebenbedingung aus dem Lehrbuch (x1 + x2 ≤ 100) ist hier weggelassen, weil sie das Optimum nicht begrenzt. Das Optimum liegt bei x1 = 30, x2 = 60 mit F = 1.500; beide Nebenbedingungen sind bindend.</p>""",
         "fil": """<p>Mula ang halimbawa sa Domschke et al., <i>Einführung in Operations Research</i>, ika-9 na edisyon (2015).</p>
 <p>Gumagawa ang isang kompanya ng dalawang produkto, P1 at P2. Nililimitahan ang produksyon ng isang makinang pinagsasaluhan, isang raw material na madaling masira (720 unit ang nasa stock) at ng kapasidad sa pag-assemble ng P2. Ang contribution margin ay 10 bawat unit ng P1 at 20 bawat unit ng P2.</p>
 <ul><li>Objective function: F = 10·x1 + 20·x2 → max</li>
-<li>C1 (makina): x1 + x2 ≤ 100</li>
-<li>C2 (raw material): 6·x1 + 9·x2 ≤ 720</li>
-<li>C3 (assembly ng P2): x2 ≤ 60</li>
+<li>C1 (raw material): 6·x1 + 9·x2 ≤ 720</li>
+<li>C2 (assembly ng P2): x2 ≤ 60</li>
 <li>x1, x2 ≥ 0, parehong tuloy-tuloy</li></ul>
-<p>Ang optimum ay x1 = 30, x2 = 60 na may F = 1,500. Binding ang C2 at C3.</p>""",
+<p>Hindi isinama rito ang constraint ng makina mula sa aklat (x1 + x2 ≤ 100) dahil hindi nito nililimitahan ang optimum. Ang optimum ay x1 = 30, x2 = 60 na may F = 1,500; parehong binding ang dalawang constraint.</p>""",
     },
     "steps": {
         "en": """<h3>1 · Enter problem</h3>
-<p>Add one objective function and your constraints. Each appears as a row with its colour from the graph. Tap a row to change or delete it; the switch decides whether it is used. Only one objective function can be active at a time.</p>
+<p>Use “+ New” next to the headings to add up to two objective functions and up to five constraints. Each appears as a row with its colour from the graph. Tap a row to change or delete it; the switch decides whether it is used. Only one objective function is active at a time. “Example” at the top loads the textbook example.</p>
 <h3>2 · Value range</h3>
 <p>Choose once for x1 and x2 whether they are continuous or integer. OptiSense shows the resulting problem type (LP, ILP or MILP).</p>
 <h3>3 · Solve &amp; analyse</h3>
 <p>The graph updates as soon as you change something. Run the linear optimization to find the optimum; then run the sensitivity analysis. Results appear in the tabs Solution, Sensitivity and Description. Any change to the problem clears old results.</p>
 <h3>Tips</h3>
-<ul><li>“Load example” fills in the textbook example.</li>
+<ul><li>“Example” fills in the textbook example.</li>
 <li>The ? next to each step opens the matching part of this guide.</li>
 <li>The language can be switched at any time at the top right; your entries are kept.</li></ul>""",
         "de": """<h3>1 · Problem eingeben</h3>
-<p>Füge eine Zielfunktion und deine Nebenbedingungen hinzu. Jede erscheint als Zeile mit ihrer Farbe aus dem Graphen. Tippe eine Zeile an, um sie zu ändern oder zu löschen; der Schalter bestimmt, ob sie verwendet wird. Es kann immer nur eine Zielfunktion aktiv sein.</p>
+<p>Mit „+ Neu“ neben den Überschriften legst du bis zu zwei Zielfunktionen und bis zu fünf Nebenbedingungen an. Jede erscheint als Zeile mit ihrer Farbe aus dem Graphen. Tippe eine Zeile an, um sie zu ändern oder zu löschen; der Schalter bestimmt, ob sie verwendet wird. Es ist immer nur eine Zielfunktion aktiv. „Beispiel“ oben lädt das Lehrbuchbeispiel.</p>
 <h3>2 · Wertebereich</h3>
 <p>Lege einmal für x1 und x2 fest, ob sie stetig oder ganzzahlig sind. OptiSense zeigt den daraus folgenden Problemtyp (LP, ILP oder MILP).</p>
 <h3>3 · Lösen &amp; analysieren</h3>
 <p>Der Graph aktualisiert sich, sobald du etwas änderst. Starte die lineare Optimierung, um das Optimum zu finden, danach die Sensitivitätsanalyse. Die Ergebnisse stehen in den Reitern Lösung, Sensitivität und Beschreibung. Jede Änderung am Problem verwirft alte Ergebnisse.</p>
 <h3>Tipps</h3>
-<ul><li>„Beispiel laden“ trägt das Lehrbuchbeispiel ein.</li>
+<ul><li>„Beispiel“ trägt das Lehrbuchbeispiel ein.</li>
 <li>Das ? neben jedem Schritt öffnet den passenden Teil dieser Anleitung.</li>
 <li>Die Sprache lässt sich jederzeit oben rechts umstellen; deine Eingaben bleiben erhalten.</li></ul>""",
         "fil": """<h3>1 · Ilagay ang problema</h3>
-<p>Magdagdag ng isang objective function at ng iyong mga constraint. Lalabas ang bawat isa bilang hilera na may kulay nito mula sa graph. I-tap ang hilera para baguhin o burahin ito; ang switch ang nagpapasya kung gagamitin ito. Isang objective function lang ang maaaring aktibo sa isang pagkakataon.</p>
+<p>Gamitin ang “+ Bago” sa tabi ng mga heading para magdagdag ng hanggang dalawang objective function at hanggang limang constraint. Lalabas ang bawat isa bilang hilera na may kulay nito mula sa graph. I-tap ang hilera para baguhin o burahin ito; ang switch ang nagpapasya kung gagamitin ito. Isang objective function lang ang aktibo sa isang pagkakataon. Nilo-load ng “Halimbawa” sa itaas ang halimbawa mula sa aklat.</p>
 <h3>2 · Saklaw ng halaga</h3>
 <p>Piliin nang isang beses para sa x1 at x2 kung tuloy-tuloy o integer ang mga ito. Ipapakita ng OptiSense ang uri ng problemang lalabas (LP, ILP o MILP).</p>
 <h3>3 · Lutasin at suriin</h3>
 <p>Nag-a-update ang graph sa sandaling may baguhin ka. Simulan ang linear optimization para hanapin ang optimum; pagkatapos ay ang sensitivity analysis. Lalabas ang mga resulta sa mga tab na Solusyon, Sensitivity at Paglalarawan. Binubura ng anumang pagbabago sa problema ang mga lumang resulta.</p>
 <h3>Mga tip</h3>
-<ul><li>Pinupunan ng “I-load ang halimbawa” ang halimbawa mula sa aklat.</li>
+<ul><li>Pinupunan ng “Halimbawa” ang halimbawa mula sa aklat.</li>
 <li>Binubuksan ng ? sa tabi ng bawat hakbang ang katugmang bahagi ng gabay na ito.</li>
 <li>Mapapalitan ang wika anumang oras sa kanang itaas; mananatili ang iyong mga input.</li></ul>""",
     },
@@ -407,7 +408,10 @@ DEFAULT_NAMES = {
 }
 
 # Constraint names of the textbook example, per language
-EXAMPLE_NAMES = {"en": ["C1", "C2", "C3"], "de": ["NB1", "NB2", "NB3"], "fil": ["C1", "C2", "C3"]}
+EXAMPLE_NAMES = {"en": ["C1", "C2"], "de": ["NB1", "NB2"], "fil": ["C1", "C2"]}
+
+MAX_OBJECTIVES = 2
+MAX_CONSTRAINTS = 5
 
 
 def norm_lang(lang):
