@@ -16,10 +16,6 @@ def register(ctx):
             ctx.var_types.set(new)
             ctx.problem_changed()
 
-    @render.text
-    def status_step2():
-        return ctx.ptype()
-
     @render.ui
     def problem_type():
         return tags.p(ctx.tr(f"type_{ctx.ptype()}"), class_="os-type")

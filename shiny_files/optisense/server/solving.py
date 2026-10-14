@@ -23,16 +23,15 @@ def register(ctx):
         ui.update_action_button("btn_opt", disabled=not can_opt)
         ui.update_action_button("btn_sens", disabled=not solved)
         ui.update_action_button("btn_png", disabled=not can_opt)
-        await session.send_custom_message("os-step-state", {"1": can_opt, "2": can_opt, "3": solved})
+        # a button turns blue once its result is shown; any change to the problem clears both
+        await session.send_custom_message("os-btn-state", {"btn_opt": solved, "btn_sens": ctx.sensitivity() is not None})
 
     @render.ui
     def solve_hint():
         hints = []
-        if ctx.active_objective() is None:
-            hints.append(ctx.tr("need_objective"))
-        if not ctx.active_constraints():
-            hints.append(ctx.tr("need_constraint"))
-        if not hints and not ctx.has_optimum():
+        if ctx.active_objective() is None or not ctx.active_constraints():
+            hints.append(ctx.tr("need_model"))
+        elif not ctx.has_optimum():
             hints.append(ctx.tr("need_optimum"))
         return TagList(*[tags.p(h, class_="os-hint") for h in hints]) if hints else None
 

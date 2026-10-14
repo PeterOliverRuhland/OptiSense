@@ -8,7 +8,7 @@ reviewed by a native speaker; technical terms follow common Philippine universit
 
 import json
 
-from .guide_texts import GUIDE, GUIDE_ORDER
+from .guide_texts import FIGURES, GUIDE, GUIDE_ORDER  # noqa: F401
 from .texts import TEXT
 
 LANGS = {"en": "English", "de": "Deutsch", "fil": "Filipino"}

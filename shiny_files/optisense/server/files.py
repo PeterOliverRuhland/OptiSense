@@ -92,11 +92,6 @@ def register(ctx):
         example_request()
 
     @reactive.effect
-    @reactive.event(input.guide_load_example)
-    def _example_from_guide():
-        example_request()
-
-    @reactive.effect
     @reactive.event(input.btn_reset)
     def _reset():
         confirm("reset", "reset_title", "reset_text", "reset_btn")

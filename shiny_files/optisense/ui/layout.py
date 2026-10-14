@@ -1,14 +1,23 @@
 """Page layout: navbar, workflow sidebar, graph, results and guide tab."""
 
+from pathlib import Path
+
 from shiny import ui
 
 from ..i18n import GUIDE_ORDER, LANGS, client_dictionary
 from .components import help_button, step_card, tr  # noqa: F401
 
+WWW = Path(__file__).resolve().parents[2] / "www"
+
+
+def asset(name):
+    """URL of a file in www/ with its modification time, so browsers reload it after every change."""
+    return f"{name}?v={int((WWW / name).stat().st_mtime)}"
+
 
 sidebar = ui.sidebar(
     step_card(
-        1, "step1", None, "steps",
+        1, "step1", "steps",
         ui.output_ui("problem_list"),
         ui.div(
             ui.input_action_link("btn_import_export", tr("import_export"), class_="os-link"),
@@ -19,7 +28,7 @@ sidebar = ui.sidebar(
                                  **{"data-i18n-aria": "load_example", "aria-label": "Load example"}),
     ),
     step_card(
-        2, "step2", "status_step2", "lp",
+        2, "step2", "range",
         ui.div(
             ui.span("x1", class_="os-var"),
             ui.input_radio_buttons("vt_x1", None, {"con": tr("continuous_short"), "int": tr("integer_short")}, inline=True),
@@ -33,8 +42,8 @@ sidebar = ui.sidebar(
         ui.output_ui("problem_type"),
     ),
     step_card(
-        3, "step3", None, "sens",
-        ui.input_action_button("btn_opt", tr("run_opt"), class_="os-btn os-btn-primary", disabled=True),
+        3, "step3", "solve",
+        ui.input_action_button("btn_opt", tr("run_opt"), class_="os-btn", disabled=True),
         ui.input_action_button("btn_sens", tr("run_sens"), class_="os-btn", disabled=True),
         ui.output_ui("solve_hint"),
     ),
@@ -81,13 +90,14 @@ work_panel = ui.nav_panel(
 guide_panel = ui.nav_panel(
     tr("tab_guide"),
     ui.div(
-        ui.div(
-            *[ui.tags.button(tr(label_key), type="button", class_="os-guide-tab", **{"data-guide": topic})
+        ui.tags.nav(
+            tr("guide_contents", tag="div", class_="os-guide-nav-title"),
+            *[ui.tags.a(tr(label_key), href=f"#guide-{topic}", class_="os-guide-tab", **{"data-guide": topic})
               for topic, label_key in GUIDE_ORDER],
             class_="os-guide-nav os-card",
-            role="tablist",
+            **{"data-i18n-aria": "guide_contents", "aria-label": "Contents"},
         ),
-        ui.div(ui.output_ui("guide_view"), class_="os-guide-body os-card"),
+        ui.div(ui.output_ui("guide_view"), class_="os-doc"),
         class_="os-guide",
     ),
     value="guide",
@@ -111,9 +121,9 @@ app_ui = ui.page_navbar(
     window_title="OptiSense",
     header=ui.head_content(
         ui.tags.meta(name="viewport", content="width=device-width, initial-scale=1"),
-        ui.tags.link(rel="stylesheet", href="optisense.css"),
+        ui.tags.link(rel="stylesheet", href=asset("optisense.css")),
         ui.tags.script(f"window.OS_I18N = {client_dictionary()};"),
-        ui.tags.script(src="optisense.js"),
+        ui.tags.script(src=asset("optisense.js")),
     ),
     bg="#b0e2ff",
     fillable=["work"],

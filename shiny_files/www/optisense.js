@@ -61,7 +61,10 @@
     var tg = el.closest("[data-sidebar-toggle]");
     if (tg) { var native = document.querySelector(".bslib-sidebar-layout > .collapse-toggle"); if (native) native.click(); [50, 400].forEach(function (d) { setTimeout(syncSidebarBtn, d); }); return; }
     var g = el.closest("[data-guide]");
-    if (g) { selectGuide(g.getAttribute("data-guide")); }
+    if (g) {
+      var target = document.getElementById("guide-" + g.getAttribute("data-guide"));
+      if (target) { ev.preventDefault(); target.scrollIntoView({ behavior: "smooth", block: "start" }); markGuide(g.getAttribute("data-guide")); }
+    }
   });
 
   document.addEventListener("keydown", function (ev) {
@@ -86,13 +89,22 @@
   }
   window.addEventListener("resize", function () { clearTimeout(scaleTimer); scaleTimer = setTimeout(sendScale, 250); });
 
-  function selectGuide(topic) {
-    document.querySelectorAll(".os-guide-tab").forEach(function (b) {
-      var on = b.getAttribute("data-guide") === topic;
-      b.classList.toggle("is-active", on);
-      b.setAttribute("aria-selected", on ? "true" : "false");
+  // guide: highlight the section that is currently being read
+  function markGuide(topic) {
+    document.querySelectorAll(".os-guide-tab").forEach(function (a) {
+      var on = a.getAttribute("data-guide") === topic;
+      a.classList.toggle("is-active", on);
+      if (on) a.setAttribute("aria-current", "true"); else a.removeAttribute("aria-current");
     });
-    if (window.Shiny && Shiny.setInputValue) Shiny.setInputValue("guide_topic", topic);
+  }
+
+  var guideObserver = null;
+  function watchGuide() {
+    if (guideObserver) guideObserver.disconnect();
+    guideObserver = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) { if (e.isIntersecting) markGuide(e.target.id.replace("guide-", "")); });
+    }, { rootMargin: "-15% 0px -75% 0px" });
+    document.querySelectorAll(".os-doc-section").forEach(function (s) { guideObserver.observe(s); });
   }
 
   // re-translate content Shiny inserts later (modals, tabs)
@@ -110,21 +122,22 @@
     var sel = document.getElementById("lang");
     if (sel && sel.value !== lang) { sel.value = lang; $(sel).trigger("change"); }
     setLang(lang);
-    selectGuide("steps");
+    markGuide("steps");
     sendScale();
     setTimeout(syncSidebarBtn, 300);
     var native = document.querySelector(".bslib-sidebar-layout > .collapse-toggle");
     if (native) new MutationObserver(syncSidebarBtn).observe(native, { attributes: true, attributeFilter: ["aria-expanded"] });
   });
 
-  // a step's "?" may ask the server to switch to the guide tab; the server sends this message
+  // the guide is re-rendered when the language changes
+  $(document).on("shiny:value", function (ev) { if (ev.name === "guide_view") setTimeout(watchGuide, 0); });
+
   if (window.Shiny) {
     $(document).on("shiny:connected", function () {
-      Shiny.addCustomMessageHandler("os-guide", function (topic) { selectGuide(topic); });
-      Shiny.addCustomMessageHandler("os-step-state", function (s) {
-        Object.keys(s).forEach(function (k) {
-          var el = document.getElementById("os-step-" + k);
-          if (el) el.classList.toggle("is-done", !!s[k]);
+      Shiny.addCustomMessageHandler("os-btn-state", function (s) {
+        Object.keys(s).forEach(function (id) {
+          var el = document.getElementById(id);
+          if (el) el.classList.toggle("is-active", !!s[id]);
         });
       });
     });

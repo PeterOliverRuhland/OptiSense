@@ -15,14 +15,12 @@ def help_button(topic):
                                                                     "aria-label": "Help"})
 
 
-def step_card(number, title_key, status_id, help_topic, *body, extra=None):
-    status = ui.output_text(status_id, inline=True, container=ui.tags.span).add_class("os-step-status") if status_id else None
+def step_card(number, title_key, help_topic, *body, extra=None):
     return ui.div(
         ui.div(
             ui.span(str(number), class_="os-num"),
             tr(title_key, class_="os-step-title"),
             extra,
-            status,
             help_button(help_topic),
             class_="os-step-head",
         ),
