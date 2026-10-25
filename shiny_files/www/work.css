@@ -1,0 +1,153 @@
+/* Page “Model & solution” (start page): workflow sidebar with the steps, graph, results, dialogs. */
+
+/* ---------------------------------------------------------------- layout */
+.bslib-sidebar-layout { --_sidebar-bg: transparent; --bslib-sidebar-bg: transparent; --bslib-sidebar-main-bg: transparent; background: transparent; }
+.bslib-sidebar-layout > .sidebar, .bslib-sidebar-layout > .main { background: transparent !important; }
+.bslib-sidebar-layout > .sidebar { border-right: 0 !important; }
+.bslib-sidebar-layout > .sidebar > .sidebar-content { padding: 1rem 0.5rem 1rem 1rem; }
+.bslib-sidebar-layout > .main { padding: 0.75rem 0.75rem 0.75rem 0.25rem; }
+.os-main { display: grid; grid-template-columns: minmax(0, 1fr) var(--results-width); gap: 0.75rem; height: 100%; min-height: 0; }
+.os-results { min-height: 0; display: flex; }
+.os-results > .card { flex: 1; min-height: 0; }
+/* hidden: the button in the graph header replaces bslib's toggle; kept in the DOM because bslib needs its transition events */
+.bslib-sidebar-layout > .collapse-toggle { width: 2rem; height: 2rem; border-radius: 1rem; background: var(--surface-content) !important;
+  border: 1px solid var(--border); color: var(--ink); opacity: 0 !important; top: 0.75rem; pointer-events: none !important; }
+
+@media (max-width: 1023.98px) {
+  .os-main { grid-template-columns: minmax(0, 1fr); height: auto; }
+  .os-graph { height: min(80vw, 38.75rem) !important; min-height: 26.25rem; }
+  .os-results > .card { min-height: 26.25rem; }
+  .bslib-sidebar-layout > .main { overflow-y: auto; }
+}
+
+/* ---------------------------------------------------------------- graph and results cards */
+.os-results > .card, .os-graph.card {
+  background: var(--surface-panel); border: 1px solid var(--hairline); border-radius: var(--radius-card); box-shadow: none;
+}
+.os-graph .card-header, .os-results .card-header { background: transparent; border-bottom: 1px solid var(--hairline); font-size: 0.9rem; font-weight: 600; }
+.os-card-header { display: flex; align-items: center; gap: 0.75rem; }
+.os-graph .card-body { background: var(--surface-content); margin: 0.5rem; border-radius: var(--radius-card); border: 1px solid var(--hairline); padding: 0.5rem; }
+.os-results .card-header { display: flex; flex-direction: column; align-items: stretch; gap: 0.5rem; padding-bottom: 0; }
+.os-results .card-header .nav-tabs { border-bottom: 0; margin: 0 -4px; }
+.os-results .card-header .nav-link { min-height: var(--touch-target); display: flex; align-items: center; color: var(--ink-muted); font-weight: 500; padding-left: 0.625rem; padding-right: 0.625rem; }
+.os-results .card-header .nav-link.active { color: var(--ink); background: var(--surface-content); border-color: var(--hairline) var(--hairline) var(--surface-content); font-weight: 600; }
+.os-results .card-body { background: var(--surface-content); margin: 0 0.75rem 0.75rem; border: 1px solid var(--hairline); border-top: 0; border-radius: 0 0 var(--radius-card) var(--radius-card); overflow-y: auto; font-size: 0.875rem; }
+@media (max-width: 1199.98px) {
+  .os-results .card-header .nav-link { padding-left: 0.4375rem; padding-right: 0.4375rem; font-size: 0.8125rem; }
+}
+
+/* ---------------------------------------------------------------- sidebar steps */
+.os-step { padding: 0; }
+.os-step-head { display: flex; align-items: center; gap: 0.5rem; padding: 0.3125rem 0.625rem 0.3125rem 0.875rem; min-height: 2.625rem; }
+.os-step-title { font-weight: 600; font-size: 0.95rem; white-space: nowrap; }
+.os-step-body { padding: 0 0.875rem 0.875rem; display: flex; flex-direction: column; gap: 0.375rem; }
+#os-step-2 .os-step-body { padding-bottom: 0.625rem; }
+
+/* step 1: lists of objective functions and constraints with “+ New” in the headings */
+.os-list { background: var(--surface-content); border: 1px solid var(--hairline); border-radius: var(--radius-card); overflow: hidden; }
+.os-list-label { font-size: 0.875rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; color: var(--ink); padding: 0.25rem 0.375rem 2px 0.75rem; display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; min-height: 2.375rem; }
+.os-add { flex: none; display: inline-flex; align-items: center; height: 1.875rem; padding: 0 0.75rem; border: 0; border-radius: 0.9375rem;
+  background: var(--surface-panel); color: var(--primary); font-size: 0.8125rem; font-weight: 600; letter-spacing: 0; text-transform: none; }
+.os-add:hover { background: var(--surface-group); }
+.os-add:focus-visible { outline: 3px solid var(--primary); outline-offset: 2px; }
+.os-row { display: flex; align-items: center; gap: 0.5rem; width: 100%; min-height: var(--touch-target); padding: 3px 0.625rem 3px 0.75rem;
+  border: 0; border-top: 1px solid var(--border); background: transparent; text-align: left; cursor: pointer; font-size: 0.875rem; color: var(--ink); }
+.os-list-label + .os-row { border-top: 0; }
+.os-row:hover { background: #f3f9fd; }
+.os-row:focus-visible { outline: 3px solid var(--primary); outline-offset: -3px; }
+.os-row.is-off .os-formula { color: var(--ink-muted); text-decoration: line-through; text-decoration-color: rgba(29, 31, 33, 0.35); }
+.os-formula { flex: 1; min-width: 0; overflow-wrap: anywhere; font-size: 0.8125rem; }
+.os-formula b { font-weight: 600; }
+.os-empty { padding: 0.625rem 0.75rem; color: var(--ink-muted); font-size: 0.875rem; }
+.os-hint { font-size: 0.8125rem; color: var(--ink-muted); margin: 0; }
+.os-links { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0 0.5rem; margin-top: -2px; }
+.os-link { display: inline-flex; align-items: center; min-height: var(--touch-target); font-size: 0.8125rem; font-weight: 500; text-decoration: none; }
+.os-link:hover { text-decoration: underline; }
+.os-links .os-link { min-height: 2.25rem; }
+/* “Example” link in the heading of step 1 */
+.os-head-link { margin-left: auto; min-height: 2rem; font-size: 0.8125rem; }
+.os-head-link + .os-help { margin-left: 0.25rem; }
+
+/* step 2: value range per variable, Shiny radio buttons drawn as a segmented control */
+.os-vt-row { display: flex; align-items: center; gap: 0.625rem; }
+.os-vt-row .shiny-input-container { flex: 1; margin: 0; width: 100% !important; }
+.os-vt-row .control-label { display: none; }
+.os-vt-row .shiny-options-group { display: flex; flex-wrap: nowrap; width: 100%; }
+.os-vt-row .radio-inline { margin: 0 !important; padding: 0 !important; flex: 1 1 0; position: relative; display: flex !important; }
+.os-vt-row .radio-inline input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+.os-vt-row .radio-inline input + span {
+  flex: 1; display: flex; align-items: center; justify-content: center; text-align: center; min-height: 2.25rem; padding: 2px 0.375rem;
+  background: var(--surface-content); color: var(--ink); border: 1px solid var(--border); cursor: pointer; font-size: 0.8125rem; line-height: 1.2; white-space: nowrap; }
+.os-vt-row .radio-inline + .radio-inline input + span { border-left: 0; }
+.os-vt-row .radio-inline:first-child input + span { border-radius: var(--radius-control) 0 0 var(--radius-control); }
+.os-vt-row .radio-inline:last-child input + span { border-radius: 0 var(--radius-control) var(--radius-control) 0; }
+.os-vt-row .radio-inline input:checked + span { background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600; }
+.os-vt-row .radio-inline input:focus-visible + span { outline: 3px solid var(--primary); outline-offset: 2px; position: relative; z-index: 1; }
+.os-type { font-size: 0.8125rem; margin: 0; color: var(--ink-muted); }
+.os-type b { font-weight: 600; }
+.os-credit { font-size: 0.75rem; color: var(--ink-muted); text-align: center; padding: 0.25rem 0 0.5rem; }
+
+/* short laptop screens: slightly lower list rows so step 3 stays in view (tablets keep 44 px) */
+@media (max-height: 820px) and (min-width: 1024px) {
+  .os-row { min-height: 2.5rem; }
+  .os-list-label { min-height: 2rem; padding-top: 2px; }
+  .os-step-head { min-height: 2.375rem; padding-top: 3px; padding-bottom: 3px; }
+  .os-step-body { padding-bottom: 0.625rem; }
+  .os-links .os-link { min-height: 2rem; }
+  .bslib-sidebar-layout > .sidebar > .sidebar-content { padding-top: 0.75rem; }
+}
+
+/* ---------------------------------------------------------------- results */
+.os-results h4 { font-size: 0.95rem; font-weight: 600; margin: 0.25rem 0 0.5rem; }
+.os-results p { margin: 0 0 0.625rem; }
+.os-name { font-weight: 600; }
+.os-note { font-size: 0.8125rem; color: var(--ink-muted); border-top: 1px solid var(--border); padding-top: 0.5rem; }
+.os-alert { border: 1px solid #e69999; background: #f3cccc; color: #4d0000; border-radius: var(--radius-card); padding: 0.625rem 0.75rem; }
+.os-placeholder { color: var(--ink-muted); }
+.os-desc ul { padding-left: 1.1rem; margin-bottom: 0.75rem; }
+.os-desc li { margin-bottom: 0.375rem; }
+/* narrower results column: status tag sits under the constraint name */
+.os-cell-name .os-tag { margin-top: 3px; }
+
+/* ---------------------------------------------------------------- dialogs: edit, import/export */
+.os-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+.os-preview { background: var(--surface-panel); border-radius: var(--radius-card); padding: 0.625rem 0.75rem; font-size: 1rem; margin-top: 0.25rem; }
+.os-preview small { display: block; font-size: 0.75rem; color: var(--ink-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+.os-errors { color: #4d0000; background: #f3cccc; border: 1px solid #e69999; border-radius: var(--radius-card); padding: 0.5rem 0.75rem; margin-top: 0.625rem; font-size: 0.875rem; }
+.os-errors ul { margin: 0; padding-left: 1.1rem; }
+.modal-footer .os-btn-danger { margin-right: auto; color: #8a0000; border-color: #e69999; background: #fff; }
+.modal-footer .os-btn-danger:hover { background: #f3cccc; color: #4d0000; }
+.os-modal-section + .os-modal-section { border-top: 1px solid var(--border); margin-top: 1rem; padding-top: 1rem; }
+.os-modal-section h5 { font-size: 1rem; font-weight: 600; }
+
+/* ---------------------------------------------------------------- smartphones: one column
+   steps → graph → results. Portrait (< 576 px): bslib keeps the sidebar open above the main area
+   (open mobile="always-above"); landscape (low screens up to 1023 px): the same, set here. */
+.os-credit-end { display: none; }
+@media (max-width: 575.98px), (max-width: 1023.98px) and (max-height: 500px) {
+  .bslib-flow-mobile > .html-fill-item { flex: 0 0 auto; }
+  .bslib-sidebar-layout[data-collapsible-mobile="false"] { display: block !important; }
+  .bslib-sidebar-layout > .sidebar[hidden] { display: block !important; }
+  .bslib-sidebar-layout > .sidebar[hidden] > .sidebar-content { display: flex !important; }
+  .bslib-sidebar-layout > .collapse-toggle { display: none !important; }
+  .bslib-sidebar-layout > .sidebar { max-height: none !important; width: auto; }
+  .bslib-sidebar-layout > .sidebar > .sidebar-content { padding: 0.75rem 0.75rem 0; }
+  .bslib-sidebar-layout > .main { padding: 0.75rem; overflow: visible; }
+  .os-sidebar > .sidebar-content > .os-credit { display: none; }
+  .os-credit-end { display: block; padding-top: 0.25rem; }
+  .os-sidebar-btn[data-sidebar-toggle] { display: none; }
+  .os-main { gap: 0.75rem; }
+  .os-graph { height: min(122vw, 36rem) !important; min-height: 0; }
+  .os-results > .card { min-height: 0; }
+  .os-results .card-body { overflow-x: auto; }
+  .os-results .os-table { font-size: 0.8125rem; }
+  .os-results .os-table th { white-space: normal; vertical-align: bottom; }
+  .os-results .os-table th, .os-results .os-table td { padding-left: 0.25rem; padding-right: 0.25rem; }
+  .os-results .card-header .nav-link { flex: 1 1 auto; justify-content: center; padding-left: 0.375rem; padding-right: 0.375rem; font-size: 0.875rem; }
+  .os-step-title { white-space: normal; }
+  .os-form-grid { grid-template-columns: minmax(0, 1fr); }
+}
+/* smartphones in landscape: the graph fits the screen height */
+@media (max-width: 1023.98px) and (max-height: 500px) {
+  .os-graph { height: calc(100svh - 1.5rem) !important; }
+}

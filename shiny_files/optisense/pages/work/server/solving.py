@@ -5,7 +5,7 @@ import subprocess
 from htmltools import TagList, tags
 from shiny import reactive, render, ui
 
-from .. import core
+from optisense import core
 
 ERROR_KEYS = {"infeasible": "infeasible", "unbounded": "unbounded"}
 

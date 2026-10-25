@@ -1,13 +1,13 @@
-"""Per-session state and helpers shared by all server parts.
+"""Per-session state shared by the pages: the language, text helpers and the problem.
 
+The problem is entered on “Model & solution”; “Learn & practice” offers it as an own exercise.
 objectives:  [{id, name, c1, c2, sense, active}]          (at most MAX_OBJECTIVES, one active)
 constraints: [{id, name, a1, a2, op, b, active, color_index}]  (at most MAX_CONSTRAINTS)
 """
 
-from htmltools import tags
 from shiny import reactive, ui
 
-from .. import core, plotting
+from .. import core
 from ..config import DEFAULT_NAMES
 from ..i18n import fmt_num, norm_lang, t
 
@@ -39,19 +39,10 @@ class AppContext:
         def ptype():
             return core.problem_type(self.var_types())
 
-        @reactive.calc
-        def plot_scale():
-            # sent by www/optisense.js: root font size / 16, grows on large screens
-            try:
-                return float(input.ui_scale())
-            except Exception:  # noqa: BLE001 - not sent yet
-                return 1.0
-
         self.lang = lang
         self.active_objective = active_objective
         self.active_constraints = active_constraints
         self.ptype = ptype
-        self.plot_scale = plot_scale
 
     # ------------------------------------------------------------------ ids and state changes
     def next_id(self):
@@ -103,28 +94,3 @@ class AppContext:
         """Errors stay until closed; other messages disappear after 3 s. One shared id, so a new
         message replaces the previous one instead of stacking."""
         ui.notification_show(self.tr(key, **kw), type=kind, duration=None if kind == "error" else 3, id="os-status")
-
-    def formula(self, a1, a2):
-        parts = []
-        for coef, var in ((a1, "x1"), (a2, "x2")):
-            if coef == 0:
-                continue
-            parts.append(f"{'' if coef == 1 else fmt_num(coef, self.lang()) + '·'}{var}")
-        return " + ".join(parts) if parts else "0"
-
-    def con_text(self, con):
-        return f"{self.formula(con['a1'], con['a2'])} {con['op']} {self.num(con['b'])}"
-
-    # ------------------------------------------------------------------ small visual pieces
-    @staticmethod
-    def swatch(color, dashed=False):
-        cls = "os-swatch is-dashed" if dashed else "os-swatch"
-        return tags.span(class_=cls, style=f"background:{color};color:{color}", **{"aria-hidden": "true"})
-
-    def con_swatch(self, con):
-        color, line = plotting.constraint_style(con["color_index"])
-        return self.swatch(color, dashed=(line != "-"))
-
-    @staticmethod
-    def colored_name(name, color):
-        return tags.span(name, class_="os-name", style=f"color:{color}")

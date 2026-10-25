@@ -3,9 +3,10 @@
 from htmltools import HTML, TagList, tags
 from shiny import reactive, render, req, ui
 
+from optisense.config import DEFAULT_NAMES, MAX_CONSTRAINTS, MAX_OBJECTIVES
+
 from .. import plotting
-from ..config import DEFAULT_NAMES, MAX_CONSTRAINTS, MAX_OBJECTIVES
-from .html_utils import esc
+from .html_utils import con_swatch, con_text, esc, formula, swatch
 
 
 def register(ctx):
@@ -46,13 +47,13 @@ def register(ctx):
         if not objs:
             rows.append(tags.div(tr("no_objective"), class_="os-empty"))
         for obj in objs:
-            text = HTML(f"<b>{esc(obj['name'])}</b> = {esc(ctx.formula(obj['c1'], obj['c2']))} → {obj['sense']}")
-            rows.append(row("obj", obj, ctx.swatch(plotting.OPTIMIZED), text))
+            text = HTML(f"<b>{esc(obj['name'])}</b> = {esc(formula(obj['c1'], obj['c2'], ctx.lang()))} → {obj['sense']}")
+            rows.append(row("obj", obj, swatch(plotting.OPTIMIZED), text))
         rows.append(heading("constraints", "con", len(cons), MAX_CONSTRAINTS))
         if not cons:
             rows.append(tags.div(tr("no_constraints"), class_="os-empty"))
         for con in cons:
-            rows.append(row("con", con, ctx.con_swatch(con), HTML(f"<b>{esc(con['name'])}:</b> {esc(ctx.con_text(con))}")))
+            rows.append(row("con", con, con_swatch(con), HTML(f"<b>{esc(con['name'])}:</b> {esc(con_text(con, ctx.lang()))}")))
         return tags.div(*rows, class_="os-list")
 
     @reactive.effect
@@ -143,10 +144,10 @@ def register(ctx):
             return None
         name = (input.f_name() or "").strip() or "…"
         if ed[0] == "obj":
-            text = f"{name} = {ctx.formula(a1, a2)} → {input.f_sense()}"
+            text = f"{name} = {formula(a1, a2, ctx.lang())} → {input.f_sense()}"
         else:
             b = input.f_b()
-            text = f"{name}: {ctx.formula(a1, a2)} {input.f_op()} {ctx.num(b) if isinstance(b, (int, float)) else '…'}"
+            text = f"{name}: {formula(a1, a2, ctx.lang())} {input.f_op()} {ctx.num(b) if isinstance(b, (int, float)) else '…'}"
         return tags.div(tags.small(tr("preview")), text, class_="os-preview")
 
     @render.ui

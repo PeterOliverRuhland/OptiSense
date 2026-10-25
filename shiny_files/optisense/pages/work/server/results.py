@@ -3,9 +3,12 @@
 from htmltools import HTML, TagList, tags
 from shiny import render
 
-from .. import core, plotting
-from ..i18n import t
-from .html_utils import fmt_html
+from optisense import core
+from optisense.config import constraint_color
+from optisense.i18n import t
+
+from .. import plotting
+from .html_utils import colored_name, con_swatch, con_text, fmt_html
 from .solving import error_key
 
 
@@ -31,7 +34,7 @@ def register(ctx):
             tag = tags.span(tr("binding" if act["binding"] else "non_binding"),
                             class_="os-tag" + (" is-binding" if act["binding"] else ""))
             rows.append(tags.tr(
-                tags.td(tags.div(ctx.con_swatch(con), con["name"]), tag, class_="os-cell-name"),
+                tags.td(tags.div(con_swatch(con), con["name"]), tag, class_="os-cell-name"),
                 tags.td(f"{num(act['lhs'])} {con['op']} {num(con['b'])}", class_="num"),
                 tags.td(num(act["slack"]), class_="num")))
         binding = [con["name"] for con, act in zip(cons, activity) if act["binding"]]
@@ -57,13 +60,13 @@ def register(ctx):
         sol, obj, cons = ctx.solution(), ctx.active_objective(), ctx.active_constraints()
         rows, sentences = [], []
         for con, sh in zip(cons, sens["shadow"]):
-            name_cell = tags.td(ctx.con_swatch(con), con["name"])
+            name_cell = tags.td(con_swatch(con), con["name"])
             if sh is None:
                 rows.append(tags.tr(name_cell, tags.td(tr("not_reported"), colspan="3")))
                 continue
             rows.append(tags.tr(name_cell, tags.td(num(sh["price"]), class_="num"),
                                 tags.td(num(sh["from"]), class_="num"), tags.td(num(sh["till"]), class_="num")))
-            name_html = str(ctx.colored_name(con["name"], plotting.constraint_color(con["color_index"])))
+            name_html = str(colored_name(con["name"], constraint_color(con["color_index"])))
             if sh["price"] == 0:
                 sentences.append(HTML(fmt_html(tr("shadow_zero_sentence", name="{name}"), name=name_html)))
             else:
@@ -110,15 +113,15 @@ def register(ctx):
 
         items = []
         i1, i2 = intercept_texts(obj["c1"], obj["c2"], level)
-        dummy_name = str(ctx.colored_name(t(ctx.lang(), "plot_dummy", name=obj["name"]), plotting.DUMMY))
+        dummy_name = str(colored_name(t(ctx.lang(), "plot_dummy", name=obj["name"]), plotting.DUMMY))
         direction = tr("dir_max" if obj["sense"] == "max" else "dir_min")
         items.append(tags.li(HTML(fmt_html(tr("desc_obj", name="{name}", level=num(level), i1=i1, i2=i2, dir=direction),
                                           name=dummy_name))))
         for con in cons:
             i1, i2 = intercept_texts(con["a1"], con["a2"], con["b"])
-            name_html = str(ctx.colored_name(con["name"], plotting.constraint_color(con["color_index"])))
+            name_html = str(colored_name(con["name"], constraint_color(con["color_index"])))
             key = "desc_con_h" if con["a1"] == 0 else ("desc_con_v" if con["a2"] == 0 else "desc_con")
-            items.append(tags.li(HTML(fmt_html(tr(key, name="{name}", formula=ctx.con_text(con), i1=i1, i2=i2),
+            items.append(tags.li(HTML(fmt_html(tr(key, name="{name}", formula=con_text(con, ctx.lang()), i1=i1, i2=i2),
                                               name=name_html))))
         region = core.feasible_region(cons, ctx.var_types(), xmax, ymax)
         region_text = tr("desc_region") if ctx.ptype() == "LP" else tr("desc_region_int")

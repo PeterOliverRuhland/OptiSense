@@ -1,10 +1,12 @@
-"""Server of OptiSense. Each step of the page has its own module; they share one AppContext."""
+"""Server of OptiSense: one AppContext per session (context.py), shared by the three pages."""
 
-from . import files, graph, guide, problem, results, solving, value_range
+from ..pages.guide import server as guide
+from ..pages.learn import server as learn
+from ..pages.work import server as work
 from .context import AppContext
 
 
 def server(input, output, session):
     ctx = AppContext(input, session)
-    for part in (problem, value_range, solving, graph, results, files, guide):
-        part.register(ctx)
+    for page in (work, guide, learn):
+        page.register(ctx)

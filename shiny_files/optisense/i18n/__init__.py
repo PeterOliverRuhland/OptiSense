@@ -1,17 +1,24 @@
-"""All user-facing text of OptiSense in English (source), German and Filipino.
+"""All user-facing text of OptiSense in English (source) and German.
+
+Each page keeps its own texts (pages/work/texts.py, pages/guide/texts.py and content.py, pages/learn/texts.py);
+texts used on more than one page are in common.py. This module joins them and translates.
 
 Rules: every string has a key; whole sentences with {placeholders}; mathematical notation
-(x1, x2, c1, a1, b, ≤ ≥ =, ℕ0) is never translated. Filipino is a first draft and should be
-reviewed by a native speaker; technical terms follow common Philippine university usage
-(English term kept, Filipino explanation around it).
+(x1, x2, c1, a1, b, ≤ ≥ =, ℕ0) is never translated.
 """
 
 import json
 
-from .guide_texts import FIGURES, GUIDE, GUIDE_ORDER  # noqa: F401
-from .texts import TEXT
+from ..pages.guide.content import GUIDE
+from ..pages.guide.texts import TEXT as GUIDE_TEXT
+from ..pages.learn.texts import LEARN
+from ..pages.work.texts import TEXT as WORK_TEXT
+from .common import TEXT as COMMON_TEXT
 
-LANGS = {"en": "English", "de": "Deutsch", "fil": "Filipino"}
+# one dictionary for all short texts; the keys of the learning page start with learn_
+TEXT = {**COMMON_TEXT, **WORK_TEXT, **GUIDE_TEXT, **LEARN}
+
+LANGS = {"en": "English", "de": "Deutsch"}
 DEFAULT_LANG = "en"
 
 
@@ -33,7 +40,7 @@ def guide(lang, topic):
 
 def fmt_num(value, lang, digits=4):
     """Number for display: up to `digits` decimals, trailing zeros removed, locale separators.
-    German uses 1.500,5; English and Filipino use 1,500.5."""
+    German uses 1.500,5; English uses 1,500.5."""
     if value is None:
         return "–"
     if value == float("inf"):

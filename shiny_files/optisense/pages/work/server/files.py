@@ -3,8 +3,8 @@
 from htmltools import TagList, tags
 from shiny import reactive, render, ui
 
-from .. import core
-from ..config import EXAMPLE_NAMES
+from optisense import core
+from optisense.config import EXAMPLE_NAMES
 from .html_utils import safe_filename
 
 

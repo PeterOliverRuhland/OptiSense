@@ -13,13 +13,25 @@ def register(ctx):
     input = ctx.input
     tr = ctx.tr
 
-    def make_figure(figsize=None, scale=None):
+    @reactive.calc
+    def plot_scale():
+        # sent by www/work.js: root font size / 16, grows on large screens
+        try:
+            return float(input.ui_scale())
+        except Exception:  # noqa: BLE001 - not sent yet
+            return 1.0
+
+    def make_figure(figsize=None, scale=None, compact=False):
         return plotting.draw(ctx.active_objective(), ctx.active_constraints(), ctx.var_types(), ctx.solution(),
-                             ctx.lang(), figsize=figsize, scale=ctx.plot_scale() if scale is None else scale)
+                             ctx.lang(), figsize=figsize, scale=plot_scale() if scale is None else scale, compact=compact)
 
     @render.plot(alt="Graphical solution")
     def plot():
-        return make_figure()
+        try:   # sent by www/work.js: true on smartphones
+            phone = bool(input.ui_phone())
+        except Exception:  # noqa: BLE001 - not sent yet
+            phone = False
+        return make_figure(compact=phone)
 
     @reactive.effect
     @reactive.event(input.btn_png)

@@ -13,7 +13,7 @@ from playwright.sync_api import sync_playwright
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 OUT = os.path.join(ROOT, "shiny_files", "www", "guide")
-LANGS = ("en", "de", "fil")
+LANGS = ("en", "de")
 
 
 def shoot(browser, url, lang):

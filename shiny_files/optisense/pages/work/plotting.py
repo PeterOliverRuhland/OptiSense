@@ -1,4 +1,4 @@
-"""Draws the graphical solution with matplotlib, using the OptiSense design-system colours."""
+"""“Model & solution”: draws the graphical solution with matplotlib, using the OptiSense design-system colours."""
 
 import matplotlib
 
@@ -6,19 +6,11 @@ matplotlib.use("Agg")
 import matplotlib.lines as mlines  # noqa: E402
 import matplotlib.patches as mpatches  # noqa: E402
 import matplotlib.pyplot as plt  # noqa: E402
+from matplotlib.transforms import ScaledTranslation  # noqa: E402
 
-from . import core  # noqa: E402
-from .config import CONSTRAINT_COLORS, DUMMY, FEASIBLE, GRID, INK, OPTIMIZED, OPTIMUM  # noqa: E402
-from .i18n import fmt_num, t  # noqa: E402
-
-
-def constraint_style(color_index):
-    """Colour and line style for the n-th constraint colour slot (5 colours, then dash-dot)."""
-    return CONSTRAINT_COLORS[color_index % len(CONSTRAINT_COLORS)], ("-" if color_index < len(CONSTRAINT_COLORS) else "-.")
-
-
-def constraint_color(color_index):
-    return constraint_style(color_index)[0]
+from optisense import core  # noqa: E402
+from optisense.config import DUMMY, FEASIBLE, GRID, INK, OPTIMIZED, OPTIMUM, constraint_style  # noqa: E402
+from optisense.i18n import fmt_num, t  # noqa: E402
 
 
 def _base_axes(ax, xmax, ymax, k=1.0):
@@ -56,12 +48,13 @@ def _label_line(ax, seg, text, color, xmax, ymax, k=1.0):
                 bbox={"boxstyle": "round,pad=0.15", "fc": "white", "ec": "none", "alpha": 0.75})
 
 
-def draw(objective, constraints, var_types, solution, lang, figsize=None, scale=1.0):
+def draw(objective, constraints, var_types, solution, lang, figsize=None, scale=1.0, compact=False):
     """Return a matplotlib Figure.
 
     objective: dict or None; constraints: active constraints, each with "color_index";
     solution: result of core.solve or None.
     scale: factor for fonts, lines and markers; the page sends it so large screens get larger labels.
+    compact: narrow graph (smartphones); the legend keeps a fixed distance below the x1 label.
     """
     k = max(0.8, min(float(scale or 1.0), 2.0))
     fig, ax = plt.subplots(figsize=figsize or (7, 6.2))
@@ -148,7 +141,11 @@ def draw(objective, constraints, var_types, solution, lang, figsize=None, scale=
         handles.insert(0, mlines.Line2D([], [], color=OPTIMUM, marker="o", ls="none", ms=8 * k,
                                         label=f"{t(lang, 'plot_optimum')}: {objective['name']} = {fmt_num(sol['value'], lang)}"))
 
-    ax.legend(handles=handles, loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=2 if len(handles) > 2 else len(handles), fontsize=9 * k,
-              frameon=False, handlelength=2.4)
+    # below the axes: 10 % of the axes height, or on narrow graphs a fixed 38 pt so that it stays clear of “x1”
+    anchor = {"bbox_to_anchor": (0.5, -0.1)}
+    if compact:
+        anchor = {"bbox_to_anchor": (0.5, 0), "bbox_transform": ax.transAxes + ScaledTranslation(0, -38 * k / 72, fig.dpi_scale_trans)}
+    ax.legend(handles=handles, loc="upper center", ncol=2 if len(handles) > 2 else len(handles), fontsize=9 * k,
+              frameon=False, handlelength=2.4 if not compact else 1.8, **anchor)
     fig.set_layout_engine("tight", pad=1.2)
     return fig

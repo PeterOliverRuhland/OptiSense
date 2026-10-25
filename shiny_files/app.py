@@ -5,7 +5,7 @@ import os
 from shiny import App
 
 from optisense.server import server
-from optisense.ui import app_ui
+from optisense.ui.layout import app_ui
 
 app = App(app_ui, server, static_assets=os.path.join(os.path.dirname(__file__), "www"))
 

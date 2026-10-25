@@ -96,9 +96,10 @@ Then open `http://localhost:8000` in your browser. With Docker: `docker compose 
 - **Exact graph** – the feasible region is computed geometrically (LP polygon, integer lattice points, MILP lines), constraints have fixed colours and are labelled directly in the graph.
 - **Solve** with `scipy.optimize.milp`; infeasible and unbounded problems are explained instead of failing.
 - **Sensitivity analysis** with `lp_solve`: shadow prices with their valid range of b, objective-coefficient ranges, and a sentence explaining each result.
-- **Languages** – English, German and Filipino in a compact language menu (more can be added), switchable at any time without losing input.
+- **Languages** – English and German in a compact language menu, switchable at any time without losing input.
+- **Learn & practice** – solve problems yourself, step by step: a guided example (the burger problem from the lecture, every step worked out), generated practice tasks (word problems or formulas, three difficulty levels, LP/ILP/MILP, six topics) and your own problem from “Model & solution”. Lines are drawn via their axis intersections, the simplex tableaus show the ratio column Q, MILP regions are drawn as grey bars – as on the lecture slides. Each step can be checked, with hints and a worked solution; an exam mode grades only after handing in. Up to 100 points, an evaluation that can be saved or printed, and the matching `scipy.optimize.milp` code to check the result in Python.
 - **Import & export** in the LP format (files from earlier versions still import) and **PNG export** of the graph.
-- Built for student laptops and iPads from 12 inch (works from 1024 × 650 px, touch targets ≥ 44 px).
+- Built for student laptops, iPads and smartphones from 6.1 inch (touch targets ≥ 44 px). From 1024 px width the columns stand side by side; on smartphones (portrait below 576 px, landscape up to 500 px height) every page shows its blocks in one column – steps, graph, results – and the graph of “Learn & practice” works by touch (a swipe scrolls, the handles can be dragged, a tap sets the optimum).
 
 ## Application Structure
 
@@ -106,36 +107,62 @@ Then open `http://localhost:8000` in your browser. With Docker: `docker compose 
 
 **Model & solution**: the graphical solution is the central element; left, the three workflow steps (can be hidden with the ‹ button in the graph header); right, the results in the tabs *Solution*, *Sensitivity* and *Description*. All three columns stay side by side from 1024 px width.
 
-![Guide tab](docs/screenshots/anleitung-fil.png)
+![Learn & practice tab](docs/screenshots/lernen-de.png)
+
+**Learn & practice**: the same three-column layout as “Model & solution” – the task text on the left, an interactive coordinate system in the middle (drag the points of a line, the objective line or your optimum), the current step on the right. A stepper on top shows where you are and which steps are correct. Steps: set up the model (word problems only), draw the lines, feasible region, intersection, optimum, slack & sensitivity, interpret the result and, optionally, simplex tableaus.
+
+![Guide tab](docs/screenshots/anleitung-de.png)
 
 **Guide**: how to use OptiSense, short introductions to linear programming and sensitivity analysis, the textbook example (loadable with one click) and import/export. The **?** next to each step opens the matching section in place.
 
 ### Code layout
 
+Each of the three pages has its own package with its texts, layout and server part, and its own stylesheet and script in `www/`. Shared parts (maths, translation, the frame with navbar and language menu, the per-session state) live outside `pages/`.
+
 ```
 shiny_files/
 ├── app.py                     entry point (shiny run app.py)
-├── www/                       optisense.css (design system, fluid sizing), optisense.js (language, list, sidebar)
+├── www/
+│   ├── optisense.css / .js    shared: design tokens, navbar, components, language switch
+│   ├── work.css / .js         start page “Model & solution”
+│   ├── learn.css / .js        “Learn & practice” (the page is drawn in the browser)
+│   ├── guide.css / .js        “Guide”
+│   └── guide/en, guide/de     pictures of the guide
 └── optisense/
-    ├── config.py              limits (2 objective functions, 5 constraints), example names, graph colours
-    ├── plotting.py            the matplotlib graph
-    ├── core/                  maths, no Shiny code
-    │   ├── model.py           problem type, integrality, slack / binding
-    │   ├── solver.py          scipy.optimize.milp
-    │   ├── geometry.py        axis bounds, feasible region, lines, dummy objective line
-    │   ├── lp_format.py       .lp import / export
-    │   └── sensitivity.py     lp_solve call and output parsing
-    ├── i18n/                  all texts: texts.py (interface), guide_texts.py (guide), __init__.py (t, fmt_num)
-    ├── ui/                    components.py (step card, translated text), layout.py (page)
-    └── server/                context.py (shared state) and one module per area:
-                               problem (step 1), value_range (step 2), solving (step 3),
-                               graph, results, files (import/export, example, reset), guide
-tests/test_core.py             unit tests: python -m unittest discover -s tests
+    ├── pages/
+    │   ├── work/              start page “Model & solution”
+    │   │   ├── texts.py       its texts (English, German)
+    │   │   ├── ui.py          workflow sidebar with the three steps, graph card, results tabs
+    │   │   ├── plotting.py    the matplotlib graph
+    │   │   └── server/        problem (step 1), value_range (step 2), solving (step 3), graph, results,
+    │   │                      files (import/export, example, reset), help_dialog (the ? buttons), html_utils
+    │   ├── learn/             “Learn & practice”
+    │   │   ├── texts.py       its texts (keys start with learn_)
+    │   │   ├── ui.py          the panel that www/learn.js fills
+    │   │   ├── server.py      requests from www/learn.js; the expected answers stay on the server
+    │   │   └── engine.py, story.py, solution.py, tutorial.py, pycode.py
+    │   │                      exercises without Shiny code: generation, grading, task texts,
+    │   │                      worked solutions, guided example, scipy.optimize.milp code
+    │   └── guide/             “Guide”
+    │       ├── texts.py       short texts (contents, figure captions)
+    │       ├── content.py     the sections in English and German, also shown by the ? buttons
+    │       ├── ui.py          contents list and text column
+    │       └── server.py      renders the sections in the chosen language
+    ├── core/                  maths of the start page, no Shiny code: model, solver (scipy.optimize.milp),
+    │                          geometry, lp_format (.lp import/export), sensitivity (lp_solve)
+    ├── i18n/                  t(), fmt_num(), the language list; common.py holds texts used on several pages
+    ├── ui/                    layout.py (navbar with the three pages, styles, scripts), components.py (translated text)
+    ├── server/                server(): one AppContext per session (context.py) shared by the pages
+    └── config.py              limits (2 objective functions, 5 constraints), default names, colours
+tests/test_core.py             maths, import/export and texts: python -m unittest discover -s tests
+tests/test_learning.py         exercises, grading and the texts of the learning page
+tests/test_structure.py        the pages stay separate (no imports between them except the ? dialogs, unique text keys)
+tools/                         guide_images.py and guide_screenshots.py create the pictures of the guide
 ```
 
-### Adding or changing a language
+### Texts and languages
 
-All texts live in `shiny_files/optisense/i18n/` (`texts.py`, `guide_texts.py`). Add a language code to `LANGS` and a translation to every entry of `TEXT` and `GUIDE`; the unit tests check that no entry is missing and that placeholders such as `{name}` match. The Filipino texts are a first draft and should be reviewed by a native speaker.
+OptiSense is available in English and German. Each page keeps its texts next to its code (`pages/*/texts.py`, the guide sections in `pages/guide/content.py`); texts used on several pages are in `i18n/common.py`. Every entry has an `en` and a `de` version; the unit tests check that none is missing and that placeholders such as `{name}` match. A further language needs a code in `LANGS` (`i18n/__init__.py`) and a translation in every entry.
 
 ## Contributing
 

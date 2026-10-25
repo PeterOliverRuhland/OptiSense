@@ -10,9 +10,10 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "shiny_files"))
 
-from optisense import core, plotting  # noqa: E402
+from optisense import core  # noqa: E402
 from optisense.config import EXAMPLE_NAMES  # noqa: E402
 from optisense.i18n import LANGS  # noqa: E402
+from optisense.pages.work import plotting  # noqa: E402
 
 OUT = os.path.join(ROOT, "shiny_files", "www", "guide")
 OBJECTIVE = {"name": "F", "c1": 10, "c2": 20, "sense": "max"}

@@ -1,8 +1,9 @@
-"""Long texts of the guide tab (HTML fragments using only <p>, <ul>, <ol>, <li>, <b>, <i>, <code>, <h3>, <a>)."""
+"""The sections of the page “Guide” in English and German (HTML fragments using only <p>, <ul>, <ol>, <li>, <b>, <i>, <code>, <h3>, <a>),
+their order and their figures. The ? buttons of “Model & solution” show the same sections as help dialogs."""
 
 GUIDE = {
     "steps": {
-        "en": """<p>OptiSense takes you from a problem to its solution in three steps. Everything happens on the page “Model &amp; solution”: the steps on the left, the graph in the middle, the results on the right.</p>
+        "en": """<p>OptiSense takes you from a problem to its solution in three steps. Everything happens on the page “Model &amp; solution”: the steps on the left, the graph in the middle, the results on the right. On a smartphone they are shown one below the other.</p>
 <h3>1 · Enter problem</h3>
 <p>Use “+ New” to add an objective function and one or more constraints (up to 2 objective functions and 5 constraints). Click a row to change or delete it. The switch on the right takes a function out of the calculation without deleting it. Only one objective function is active at a time. “Example” loads the example problem of this guide.</p>
 <h3>2 · Value range</h3>
@@ -13,7 +14,7 @@ GUIDE = {
 <ul><li>The ? next to each step explains exactly that step.</li>
 <li>You can switch the language at the top right at any time; your entries are kept.</li>
 <li>All numbers must be ≥ 0.</li></ul>""",
-        "de": """<p>OptiSense führt dich in drei Schritten von der Aufgabe zur Lösung. Alles passiert auf der Seite „Modell &amp; Lösung“: links die Schritte, in der Mitte der Graph, rechts die Ergebnisse.</p>
+        "de": """<p>OptiSense führt dich in drei Schritten von der Aufgabe zur Lösung. Alles passiert auf der Seite „Modell &amp; Lösung“: links die Schritte, in der Mitte der Graph, rechts die Ergebnisse. Auf dem Smartphone stehen sie untereinander.</p>
 <h3>1 · Problem eingeben</h3>
 <p>Lege mit „+ Neu“ eine Zielfunktion und eine oder mehrere Nebenbedingungen an (höchstens 2 Zielfunktionen und 5 Nebenbedingungen). Ein Klick auf eine Zeile öffnet sie zum Ändern oder Löschen. Mit dem Schalter rechts nimmst du eine Funktion aus der Rechnung, ohne sie zu löschen. Es ist immer nur eine Zielfunktion aktiv. „Beispiel“ lädt das Beispielproblem dieser Anleitung.</p>
 <h3>2 · Wertebereich</h3>
@@ -24,17 +25,6 @@ GUIDE = {
 <ul><li>Das ? an jedem Schritt erklärt genau diesen Schritt.</li>
 <li>Die Sprache kannst du oben rechts jederzeit wechseln; deine Eingaben bleiben erhalten.</li>
 <li>Alle Zahlen müssen ≥ 0 sein.</li></ul>""",
-        "fil": """<p>Dinadala ka ng OptiSense mula sa problema hanggang sa solusyon sa tatlong hakbang. Lahat ay nangyayari sa pahinang “Modelo at solusyon”: nasa kaliwa ang mga hakbang, nasa gitna ang graph, nasa kanan ang mga resulta.</p>
-<h3>1 · Ilagay ang problema</h3>
-<p>Gamitin ang “+ Bago” para magdagdag ng objective function at isa o higit pang constraint (hanggang 2 objective function at 5 constraint). I-click ang isang hilera para baguhin o burahin ito. Inaalis ng switch sa kanan ang isang function sa kalkulasyon nang hindi ito binubura. Isang objective function lang ang aktibo sa isang pagkakataon. Nilo-load ng “Halimbawa” ang halimbawang problema ng gabay na ito.</p>
-<h3>2 · Saklaw ng halaga</h3>
-<p>Piliin para sa x1 at x2 kung tuloy-tuloy o integer ang mga ito. Tingnan ang “Saklaw ng halaga” sa ibaba.</p>
-<h3>3 · Lutasin at suriin</h3>
-<p>Iginuguhit muli ang graph pagkatapos ng bawat pagbabago. Kinakalkula ng “Simulan ang linear optimization” ang optimum; pagkatapos nito, maaari mong simulan ang sensitivity analysis. Lalabas ang mga resulta sa kanan sa mga tab na Solusyon, Sensitivity at Paglalarawan. Ipinapakita ng asul na button na napapanahon ang resulta nito. Kapag binago mo ang problema, mabubura ang mga resulta at magiging puti muli ang mga button.</p>
-<h3>Mabuting malaman</h3>
-<ul><li>Ipinapaliwanag ng ? sa tabi ng bawat hakbang ang mismong hakbang na iyon.</li>
-<li>Mapapalitan mo ang wika sa kanang itaas anumang oras; mananatili ang iyong mga input.</li>
-<li>Dapat ≥ 0 ang lahat ng numero.</li></ul>""",
     },
     "example": {
         "en": """<p>This example runs through the whole guide. Load it with “Example” in step 1. It comes from Domschke et al., <i>Einführung in Operations Research</i>, 9th edition (2015).</p>
@@ -55,15 +45,6 @@ GUIDE = {
 <li>x1, x2 ≥ 0, beide stetig</li></ul>
 <p>Das Lehrbuch nennt zusätzlich eine Maschinen-Nebenbedingung (x1 + x2 ≤ 100). Sie ist hier weggelassen, weil sie das Optimum nicht verändert.</p>
 <p><b>Ergebnis:</b> x1 = 30, x2 = 60 mit F = 1.500.</p>""",
-        "fil": """<p>Ginagamit ang halimbawang ito sa buong gabay. I-load ito gamit ang “Halimbawa” sa hakbang 1. Mula ito sa Domschke et al., <i>Einführung in Operations Research</i>, ika-9 na edisyon (2015).</p>
-<p>Gumagawa ang isang kompanya ng dalawang produkto, P1 at P2. Bawat unit ng P1 ay may contribution margin na 10, bawat unit ng P2 ay 20. Hinahanap natin ang production plan na may pinakamataas na kabuuang margin.</p>
-<ul><li>x1, x2: dami ng ginawang P1 at P2</li>
-<li>Objective function: F = 10·x1 + 20·x2 → max</li>
-<li>C1 (raw material): 6·x1 + 9·x2 ≤ 720 — kailangan ng isang unit ng P1 ang 6, at ng isang unit ng P2 ang 9 na unit ng raw material; 720 ang nasa stock.</li>
-<li>C2 (assembly ng P2): x2 ≤ 60 — hanggang 60 unit lang ng P2 ang maaaring i-assemble.</li>
-<li>x1, x2 ≥ 0, parehong tuloy-tuloy</li></ul>
-<p>May constraint din ng makina ang aklat (x1 + x2 ≤ 100). Hindi ito isinama rito dahil hindi nito binabago ang optimum.</p>
-<p><b>Resulta:</b> x1 = 30, x2 = 60 na may F = 1,500.</p>""",
     },
     "lp": {
         "en": """<p>Linear programming looks for the best of all allowed solutions — for example the highest profit or the lowest cost. It needs three building blocks:</p>
@@ -92,19 +73,6 @@ GUIDE = {
 <li>Diese Linie wird parallel verschoben – beim Maximieren zu größeren Werten, beim Minimieren zu kleineren –, bis sie den zulässigen Bereich gerade noch berührt. Dieser Punkt ist das <b>Optimum</b> (rot).</li></ol>
 <p>Gibt es ein Optimum, liegt mindestens eines auf einer Ecke des zulässigen Bereichs. Im Beispiel ist das die Ecke x1 = 30, x2 = 60 mit F = 10·30 + 20·60 = 1.500.</p>
 <p>Zwei Sonderfälle: Widersprechen sich die Nebenbedingungen, ist der Bereich leer – es gibt <b>keine zulässige Lösung</b>. Ist der Bereich in Richtung des Ziels offen, kann F sich unbegrenzt verbessern – das Problem ist <b>unbeschränkt</b>.</p>""",
-        "fil": """<p>Hinahanap ng linear programming ang pinakamainam sa lahat ng pinapayagang solusyon — halimbawa ang pinakamataas na kita o pinakamababang gastos. Kailangan nito ng tatlong bahagi:</p>
-<ul><li><b>Decision variable</b> x1 at x2: ang mga dami na ikaw ang nagpapasya, halimbawa dami ng produksyon.</li>
-<li><b>Objective function</b> F = c1·x1 + c2·x2: ima-maximize o mi-minimize ito.</li>
-<li><b>Constraint</b> a1·x1 + a2·x2 ≤ b (o ≥ b, = b): mga hangganan gaya ng raw material o kapasidad. Bukod dito, palaging x1, x2 ≥ 0.</li></ul>
-<p>Ang ibig sabihin ng “linear”: bawat variable ay minu-multiply lamang sa isang takdang numero — walang square, walang product gaya ng x1·x2.</p>
-<h3>Ang grapikong solusyon</h3>
-<p>Sa dalawang variable, maiguguhit ang bawat problema:</p>
-<ol><li>Bawat constraint ay isang linya. Pinapayagan ang panig kung saan natutupad ang constraint.</li>
-<li>Ang mga puntong sumusunod sa lahat ng constraint ang bumubuo sa <b>feasible region</b> (abo).</li>
-<li>Pinagdudugtong ng putol-putol na berdeng <b>dummy line</b> ang lahat ng punto na may parehong halaga ng objective.</li>
-<li>Inililipat nang parallel ang linyang ito — patungo sa mas malalaking halaga kapag nagma-maximize, sa mas maliliit kapag nagmi-minimize — hanggang halos dumampi na lang ito sa feasible region. Ang puntong iyon ang <b>optimum</b> (pula).</li></ol>
-<p>Kung may optimum, may kahit isa na nasa isang sulok ng feasible region. Sa halimbawa, ito ang sulok na x1 = 30, x2 = 60 na may F = 10·30 + 20·60 = 1,500.</p>
-<p>Dalawang espesyal na kaso: kapag nagkakasalungat ang mga constraint, walang laman ang rehiyon at <b>walang feasible na solusyon</b>. Kapag bukas ang rehiyon sa direksyon ng layunin, maaaring gumanda ang F nang walang hangganan — <b>unbounded</b> ang problema.</p>""",
     },
     "range": {
         "en": """<p>Here you decide which values x1 and x2 may take. Both are always ≥ 0.</p>
@@ -125,15 +93,6 @@ GUIDE = {
 <li><b>MILP:</b> eine ganzzahlig, eine stetig.</li></ul>
 <p>Mit ganzzahligen Variablen besteht der zulässige Bereich nur noch aus einzelnen Punkten (bei MILP aus Linien). Das Optimum ist der beste dieser Punkte. Es muss nicht auf einer Ecke liegen, und einfaches Runden der LP-Lösung führt nicht immer dorthin.</p>
 <p>Eine Änderung des Wertebereichs verwirft bisherige Ergebnisse; starte die Optimierung danach erneut.</p>""",
-        "fil": """<p>Dito mo itinatakda kung anong mga halaga ang maaaring kunin ng x1 at x2. Palaging ≥ 0 ang dalawa.</p>
-<ul><li><b>tuloy-tuloy (ℝ≥0):</b> kahit anong halaga, pati may decimal — halimbawa 12.5 oras.</li>
-<li><b>integer (ℕ0):</b> buong numero lamang — halimbawa bilang ng mesa.</li></ul>
-<p>Itinatakda ng pagpili ang uri ng problema na nakikita sa ilalim ng dalawang hilera:</p>
-<ul><li><b>LP:</b> parehong tuloy-tuloy.</li>
-<li><b>ILP:</b> parehong integer.</li>
-<li><b>MILP:</b> isang integer, isang tuloy-tuloy.</li></ul>
-<p>Kapag integer ang mga variable, nagiging hiwa-hiwalay na punto na lang ang feasible region (o mga linya para sa MILP). Ang optimum ang pinakamainam sa mga puntong ito. Hindi ito kailangang nasa sulok, at hindi laging humahantong dito ang simpleng pag-round ng LP na solusyon.</p>
-<p>Binubura ng pagbabago sa saklaw ng halaga ang mga naunang resulta; patakbuhin muli ang optimization pagkatapos.</p>""",
     },
     "sens": {
         "en": """<p>Sensitivity analysis asks: what happens to the optimum when a number in the problem changes? It is available after a successful linear optimization; the results appear in the tab “Sensitivity”.</p>
@@ -154,15 +113,6 @@ GUIDE = {
 <h3>Bereiche der Zielfunktionskoeffizienten</h3>
 <p>Jeder Koeffizient c1, c2 darf sich in einem Bereich bewegen, ohne dass sich die optimale Lösung (x1, x2) ändert; der Zielwert F ändert sich dabei natürlich mit. Der Bereich gilt, wenn jeweils nur ein Koeffizient verändert wird. Im Beispiel bleibt die Lösung bei x1 = 30, x2 = 60, solange c1 zwischen 0 und 13,33 liegt.</p>
 <p>Bei ILP und MILP sind diese Werte nur eine Orientierung: lp_solve gibt sie für die zuletzt gelöste LP-Relaxation aus.</p>""",
-        "fil": """<p>Tinatanong ng sensitivity analysis: ano ang mangyayari sa optimum kapag nagbago ang isang numero sa problema? Magagamit ito pagkatapos ng matagumpay na linear optimization; lalabas ang mga resulta sa tab na “Sensitivity”.</p>
-<h3>Slack: binding o non-binding</h3>
-<p>Ang slack ay ang kapasidad ng isang constraint na hindi nagamit sa optimum (tab na “Solusyon”). Kapag 0 ang slack, <b>binding</b> ang constraint: nililimitahan nito ang solusyon. Sa halimbawa, parehong binding: ubos na ang raw material (6·30 + 9·60 = 720) at eksaktong 60 unit ng P2 ang ina-assemble.</p>
-<h3>Shadow price</h3>
-<p>Sinasabi ng shadow price kung gaano magbabago ang halaga ng objective kapag tumaas nang 1 ang kanang bahagi b ng isang constraint. Balido lamang ito sa loob ng ibinigay na saklaw ng b. 0 ang shadow price ng mga non-binding constraint.</p>
-<p>Sa halimbawa, 1.67 ang shadow price ng C1: ang isang dagdag na unit ng raw material ay nagpapataas sa F nang mga 1.67 (balido mula b = 540). 5 ang shadow price ng C2: ang pag-assemble ng isa pang unit ng P2 ay nagpapataas sa F nang 5 (balido hanggang b = 80).</p>
-<h3>Saklaw ng mga coefficient ng objective function</h3>
-<p>Maaaring gumalaw ang bawat coefficient c1, c2 sa loob ng isang saklaw nang hindi nagbabago ang optimal na solusyon (x1, x2); siyempre, nagbabago kasabay nito ang halaga ng F. Balido ang saklaw kapag isang coefficient lang ang binabago sa bawat pagkakataon. Sa halimbawa, nananatili ang solusyon sa x1 = 30, x2 = 60 basta't nasa pagitan ng 0 at 13.33 ang c1.</p>
-<p>Para sa ILP at MILP, gabay lamang ang mga halagang ito: iniuulat ito ng lp_solve para sa huling LP relaxation na nilutas nito.</p>""",
     },
     "import": {
         "en": """<p><b>Save as PNG</b> (at the top of the graph) downloads the current graph. Choose 150 DPI for slides or 300 DPI for print. Your browser saves the file in its download folder.</p>
@@ -175,11 +125,6 @@ GUIDE = {
 <p>Beispiel einer Datei:</p>
 <p><code>max: 10 x1 + 20 x2;<br>NB1: 6 x1 + 9 x2 &lt;= 720;<br>NB2: 0 x1 + 1 x2 &lt;= 60;<br>int x1;</code></p>
 <p>Die letzte Zeile macht x1 ganzzahlig; ohne sie sind beide Variablen stetig.</p>""",
-        "fil": """<p>Dina-download ng <b>I-save bilang PNG</b> (sa itaas ng graph) ang kasalukuyang graph. Piliin ang 150 DPI para sa slides o 300 DPI para sa pag-print. Ise-save ng browser ang file sa download folder nito.</p>
-<p>Sine-save ng <b>Import at export</b> (sa hakbang 1) ang aktibong problema bilang .lp file sa LP format ng lp_solve, o naglo-load ng ganitong file. Papalitan ng import ang kasalukuyang problema. Maaari ring i-import ang mga file mula sa mas lumang bersyon ng OptiSense.</p>
-<p>Halimbawa ng file:</p>
-<p><code>max: 10 x1 + 20 x2;<br>C1: 6 x1 + 9 x2 &lt;= 720;<br>C2: 0 x1 + 1 x2 &lt;= 60;<br>int x1;</code></p>
-<p>Ginagawang integer ng huling linya ang x1; kung wala ito, parehong tuloy-tuloy ang dalawang variable.</p>""",
     },
     "about": {
         "en": """<p>OptiSense helps you understand linear programming (LP), integer linear programming (ILP) and mixed-integer linear programming (MILP) with two variables — including sensitivity analysis. It is a teaching tool: you enter a small problem, see it as a graph, solve it and read what the result means.</p>
@@ -188,9 +133,6 @@ GUIDE = {
         "de": """<p>OptiSense hilft dir, lineare Optimierung (LP), ganzzahlige lineare Optimierung (ILP) und gemischt-ganzzahlige lineare Optimierung (MILP) mit zwei Variablen zu verstehen – einschließlich Sensitivitätsanalyse. Es ist ein Lernwerkzeug: Du gibst ein kleines Problem ein, siehst es als Graph, löst es und liest ab, was das Ergebnis bedeutet.</p>
 <p>OptiSense wurde von Peter Oliver Ruhland im Rahmen der Bachelorarbeit „Shiny in Python: Eine Anwendung zur interaktiven Visualisierung, Lösung und Untersuchung der Sensitivität einfacher LP- und (M)ILP-Probleme mit scipy.optimize.milp und lp_solve“ entwickelt.</p>
 <p>Die Optimierung nutzt <code>scipy.optimize.milp</code>, die Sensitivitätsanalyse den Open-Source-Solver lp_solve, ursprünglich entwickelt von Michel Berkelaar (TU Eindhoven) mit Jeroen Dirks, Kjell Eikland, Peter Notebaert und Juergen Ebert (<a href="https://lpsolve.sourceforge.net/5.5/" target="_blank" rel="noopener">lpsolve.sourceforge.net</a>). Die App basiert auf Shiny for Python, matplotlib, NumPy und SciPy.</p>""",
-        "fil": """<p>Tinutulungan ka ng OptiSense na maunawaan ang linear programming (LP), integer linear programming (ILP) at mixed-integer linear programming (MILP) na may dalawang variable — kasama ang sensitivity analysis. Isa itong kasangkapan sa pag-aaral: maglalagay ka ng maliit na problema, makikita mo ito bilang graph, lulutasin mo ito, at babasahin mo kung ano ang ibig sabihin ng resulta.</p>
-<p>Binuo ni Peter Oliver Ruhland ang OptiSense bilang bahagi ng kanyang bachelor thesis na “Shiny in Python: Eine Anwendung zur interaktiven Visualisierung, Lösung und Untersuchung der Sensitivität einfacher LP- und (M)ILP-Probleme mit scipy.optimize.milp und lp_solve”.</p>
-<p>Gumagamit ang optimization ng <code>scipy.optimize.milp</code>; ang sensitivity analysis ay gumagamit ng open-source na solver na lp_solve, na orihinal na binuo ni Michel Berkelaar (Eindhoven University of Technology) kasama sina Jeroen Dirks, Kjell Eikland, Peter Notebaert at Juergen Ebert (<a href="https://lpsolve.sourceforge.net/5.5/" target="_blank" rel="noopener">lpsolve.sourceforge.net</a>). Ginawa ang app gamit ang Shiny for Python, matplotlib, NumPy at SciPy.</p>""",
     },
 }
 

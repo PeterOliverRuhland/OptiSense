@@ -1,17 +1,14 @@
-"""The guide tab and the contextual help dialogs behind the ? buttons."""
+"""The guide: all sections in the chosen language, each with its figure from www/guide/<lang>/."""
 
 from htmltools import HTML, TagList, tags
-from shiny import reactive, render, ui
+from shiny import render
 
-from ..i18n import FIGURES, GUIDE_ORDER, guide, norm_lang
+from optisense.i18n import guide, norm_lang
 
-TOPICS = dict(GUIDE_ORDER)
-# the ? of each step: dialog title and the guide sections it shows
-HELP = {"steps": ("guide_steps", ["steps"]), "range": ("step2", ["range"]), "solve": ("step3", ["lp", "sens"])}
+from .content import FIGURES, GUIDE_ORDER
 
 
 def register(ctx):
-    input = ctx.input
     tr = ctx.tr
 
     def figure(topic):
@@ -39,22 +36,3 @@ def register(ctx):
                 class_="os-doc-section os-card" + (" has-figure" if fig is not None else ""),
             ))
         return TagList(*sections)
-
-    @reactive.effect
-    @reactive.event(input.help_topic)
-    def _help():
-        topic = input.help_topic()["topic"]
-        if topic not in HELP:
-            return
-        title_key, sections = HELP[topic]
-        parts = []
-        for section in sections:
-            if len(sections) > 1:
-                parts.append(tags.h2(tr(TOPICS[section])))
-            parts.append(HTML(guide(ctx.lang(), section)))
-        ui.modal_show(ui.modal(
-            tags.div(*parts, class_="os-guide-body os-guide-body--modal"),
-            title=tr(title_key),
-            footer=ui.modal_button(tr("close"), class_="os-btn"),
-            easy_close=True, size="l",
-        ))

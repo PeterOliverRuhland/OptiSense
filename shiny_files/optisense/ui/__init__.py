@@ -1,5 +1,4 @@
-"""User interface of OptiSense."""
+"""The frame of the app (layout.py) and UI helpers shared by the pages (components.py).
 
-from .layout import app_ui
-
-__all__ = ["app_ui"]
+Free of imports, so that the pages can use components.py while layout.py imports the pages.
+"""

@@ -135,7 +135,6 @@ class I18nTests(unittest.TestCase):
         for key, entry in i18n.TEXT.items():
             fields = {lang: {f[1] for f in string.Formatter().parse(text) if f[1]} for lang, text in entry.items()}
             self.assertEqual(fields["en"], fields["de"], key)
-            self.assertEqual(fields["en"], fields["fil"], key)
 
     def test_number_format(self):
         self.assertEqual(i18n.fmt_num(1500, "de"), "1.500")
