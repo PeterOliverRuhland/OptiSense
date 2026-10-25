@@ -3,8 +3,11 @@
 from htmltools import TagList, tags
 from shiny import reactive, render, ui
 
+import math
+import os
+
 from optisense import core
-from optisense.config import EXAMPLE_NAMES
+from optisense.config import EXAMPLE_NAMES, MAX_CONSTRAINTS, MAX_IMPORT_BYTES, MAX_NAME_LENGTH, MAX_VALUE
 from .html_utils import safe_filename
 
 
@@ -46,16 +49,28 @@ def register(ctx):
         if not files:
             ctx.notify("n_import_none", "error")
             return
+        path = files[0]["datapath"]
+        if os.path.getsize(path) > MAX_IMPORT_BYTES:
+            ctx.notify("n_import_too_large", "error", kb=MAX_IMPORT_BYTES // 1000)
+            return
         try:
-            with open(files[0]["datapath"], encoding="utf-8", errors="replace") as fh:
-                obj, cons, var_types = core.parse_lp_file(fh.read())
+            with open(path, encoding="utf-8", errors="replace") as fh:
+                obj, cons, var_types = core.parse_lp_file(fh.read(MAX_IMPORT_BYTES + 1))
         except core.LPParseError as exc:
             ctx.notify("n_import_failed", "error", line=str(exc)[:80])
+            return
+        if len(cons) > MAX_CONSTRAINTS:
+            ctx.notify("n_import_too_many", "error", n=MAX_CONSTRAINTS)
             return
         values = [obj["c1"], obj["c2"]] + [v for c in cons for v in (c["a1"], c["a2"], c["b"])]
         if any(v < 0 for v in values):
             ctx.notify("n_import_negative", "error")
             return
+        if not all(math.isfinite(v) and v <= MAX_VALUE for v in values):
+            ctx.notify("n_import_too_big", "error")
+            return
+        for con in cons:
+            con["name"] = (con.get("name") or "")[:MAX_NAME_LENGTH] or None
         ctx.load_problem(obj, cons, var_types)
         ui.modal_remove()
         ctx.notify("n_imported")

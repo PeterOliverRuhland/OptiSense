@@ -1,5 +1,7 @@
+# Fixed versions: every Docker build installs exactly these (tested with Python 3.11 in the Docker image).
+# To update: raise the versions, rebuild, run the tests – and check https://osv.dev for known vulnerabilities.
 shiny == 1.2.1
-matplotlib
-pandas
-scipy
-numpy
+matplotlib == 3.11.2
+scipy == 1.17.1
+numpy == 2.4.6
+pillow == 13.0.0

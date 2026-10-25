@@ -3,7 +3,9 @@
 from htmltools import HTML, TagList, tags
 from shiny import reactive, render, req, ui
 
-from optisense.config import DEFAULT_NAMES, MAX_CONSTRAINTS, MAX_OBJECTIVES
+import math
+
+from optisense.config import DEFAULT_NAMES, MAX_CONSTRAINTS, MAX_NAME_LENGTH, MAX_OBJECTIVES, MAX_VALUE
 
 from .. import plotting
 from .html_utils import con_swatch, con_text, esc, formula, swatch
@@ -180,7 +182,7 @@ def register(ctx):
 
     def validate(kind, item_id):
         errs, values = [], {}
-        name = (input.f_name() or "").strip()
+        name = str(input.f_name() or "").strip()[:MAX_NAME_LENGTH]
         if not name:
             errs.append(tr("err_name"))
         elif any(i["name"] == name and i["id"] != item_id for i in items_of(kind)):
@@ -189,10 +191,17 @@ def register(ctx):
         fields = [("f_a1", labels[0]), ("f_a2", labels[1])] + ([("f_b", "rhs_b")] if kind == "con" else [])
         for fid, key in fields:
             v = input[fid]()
-            if not isinstance(v, (int, float)) or v < 0:
+            if not isinstance(v, (int, float)) or isinstance(v, bool) or not math.isfinite(v) or v < 0:
                 errs.append(tr("err_number", field=tr(key)))
+            elif v > MAX_VALUE:
+                errs.append(tr("err_number_large", field=tr(key)))
             else:
                 values[fid] = float(v)
+        # choices the browser sends are checked too: it could send anything
+        if kind == "obj" and input.f_sense() not in ("max", "min"):
+            errs.append(tr("err_choice", field=tr("sense")))
+        if kind == "con" and input.f_op() not in ("≤", "≥", "="):
+            errs.append(tr("err_choice", field=tr("operator")))
         if values.get("f_a1") == 0 and values.get("f_a2") == 0:
             errs.append(tr("err_both_zero"))
         return name, values, errs

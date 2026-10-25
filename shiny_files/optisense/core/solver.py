@@ -30,7 +30,7 @@ def solve(objective, constraints, var_types):
     if A:
         kwargs["constraints"] = LinearConstraint(np.array(A, dtype=float), np.array(lb), np.array(ub))
     try:
-        res = milp(c, **kwargs)
+        res = milp(c, options={"time_limit": 5}, **kwargs)   # never block the shared server for long
     except Exception:  # noqa: BLE001 - surface any solver problem as a message
         return {"status": "error"}
     if res.status == 0 and res.x is not None:

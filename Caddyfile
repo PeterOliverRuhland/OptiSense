@@ -3,6 +3,11 @@
 # reicht Upgrade-Verbindungen automatisch durch. Genau das braucht Shiny.
 
 {$SITE_ADDRESS} {
+	# Anfragen sind klein (Klicks, .lp-Dateien bis 20 KB) - groessere Uploads gar nicht erst annehmen.
+	request_body {
+		max_size 1MB
+	}
+
 	reverse_proxy app:8000
 
 	encode zstd gzip
@@ -11,12 +16,26 @@
 		X-Content-Type-Options "nosniff"
 		X-Frame-Options "SAMEORIGIN"
 		Referrer-Policy "strict-origin-when-cross-origin"
+		# nur HTTPS (wirkt erst, wenn die Seite ueber HTTPS laeuft)
+		Strict-Transport-Security "max-age=31536000"
+		-Server
 	}
 
+	# Datenschutz: IP-Adressen nur gekuerzt speichern (IPv4 ohne letzte Stelle)
 	log {
 		output file /data/access.log {
 			roll_size 10MiB
 			roll_keep 5
+		}
+		format filter {
+			request>remote_ip ip_mask {
+				ipv4 24
+				ipv6 48
+			}
+			request>client_ip ip_mask {
+				ipv4 24
+				ipv6 48
+			}
 		}
 	}
 }

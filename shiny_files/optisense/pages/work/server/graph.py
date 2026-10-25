@@ -8,6 +8,8 @@ from shiny import reactive, render, ui
 from .. import plotting
 from .html_utils import safe_filename
 
+DPI_CHOICES = ("72", "150", "300", "600")
+
 
 def register(ctx):
     input = ctx.input
@@ -38,7 +40,7 @@ def register(ctx):
     def _png_dialog():
         ui.modal_show(ui.modal(
             ui.input_text("png_name", tr("file_name"), "optisense-graph"),
-            ui.input_select("png_dpi", tr("dpi"), {"72": "72", "150": "150", "300": "300", "600": "600"}, selected="150"),
+            ui.input_select("png_dpi", tr("dpi"), {d: d for d in DPI_CHOICES}, selected="150"),
             tags.p(tr("dpi_hint"), class_="os-hint"),
             title=tr("png_title"),
             footer=TagList(ui.modal_button(tr("close"), class_="os-btn"),
@@ -50,6 +52,7 @@ def register(ctx):
     def dl_png():
         fig = make_figure(figsize=(8, 7), scale=1.0)   # fixed size, independent of the screen
         buf = io.BytesIO()
-        fig.savefig(buf, format="png", dpi=int(input.png_dpi() or 150), bbox_inches="tight")
+        dpi = str(input.png_dpi()) if str(input.png_dpi()) in DPI_CHOICES else "150"   # the browser may send anything
+        fig.savefig(buf, format="png", dpi=int(dpi), bbox_inches="tight")
         buf.seek(0)
         yield buf.read()

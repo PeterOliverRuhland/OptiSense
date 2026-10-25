@@ -38,7 +38,7 @@ def _num(token):
     return _clean(v)
 
 
-def run_sensitivity(objective, constraints, var_types, timeout=30):
+def run_sensitivity(objective, constraints, var_types, timeout=5):
     """Run lp_solve -S4 and return shadow prices and objective-coefficient limits.
 
     Rows are named R1..Rn in the order of `constraints`.

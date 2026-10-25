@@ -11,6 +11,10 @@ EXAMPLE_NAMES = {"en": ["C1", "C2"], "de": ["NB1", "NB2"]}
 
 MAX_OBJECTIVES = 2
 MAX_CONSTRAINTS = 5
+# limits for values sent by the browser or read from a file (the server is shared by all users)
+MAX_VALUE = 1e9
+MAX_NAME_LENGTH = 40
+MAX_IMPORT_BYTES = 20_000
 
 # Design-system tokens used by the graph (see the OptiSense design system: plot-* and constraint-* colours)
 INK = "#1d1f21"

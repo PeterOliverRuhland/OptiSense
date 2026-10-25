@@ -95,6 +95,27 @@ class LPFileTests(unittest.TestCase):
         with self.assertRaises(lp_core.LPParseError):
             lp_core.parse_lp_file("max: 3 x1 + 2 y;\nx1 <= 4;")
 
+    def test_numbers_in_all_notations(self):
+        obj, cons, _ = lp_core.parse_lp_file("max: .5 x1 + 2. x2;\n1.5e2 x1 + 3*x2 <= 1e3;\n-x1 + x2 >= 0;")
+        self.assertEqual((obj["c1"], obj["c2"]), (0.5, 2.0))
+        self.assertEqual((cons[0]["a1"], cons[0]["a2"], cons[0]["b"]), (150.0, 3.0, 1000.0))
+        self.assertEqual((cons[1]["a1"], cons[1]["a2"]), (-1.0, 1.0))
+
+    def test_hostile_files_are_rejected_quickly(self):
+        """The server is shared: a crafted file must not keep it busy."""
+        import time
+        for text in ("max: x1 + x2;\nx1 <= 4" + ";\nx1 <= 4" * 60,        # too many statements
+                     "max: x1 + x2;\n" + "1" * 100_000 + " <= 4;",        # one very long statement
+                     "max: x1 + x2;\nx1 + " + "+".join(["1"] * 200) + " x2 <= 4;"):
+            start = time.perf_counter()
+            with self.assertRaises(lp_core.LPParseError):
+                lp_core.parse_lp_file(text)
+            self.assertLess(time.perf_counter() - start, 1.0)
+
+    def test_solver_has_a_time_limit_and_still_solves(self):
+        res = lp_core.solve(OBJ, CONS[1:], {"x1": "int", "x2": "int"})
+        self.assertEqual((res["status"], res["x1"], res["x2"]), ("optimal", 30, 60))
+
 
 class SensitivityTests(unittest.TestCase):
     def test_parse_output(self):

@@ -31,7 +31,11 @@ class LPParseError(ValueError):
     pass
 
 
-_TERM = re.compile(r"([+-]?)\s*(\d*\.?\d+(?:[eE][+-]?\d+)?)?\s*\*?\s*(x[12])\b")
+# one way to match a number (no nested optional digit groups), so long inputs cannot cause backtracking
+_TERM = re.compile(r"([+-]?)\s*((?:\d+(?:\.\d*)?|\.\d+)(?:[eE][+-]?\d+)?)?\s*\*?\s*(x[12])\b")
+# the files are small: two variables, a handful of constraints
+MAX_STATEMENTS = 50
+MAX_STATEMENT_LENGTH = 300
 
 
 def _parse_expr(expr):
@@ -51,6 +55,11 @@ def parse_lp_file(text):
     text = re.sub(r"/\*.*?\*/", "", text, flags=re.S)
     text = re.sub(r"//[^\n]*", "", text)
     statements = [s.strip() for s in text.split(";") if s.strip()]
+    if len(statements) > MAX_STATEMENTS:
+        raise LPParseError("too many statements")
+    for st in statements:
+        if len(st) > MAX_STATEMENT_LENGTH:
+            raise LPParseError(st[:40] + "…")
     objective, constraints = None, []
     var_types = {"x1": "con", "x2": "con"}
     for st in statements:

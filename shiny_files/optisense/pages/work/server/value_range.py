@@ -9,7 +9,8 @@ def register(ctx):
 
     @reactive.effect
     def _from_input():
-        new = {"x1": input.vt_x1(), "x2": input.vt_x2()}
+        # only the two known values; anything else the browser might send counts as continuous
+        new = {v: "int" if input[f"vt_{v}"]() == "int" else "con" for v in ("x1", "x2")}
         with reactive.isolate():
             old = ctx.var_types()
         if new != old:
