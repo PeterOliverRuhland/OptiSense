@@ -8,7 +8,16 @@
 		max_size 1MB
 	}
 
-	reverse_proxy app:8000
+	# Vier App-Container (docker-compose.yml). Shiny haelt eine Sitzung (Modell, Lernaufgabe) im Prozess,
+	# darum bleibt jeder Browser per Cookie beim selben Container. Neue Besucher gehen an den Container
+	# mit den wenigsten offenen Verbindungen (jede offene Seite haelt eine WebSocket-Verbindung).
+	reverse_proxy app1:8000 app2:8000 app3:8000 app4:8000 {
+		lb_policy cookie optisense_lb {
+			fallback least_conn
+		}
+		# faellt ein Container aus, gehen neue Anfragen 30 s lang an die anderen
+		fail_duration 30s
+	}
 
 	encode zstd gzip
 
