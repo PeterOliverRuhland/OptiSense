@@ -112,9 +112,61 @@ class LPFileTests(unittest.TestCase):
                 lp_core.parse_lp_file(text)
             self.assertLess(time.perf_counter() - start, 1.0)
 
+    def test_errors_give_the_line_but_no_file_text(self):
+        """Error messages are shown to the user: they must not repeat what is in the file."""
+        cases = (("max: x1 + x2;\n/* a\nb */\nx1 + SECRET <= 4;", 4),
+                 ("max: x1 + x2;\n\n" + "SECRET" * 60 + " <= 4;", 3),
+                 ("max: x1 + x2; x1 <= 4;\nint SECRET;", 2),
+                 ("token: SECRET;", 1))
+        for text, line in cases:
+            with self.assertRaises(lp_core.LPParseError) as cm:
+                lp_core.parse_lp_file(text)
+            self.assertEqual(cm.exception.line, line, text)
+            self.assertNotIn("SECRET", str(cm.exception))
+
     def test_solver_has_a_time_limit_and_still_solves(self):
         res = lp_core.solve(OBJ, CONS[1:], {"x1": "int", "x2": "int"})
         self.assertEqual((res["status"], res["x1"], res["x2"]), ("optimal", 30, 60))
+
+
+class UploadPathTests(unittest.TestCase):
+    """The browser can send any "datapath"; only files Shiny saved for this session may be opened."""
+
+    def setUp(self):
+        from types import SimpleNamespace
+        from shiny._fileupload import FileUploadManager
+        manager = FileUploadManager()
+        self.addCleanup(manager.rm_upload_dir)
+        op = manager.get_upload_operation(manager.create_upload_operation([{"name": "a.lp", "size": 3, "type": ""}]))
+        with op:
+            op.write_chunk(b"max")
+        self.files = op.finish()
+        self.session = SimpleNamespace(root_scope=lambda: SimpleNamespace(_file_upload_manager=manager))
+
+    def test_accepts_a_real_upload(self):
+        from optisense.pages.work.server.files import upload_path
+        self.assertEqual(upload_path(self.session, self.files), os.path.realpath(self.files[0]["datapath"]))
+
+    def test_rejects_other_paths(self):
+        from optisense.pages.work.server.files import upload_path
+        inside = os.path.dirname(self.files[0]["datapath"])
+        for path in ("/etc/passwd", "/proc/self/environ", os.path.join(inside, "..", "..", "..", "etc", "passwd"),
+                     inside, os.path.join(inside, "missing.lp"), "a\0b", 42):
+            self.assertIsNone(upload_path(self.session, [{"name": "a.lp", "datapath": path}]), path)
+        for files in (None, (), "x", {"datapath": "/etc/passwd"}, ["/etc/passwd"]):
+            self.assertIsNone(upload_path(self.session, files), files)
+
+
+class PngExportTests(unittest.TestCase):
+    def test_download_closes_the_figure(self):
+        """An open figure keeps its image buffer (about 80 MB at 600 dpi) until the app stops."""
+        import matplotlib.pyplot as plt
+        from optisense.pages.work import plotting
+        before = len(plt.get_fignums())
+        cons = [dict(c, color_index=i) for i, c in enumerate(CONS)]
+        png = plotting.png_bytes(plotting.draw(OBJ, cons, LP, lp_core.solve(OBJ, cons, LP), "de", figsize=(8, 7)), 72)
+        self.assertTrue(png.startswith(b"\x89PNG"))
+        self.assertEqual(len(plt.get_fignums()), before)
 
 
 class SensitivityTests(unittest.TestCase):

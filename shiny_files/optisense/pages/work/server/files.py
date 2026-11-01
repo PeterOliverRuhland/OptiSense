@@ -11,6 +11,26 @@ from optisense.config import EXAMPLE_NAMES, MAX_CONSTRAINTS, MAX_IMPORT_BYTES, M
 from .html_utils import safe_filename
 
 
+def upload_path(session, files):
+    """Server path of the first file this session really uploaded, or None.
+
+    The browser can overwrite the value of a file input, "datapath" included, so the path is only
+    trusted if it is a file in this session's upload folder (an internal of shiny 1.2.1)."""
+    manager = getattr(session.root_scope(), "_file_upload_manager", None)
+    basedir = getattr(manager, "_basedir", None)
+    info = files[0] if isinstance(files, (list, tuple)) and files else None
+    path = info.get("datapath") if isinstance(info, dict) else None
+    if not isinstance(basedir, str) or not isinstance(path, str):
+        return None
+    try:
+        base, real = os.path.realpath(basedir), os.path.realpath(path)
+        if real != base and os.path.commonpath([base, real]) == base and os.path.isfile(real):
+            return real
+    except (OSError, ValueError):
+        pass
+    return None
+
+
 def register(ctx):
     input = ctx.input
     tr = ctx.tr
@@ -45,19 +65,27 @@ def register(ctx):
     @reactive.effect
     @reactive.event(input.btn_do_import)
     def _import():
-        files = input.lp_upload()
-        if not files:
+        path = upload_path(ctx.session, input.lp_upload())
+        if path is None:
             ctx.notify("n_import_none", "error")
             return
-        path = files[0]["datapath"]
-        if os.path.getsize(path) > MAX_IMPORT_BYTES:
-            ctx.notify("n_import_too_large", "error", kb=MAX_IMPORT_BYTES // 1000)
-            return
         try:
+            if os.path.getsize(path) > MAX_IMPORT_BYTES:
+                ctx.notify("n_import_too_large", "error", kb=MAX_IMPORT_BYTES // 1000)
+                return
             with open(path, encoding="utf-8", errors="replace") as fh:
                 obj, cons, var_types = core.parse_lp_file(fh.read(MAX_IMPORT_BYTES + 1))
+        except OSError:
+            ctx.notify("n_import_unreadable", "error")
+            return
         except core.LPParseError as exc:
-            ctx.notify("n_import_failed", "error", line=str(exc)[:80])
+            # only the line number, never text from the file
+            if exc.line is not None:
+                ctx.notify("n_import_failed", "error", line=exc.line)
+            elif exc.reason == core.lp_format.MISSING_PARTS:
+                ctx.notify("n_import_incomplete", "error")
+            else:
+                ctx.notify("n_import_unreadable", "error")
             return
         if len(cons) > MAX_CONSTRAINTS:
             ctx.notify("n_import_too_many", "error", n=MAX_CONSTRAINTS)

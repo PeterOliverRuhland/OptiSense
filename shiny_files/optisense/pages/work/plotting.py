@@ -1,5 +1,8 @@
 """“Model & solution”: draws the graphical solution with matplotlib, using the OptiSense design-system colours."""
 
+import gc
+import io
+
 import matplotlib
 
 matplotlib.use("Agg")
@@ -149,3 +152,17 @@ def draw(objective, constraints, var_types, solution, lang, figsize=None, scale=
               frameon=False, handlelength=2.4 if not compact else 1.8, **anchor)
     fig.set_layout_engine("tight", pad=1.2)
     return fig
+
+
+def png_bytes(fig, dpi):
+    """The figure as PNG. Closes it: pyplot keeps every open figure, with its image buffer, until the app stops.
+    A closed figure is only freed by Python's cycle collector, often many downloads later, so collect right away
+    (about 15 ms; an image at 600 dpi needs about 80 MB)."""
+    try:
+        buf = io.BytesIO()
+        fig.savefig(buf, format="png", dpi=dpi, bbox_inches="tight")
+        return buf.getvalue()
+    finally:
+        plt.close(fig)
+        del fig
+        gc.collect()
