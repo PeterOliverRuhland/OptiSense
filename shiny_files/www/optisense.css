@@ -128,8 +128,8 @@ body { background: var(--surface-page); color: var(--ink); }
   .navbar .navbar-brand { min-height: 3.5rem; display: flex; align-items: center; margin: 0; padding: 0; }
   .navbar .navbar-toggler { display: none; }
   .navbar .navbar-collapse { display: block !important; flex-basis: 100%; height: auto !important; }
-  .navbar .navbar-nav { flex-direction: row; margin: 0 -0.25rem; }
-  .navbar .navbar-nav > .nav-item { flex: 1 1 auto; }
+  .navbar .navbar-nav { flex-direction: row; flex-wrap: nowrap; margin: 0 -0.25rem; }   /* one row also at 360 px */
+  .navbar .navbar-nav > .nav-item { flex: 1 1 auto; min-width: 0; }
   .navbar .nav-link { display: flex; align-items: center; justify-content: center; margin: 0 0.25rem; padding: 0.5rem 0.125rem !important;
     font-size: 0.875rem; text-align: center; white-space: nowrap; }
   .navbar .bslib-nav-spacer { display: none; }

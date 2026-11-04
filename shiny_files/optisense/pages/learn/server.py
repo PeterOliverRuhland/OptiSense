@@ -14,7 +14,7 @@ from shiny import reactive
 from optisense.config import constraint_color
 from optisense.i18n import norm_lang, t
 
-from . import engine, pycode, solution, story, tutorial
+from . import engine, solution, story, tutorial
 from .engine import LearnError
 
 OPS = {"≤": "<=", "≥": ">=", "=": "="}
@@ -81,8 +81,6 @@ def register(ctx):
         if ex["options"].get("form") != "text":
             data["model"] = {"c": m["c"], "sense": m["sense"], "kind": m["kind"],
                              "rows": [{"a": r["a"], "op": r["op"], "b": r["b"]} for r in m["rows"]]}
-        if "tutorial" in ex:
-            data["tutorial"] = ex["tutorial"]
         data.update(texts(lang))
         return data
 
@@ -126,23 +124,31 @@ def register(ctx):
         if action == "hint":
             ex, step = current_step(req)
             grade = engine.grade_step(ex, step, answers.get(step["id"]), answers, lang)
-            ids = engine.hints_for(step, grade)
+            ids = engine.hints_for(ex, step, grade)
             if not ids:
                 return {"level": 0, "ids": []}
             level = min(2, state["hints"].get(step["id"], 0) + 1)
             state["hints"][step["id"]] = level
             return {"level": level, "ids": ids[:1] if level == 1 else ids, "more": level == 1 and len(ids) > 1}
         if action == "solution":
+            # the answers go into the fields; what the learner had entered stays their first attempt
             ex, step = current_step(req)
+            state["first"].setdefault(step["id"], engine.grade_step(ex, step, answers.get(step["id"]), answers, lang))
             state["reveals"].add(step["id"])
-            return {"lines": solution.lines(ex, step, lang)}
+            values = engine.solution_values(ex, step, answers, lang)
+            return {"values": values, "lines": solution.lines(ex, step, lang),
+                    "grade": engine.grade_step(ex, step, values, {**answers, step["id"]: values}, lang)}
         if action == "submit":
             ex = state["ex"]
             if state["result"] is None:
                 grades = [engine.grade_step(ex, s, answers.get(s["id"]), answers, lang) for s in ex["steps"]]
                 state["result"] = {"score": min(100, round(sum(g["points"] for g in grades), 1)), "grades": grades,
                                    "hints": dict(state["hints"]), "reveals": sorted(state["reveals"]),
-                                   "first": dict(state["first"]), "python": pycode.python_code(ex)}
+                                   "first": dict(state["first"]),
+                                   # after handing in: the correct model and optimum for the graphical solution
+                                   "solution": {"model": {"c": ex["model"]["c"], "sense": ex["model"]["sense"], "kind": ex["model"]["kind"],
+                                                          "rows": [{"a": r["a"], "op": r["op"], "b": r["b"]} for r in ex["model"]["rows"]]},
+                                                "x": [float(v) for v in ex["solution"]["x"]], "z": float(ex["solution"]["z"])}}
             return {**state["result"], "solutions": solution.all_lines(ex, lang)}
         raise LearnError("err_request")
 
@@ -167,6 +173,5 @@ def register(ctx):
         payload = {"ready": False}
         if model is not None:
             payload = {"ready": True, "c": model["c"], "sense": model["sense"], "kind": model["kind"],
-                       "simplex": engine.simplex_possible(model, "math"),
                        "rows": [{**r, "color": col} for r, col in zip(model["rows"], colors)]}
         await session.send_custom_message("os-learn-own", safe(payload))

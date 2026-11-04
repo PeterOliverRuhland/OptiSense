@@ -305,18 +305,22 @@ class Student:
         await self.go("learn")
         await self.think(3, 8)
         options = {"mode": "practice", "form": self.rng.choice(("text", "math")),
-                   "method": self.rng.choice(("both", "graph", "calc")),
-                   "difficulty": self.rng.choice(("easy", "medium", "hard")), "kind": self.rng.choice(("LP", "ILP"))}
+                   "difficulty": self.rng.choice(("easy", "medium")), "kind": self.rng.choice(("LP", "ILP"))}
         data = await self.learn_req("Aufgabe erstellen", "create", options=options)
         steps = (data or {}).get("steps") or []
         answers = {}
         for step in steps[:self.rng.randint(3, 6)]:
             await self.think(10, 30)
+            if time.monotonic() >= self.hub.end:
+                return
             answers[step["id"]] = {q["key"]: str(self.rng.randint(0, 60)) for q in step.get("questions", [])}
             await self.learn_req("Antwort prüfen", "check", step=step["id"], answers=answers)
             if self.rng.random() < 0.3:
                 await self.think(2, 6)
                 await self.learn_req("Tipp", "hint", step=step["id"], answers=answers)
+            if self.rng.random() < 0.2:
+                await self.think(2, 6)
+                await self.learn_req("Lösung", "solution", step=step["id"], answers=answers)
         if steps:
             await self.think(3, 8)
             await self.learn_req("Abgeben", "submit", answers=answers)
@@ -364,7 +368,7 @@ class Student:
         await self.think(2, 5)
         await self.optimize()
         actions = ((self.optimize, 12), (self.edit_constraint, 18), (self.toggle_constraint, 8), (self.value_range, 10),
-                   (self.sensitivity, 12), (self.download_png, 6), (self.learn, 14), (self.guide, 3),
+                   (self.sensitivity, 12), (self.download_png, 6), (self.learn, self.hub.args.learn_weight), (self.guide, 3),
                    (self.add_constraint, 5))
         while time.monotonic() < self.hub.end:
             await self.think(4, 15)
@@ -487,6 +491,8 @@ if __name__ == "__main__":
     p.add_argument("--burst-first", type=float, default=3, help="minute of the first “everybody now” moment")
     p.add_argument("--burst-every", type=float, default=5, help="minutes between those moments")
     p.add_argument("--pace", type=float, default=1.0, help="factor for all pauses (0.5 = students click twice as fast)")
+    p.add_argument("--learn-weight", type=float, default=14,
+                   help="how often students pick an exercise on “Learn & practise” (other actions together: 74)")
     p.add_argument("--seed", type=int, default=1)
     p.add_argument("--csv")
     try:

@@ -97,7 +97,7 @@ Then open `http://localhost:8000` in your browser. With Docker: `docker compose 
 - **Solve** with `scipy.optimize.milp`; infeasible and unbounded problems are explained instead of failing.
 - **Sensitivity analysis** with `lp_solve`: shadow prices with their valid range of b, objective-coefficient ranges, and a sentence explaining each result.
 - **Languages** – English and German in a compact language menu, switchable at any time without losing input.
-- **Learn & practice** – solve problems yourself, step by step: a guided example (the burger problem from the lecture, every step worked out), generated practice tasks (word problems or formulas, three difficulty levels, LP/ILP/MILP, six topics) and your own problem from “Model & solution”. Lines are drawn via their axis intersections, the simplex tableaus show the ratio column Q, MILP regions are drawn as grey bars – as on the lecture slides. Each step can be checked, with hints and a worked solution; an exam mode grades only after handing in. Up to 100 points, an evaluation that can be saved or printed, and the matching `scipy.optimize.milp` code to check the result in Python.
+- **Learn & practice** – solve problems yourself, step by step: a guided example (the burger problem from the lecture, every step worked out), generated practice tasks (word problems or formulas, two levels with 2 or 3 constraints, continuous or integer variables, six topics) and your own problem from “Model & solution”. Every task first shows only the task; word problems are then modelled in two steps (objective and value range, then the constraints). Lines are drawn via their axis intersections, MILP regions are drawn as grey bars – as on the lecture slides. For an LP you first move the objective line and tap the optimal corner (it snaps to the corners), then calculate this corner exactly; integer tasks snap to whole numbers. The graph never shows the objective value – the learner calculates it. Word problems name the objective (revenue, costs …) and the constraints (C1 Buns …) in front of the formulas. Each step can be checked, with hints; “Solution” fills the correct values into the fields, with the worked solution one click away; an exam mode grades only after handing in. Up to 100 points and an evaluation that can be saved as an HTML file – with the task, the graphical solution (feasible region, objective line, optimal point) and every step with its worked solution.
 - **Import & export** in the LP format (files from earlier versions still import) and **PNG export** of the graph.
 - Built for student laptops, iPads and smartphones from 6.1 inch (touch targets ≥ 44 px). From 1024 px width the columns stand side by side; on smartphones (portrait below 576 px, landscape up to 500 px height) every page shows its blocks in one column – steps, graph, results – and the graph of “Learn & practice” works by touch (a swipe scrolls, the handles can be dragged, a tap sets the optimum).
 
@@ -109,7 +109,7 @@ Then open `http://localhost:8000` in your browser. With Docker: `docker compose 
 
 ![Learn & practice tab](docs/screenshots/lernen-de.png)
 
-**Learn & practice**: the same three-column layout as “Model & solution” – the task text on the left, an interactive coordinate system in the middle (drag the points of a line, the objective line or your optimum), the current step on the right. A stepper on top shows where you are and which steps are correct. Steps: set up the model (word problems only), draw the lines, feasible region, intersection, optimum, slack & sensitivity, interpret the result and, optionally, simplex tableaus.
+**Learn & practice**: the same three-column layout as “Model & solution” – the task text on the left, an interactive coordinate system in the middle (drag the points of a line, the objective line by its handle, or your optimum), the current step on the right. A stepper on top shows where you are and which steps are correct. Steps: understand the task, objective & value range and constraints (word problems only), draw the lines, feasible region, optimal corner (LP only), optimum, slack (how much is left over and which constraints are binding, as in the lecture – shadow prices stay on “Model & solution”), interpret the result. The graph appears with the lines (while the model is set up it would stay empty), and the **?** of each step opens “How to do it” right below the step title.
 
 ![Guide tab](docs/screenshots/anleitung-de.png)
 
@@ -140,7 +140,7 @@ shiny_files/
     │   │   ├── texts.py       its texts (keys start with learn_)
     │   │   ├── ui.py          the panel that www/learn.js fills
     │   │   ├── server.py      requests from www/learn.js; the expected answers stay on the server
-    │   │   └── engine.py, story.py, solution.py, tutorial.py, pycode.py
+    │   │   └── engine.py, story.py, solution.py, tutorial.py
     │   │                      exercises without Shiny code: generation, grading, task texts,
     │   │                      worked solutions, guided example, scipy.optimize.milp code
     │   └── guide/             “Guide”

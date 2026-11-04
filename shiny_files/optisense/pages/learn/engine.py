@@ -4,8 +4,8 @@ No Shiny code and no texts. Questions are identified by keys (c0, a1_0, line0_1_
 (www/learn.js) labels them in the chosen language, story.py and solution.py write the texts that
 depend on the numbers. Expected answers never leave the server.
 
-Every generated task is solved with SciPy before it is used. LP sensitivity uses the normal cone
-and an optimal basis; integer tasks are re-solved instead (a shadow price does not apply there).
+Every generated task is solved with SciPy before it is used. After the optimum the learner determines the
+slack of every constraint and whether it is binding – the interpretation used in the lecture.
 """
 
 import copy
@@ -24,10 +24,10 @@ INTEGRALITY = {"LP": (0, 0), "ILP": (1, 1), "MILP1": (1, 0), "MILP2": (0, 1)}
 OPS = ("<=", ">=", "=")
 TOPICS = ("gastro", "production", "farming", "events", "transport", "advertising")
 MIN_TOPICS = ("gastro", "farming", "transport", "advertising")   # contexts that also make sense as cost minimisation
-WEIGHTS = {"model": 25, "lines": 15, "region": 10, "intersection": 15, "optimum": 25, "sensitivity": 20,
-           "interpret": 5, "simplex": 10}
-OPTIONS = {"mode": ("practice", "exam"), "form": ("text", "math"), "method": ("both", "graph", "calc"),
-           "difficulty": ("easy", "medium", "hard"), "kind": ("LP", "ILP", "MILP")}
+WEIGHTS = {"objective": 10, "constraints": 15, "lines": 15, "region": 10, "corner": 15, "optimum": 25,
+           "slack": 15, "interpret": 5}
+# generated tasks: continuous or integer (mixed tasks only come from “Model & solution”)
+OPTIONS = {"mode": ("practice", "exam"), "form": ("text", "math"), "difficulty": ("easy", "medium"), "kind": ("LP", "ILP")}
 MAX_ROWS = 8
 
 
@@ -185,117 +185,57 @@ def boundaries(m):
     return m["rows"] + [{"a": [1, 0], "b": 0, "op": ">="}, {"a": [0, 1], "b": 0, "op": ">="}]
 
 
+def meet(r, s):
+    """Where the boundaries of two rows meet, or None if they are parallel."""
+    B = np.array([r["a"], s["a"]], dtype=float)
+    if abs(np.linalg.det(B)) < EPS:
+        return None
+    return np.linalg.solve(B, [r["b"], s["b"]])
+
+
+def corners(m):
+    """The corners of the continuous feasible region as (i, j, point): the first two boundaries that meet there."""
+    rows, out = boundaries(m), []
+    for i, j in itertools.combinations(range(len(rows)), 2):
+        x = meet(rows[i], rows[j])
+        if x is not None and feasible(m, x, False) and not any(np.linalg.norm(x - y) < EPS for _, _, y in out):
+            out.append((i, j, x))
+    return out
+
+
 def vertices(m):
-    out = []
-    for r, s in itertools.combinations(boundaries(m), 2):
-        B = np.array([r["a"], s["a"]], dtype=float)
-        if abs(np.linalg.det(B)) < EPS:
-            continue
-        x = np.linalg.solve(B, [r["b"], s["b"]])
-        if feasible(m, x, False) and not any(np.linalg.norm(x - y) < EPS for y in out):
-            out.append(x)
-    return out
+    return [x for _, _, x in corners(m)]
 
 
-def rays(m):
-    """Extreme recession directions of the feasible region in the nonnegative orthant."""
-    out = []
-    for r in boundaries(m):
-        a, b = r["a"]
-        for d in (np.array([b, -a], float), np.array([-b, a], float)):
-            norm = np.linalg.norm(d)
-            if norm < EPS or min(d) < -EPS:
-                continue
-            d /= norm
-            ok = all(np.dot(s["a"], d) <= EPS if s["op"] == "<=" else np.dot(s["a"], d) >= -EPS if s["op"] == ">="
-                     else abs(np.dot(s["a"], d)) < EPS for s in m["rows"])
-            if ok:
-                out.append(d)
-    return out
-
-
-def sensitivity(m, x):
-    x = np.array(x)
-    c = np.array(m["c"])
+def optimal_corners(m):
+    """The corners with the best objective value (several if a side of the region is parallel to the objective line)."""
+    cs = corners(m)
+    if not cs:
+        return []
     sign = 1 if m["sense"] == "max" else -1
-    result = {"slacks": [abs(float(np.dot(r["a"], x) - r["b"])) for r in m["rows"]], "shadow": None, "rhs": None,
-              "ranges": None}
-    if m["kind"] != "LP":
-        return result
-    ds = [v - x for v in vertices(m)] + rays(m)
-    ranges = []
-    for j in range(2):
-        low, high = -math.inf, math.inf
-        for d in ds:
-            a = sign * d[j]
-            rhs = -sign * c[1 - j] * d[1 - j]
-            if a > EPS:
-                high = min(high, rhs / a)
-            elif a < -EPS:
-                low = max(low, rhs / a)
-        ranges.append([low, high])
-    result["ranges"] = ranges
+    best = max(sign * float(np.dot(m["c"], x)) for _, _, x in cs)
+    return [c for c in cs if sign * float(np.dot(m["c"], c[2])) >= best - 1e-9 * max(1, abs(best))]
+
+
+def chosen_corner(m, b1, b2):
+    """The point where the two boundaries chosen by the learner meet (indices as sent by the browser), or None."""
+    try:
+        i, j = int(b1), int(b2)
+    except (TypeError, ValueError):
+        return None
     rows = boundaries(m)
-    active = [i for i, r in enumerate(rows) if abs(np.dot(r["a"], x) - r["b"]) < 1e-5]
-    for pair in itertools.combinations(active, 2):
-        B = np.array([rows[i]["a"] for i in pair], float)
-        if abs(np.linalg.det(B)) < EPS:
-            continue
-        dual = np.linalg.solve(B.T, c)
-        if any((rows[i]["op"] == "<=" and sign * v < -EPS) or (rows[i]["op"] == ">=" and sign * v > EPS)
-               for i, v in zip(pair, dual)):
-            continue
-        shadow = [0.0] * len(m["rows"])
-        intervals = []
-        for i, v in zip(pair, dual):
-            if i < len(shadow):
-                shadow[i] = float(v)
-        for k, r in enumerate(m["rows"]):
-            velocity = np.linalg.solve(B, [1.0 if i == k else 0.0 for i in pair])
-            low, high = -math.inf, math.inf
-            for i, s in enumerate(rows):
-                factor = 1 if s["op"] == "<=" else -1
-                t = float(np.dot(s["a"], velocity)) - (1 if i == k else 0)
-                residual = s["b"] - float(np.dot(s["a"], x))
-                conditions = [(t, residual), (-t, -residual)] if s["op"] == "=" else [(factor * t, factor * residual)]
-                for a, b in conditions:
-                    if a > EPS:
-                        high = min(high, b / a)
-                    elif a < -EPS:
-                        low = max(low, b / a)
-            intervals.append([r["b"] + low, r["b"] + high])
-        result.update(shadow=shadow, rhs=intervals)
-        break
-    return result
+    if i == j or not (0 <= i < len(rows) and 0 <= j < len(rows)):
+        return None
+    return meet(rows[i], rows[j])
 
 
-def simplex_trace(m):
-    """Tableaus of the primal simplex (most negative objective entry, smallest ratio, ties: first)."""
-    n = len(m["rows"])
-    T = np.zeros((n + 1, n + 3))
-    T[0, :2] = -np.array(m["c"])
-    for i, r in enumerate(m["rows"]):
-        T[i + 1, :2] = r["a"]
-        T[i + 1, i + 2] = 1
-        T[i + 1, -1] = r["b"]
-    trace = []
-    for _ in range(12):
-        col = int(np.argmin(T[0, :-1]))
-        if T[0, col] >= -EPS:
-            break
-        candidates = [(T[i, -1] / T[i, col], i) for i in range(1, n + 1) if T[i, col] > EPS]
-        if not candidates:
-            break
-        _, row = min(candidates)
-        old = T.copy()
-        pivot = T[row, col]
-        T[row] /= pivot
-        for i in range(n + 1):
-            if i != row:
-                T[i] -= T[i, col] * T[row]
-        T[np.abs(T) < 1e-12] = 0
-        trace.append({"tableau": old.tolist(), "enter": col, "leave": row, "pivot": float(pivot), "next_z": float(T[0, -1])})
-    return trace
+def slack(r, x):
+    """What is left over of a constraint at the point x (the surplus for ≥)."""
+    return abs(float(np.dot(r["a"], x)) - r["b"])
+
+
+def binding(r, x):
+    return slack(r, x) < 1e-6 * max(1, abs(r["b"]))
 
 
 # ---------------------------------------------------------------------------------------------- generator
@@ -309,17 +249,12 @@ def generate(options):
             continue
         target = [rng.randint(3, 9) + rng.choice([0, 0.5]), rng.randint(3, 9) + rng.choice([0, 0.5])]
         c = [rng.randint(3, 12), rng.randint(3, 12)]
-        sense = "min" if difficulty == "hard" and topic in MIN_TOPICS and rng.random() < 0.45 else "max"
+        sense = "min" if difficulty == "medium" and topic in MIN_TOPICS and rng.random() < 0.45 else "max"
         op = ">=" if sense == "min" else "<="
         rows = [{"a": [a, b], "b": a * target[0] + b * target[1], "op": op, "role": "r1"},
                 {"a": [d, e], "b": d * target[0] + e * target[1], "op": op, "role": "r2"}]
-        if difficulty != "easy":
+        if difficulty == "medium":
             rows.append({"a": [1, 1], "b": math.ceil(sum(target)) + rng.randint(3, 8), "op": "<=", "role": "total"})
-        if difficulty == "hard" and sense == "max" and rng.random() < 0.2:
-            rows[-1]["op"] = "="
-            rows[-1]["b"] = round(sum(target))
-        if difficulty == "hard" and sense == "max" and rng.random() < 0.35:
-            rows.append({"a": [1, 0], "b": rng.randint(1, 3), "op": ">=", "role": "least"})
         m = validate({"c": c, "rows": rows, "sense": sense, "kind": kind})
         sol = solve(m)
         if sol["status"] == "optimal" and min(sol["x"]) > EPS:
@@ -328,15 +263,11 @@ def generate(options):
 
 
 # ---------------------------------------------------------------------------------------------- exercise
-def normalize_options(raw, rng=random):
-    """The learner's choices from the start page, reduced to known values ('MILP' picks one of the two)."""
+def normalize_options(raw):
+    """The learner's choices from the start page, reduced to known values."""
     raw = raw if isinstance(raw, dict) else {}
     opts = {k: raw.get(k) if raw.get(k) in allowed else allowed[0] for k, allowed in OPTIONS.items()}
-    if opts["kind"] == "MILP":
-        opts["kind"] = rng.choice(["MILP1", "MILP2"])
     opts["topic"] = raw.get("topic") if raw.get("topic") in TOPICS else "random"
-    opts["sensitivity"] = bool(raw.get("sensitivity", False))
-    opts["simplex"] = bool(raw.get("simplex", False))
     return opts
 
 
@@ -401,88 +332,61 @@ def side_answer(r, p):
     return "in" if satisfies(r, p) else "out"
 
 
-def simplex_possible(m, form, tutorial=False):
-    return ((form != "text" or tutorial) and m["kind"] == "LP" and m["sense"] == "max"
-            and all(r["op"] == "<=" and r["b"] >= 0 for r in m["rows"]))
-
-
 def make_exercise(options, custom=None, info=None, points=None):
-    """options: mode, form, method, difficulty, kind (LP/ILP/MILP1/MILP2), topic, sensitivity, simplex, seed.
+    """options: mode, form, difficulty, kind (LP/ILP/MILP1/MILP2), topic, seed.
     custom: a model to use instead of a generated one; info describes where the exercise comes from."""
     options = dict(options)
-    tutorial = bool(info and info.get("source") == "tutorial")
     if custom is not None:
         m = validate(custom)
         sol = solve(m)
         info = info or {"source": "own"}
-        if not tutorial:
+        if info["source"] != "tutorial":
             options["form"] = "math"
     else:
         m, info, sol = generate(options)
     if sol["status"] != "optimal":
         raise LearnError({"infeasible": "err_infeasible", "unbounded": "err_unbounded"}.get(sol["status"], "err_solver"))
     options["kind"] = m["kind"]
-    sen = sensitivity(m, sol["x"])
     ext = axis_extent(m, sol)
     ints = integrality(m)
-    method = options.get("method", "both")
     steps = []
 
-    def add(sid, qs, **extra):
-        steps.append({"id": sid, "questions": qs, **extra})
+    def add(sid, qs):
+        steps.append({"id": sid, "questions": qs})
 
     if options.get("form") == "text":
-        qs = [question("sense", m["sense"], ("max", "min")),
-              question("vt0", "int" if ints[0] else "con", ("con", "int")),
-              question("vt1", "int" if ints[1] else "con", ("con", "int")),
-              question("c0", m["c"][0]), question("c1", m["c"][1])]
+        # the model in two steps, each with its own check and hints: objective and value range, then the constraints
+        add("objective", [question("sense", m["sense"], ("max", "min")),
+                          question("vt0", "int" if ints[0] else "con", ("con", "int")),
+                          question("vt1", "int" if ints[1] else "con", ("con", "int")),
+                          question("c0", m["c"][0]), question("c1", m["c"][1])])
+        qs = []
         for i, r in enumerate(m["rows"]):
             qs += [question(f"a{i}_0", r["a"][0]), question(f"a{i}_1", r["a"][1]),
                    question(f"op{i}", r["op"], OPS), question(f"b{i}", r["b"])]
-        add("model", qs)
+        add("constraints", qs)
     test_points = [side_test_point(r, ext) for r in m["rows"]]
     region_points = points or check_points(m, ext, sol)
-    if method in ("graph", "both"):
-        add("lines", [question(f"ax{i}_{j}", axis_cut(r, j)) for i, r in enumerate(m["rows"]) for j in range(2)])
-        qs = [question(f"side{i}", side_answer(r, p), ("in", "out", "line")) for i, (r, p) in enumerate(zip(m["rows"], test_points))]
-        qs += [question(f"p{n}", "yes" if feasible(m, p) else "no", ("yes", "no")) for n, p in enumerate(region_points)]
-        add("region", qs)
-    if method in ("calc", "both"):
+    add("lines", [question(f"ax{i}_{j}", axis_cut(r, j)) for i, r in enumerate(m["rows"]) for j in range(2)])
+    qs = [question(f"side{i}", side_answer(r, p), ("in", "out", "line")) for i, (r, p) in enumerate(zip(m["rows"], test_points))]
+    qs += [question(f"p{n}", "yes" if feasible(m, p) else "no", ("yes", "no")) for n, p in enumerate(region_points)]
+    add("region", qs)
+    if m["kind"] == "LP":
+        # first find the optimal corner with the objective line, then calculate it; integer optima lie on lattice points
         idx = [str(i) for i in range(len(boundaries(m)))]
-        add("intersection", [question("boundary1", None, idx), question("boundary2", None, idx),
-                             question("crossx", None), question("crossy", None)])
+        add("corner", [question("boundary1", None, idx), question("boundary2", None, idx)])
     add("optimum", [question("x", sol["x"][0]), question("y", sol["x"][1]), question("z", sol["z"])])
-    qs = [question(f"slack{i}", sen["slacks"][i]) for i in range(len(m["rows"]))]
-    if options.get("sensitivity", True):
-        if m["kind"] == "LP" and sen["shadow"] is not None:
-            active = sum(v < EPS for v in sen["slacks"]) + sum(v < EPS for v in sol["x"])
-            # one optimal basis only: non-degenerate and without equations, so the answers are unambiguous
-            if active == 2 and not any(r["op"] == "=" for r in m["rows"]):
-                qs += [question(f"shadow{i}", sen["shadow"][i]) for i in range(len(m["rows"]))]
-                qs += [question(f"range{j}_{k}", sen["ranges"][j][k]) for j in range(2) for k in range(2)]
-        elif m["kind"] != "LP":
-            changed = copy.deepcopy(m)
-            changed["rows"][0]["b"] += 1
-            new = solve(changed)
-            if new["status"] == "optimal":
-                qs.append(question("idelta", new["z"] - sol["z"]))
-    add("sensitivity", qs)
+    # what is left over at the optimum, and which constraints are used up (binding)
+    qs = []
+    for i, r in enumerate(m["rows"]):
+        qs += [question(f"slack{i}", slack(r, sol["x"])), question(f"bind{i}", "yes" if binding(r, sol["x"]) else "no", ("yes", "no"))]
+    add("slack", qs)
     add("interpret", [question("meaning", m["sense"], ("max", "min")), question("round", "no", ("yes", "no"))])
-    if options.get("simplex") and simplex_possible(m, options.get("form"), tutorial):
-        trace = simplex_trace(m)
-        if trace:
-            cols = [str(j + 1) for j in range(len(m["rows"]) + 2)]
-            rows = [str(i + 1) for i in range(len(m["rows"]))]
-            qs = []
-            for i, t in enumerate(trace):
-                qs += [question(f"enter{i}", str(t["enter"] + 1), cols), question(f"leave{i}", str(t["leave"]), rows),
-                       question(f"pivot{i}", t["pivot"]), question(f"nextz{i}", t["next_z"])]
-            add("simplex", qs, tableaus=[t["tableau"] for t in trace])
     total = sum(WEIGHTS[s["id"]] for s in steps)
     for s in steps:
         s["points"] = round(WEIGHTS[s["id"]] / total * 100)
     steps[-1]["points"] = 100 - sum(s["points"] for s in steps[:-1])
-    return {"model": m, "solution": sol, "sen": sen, "options": options, "info": info, "steps": steps,
+    return {"model": m, "solution": sol, "options": options, "info": info, "steps": steps,
             "extent": ext, "points": region_points, "test_points": test_points}
 
 
@@ -504,7 +408,7 @@ def grade_step(ex, step, answers, all_answers=None, lang="en"):
         return number(source.get(key, ""), lang)
 
     sid = step["id"]
-    if sid == "model":
+    if sid == "constraints":
         # a constraint may be scaled as a whole (×2, ×−1 with the comparison turned round)
         for i, r in enumerate(m["rows"]):
             try:
@@ -524,20 +428,11 @@ def grade_step(ex, step, answers, all_answers=None, lang="en"):
             for j in range(2):
                 key, cut, a = f"ax{i}_{j}", axis_cut(r, j), answers.get(f"ax{i}_{j}", "")
                 checks[key] = is_none(a) if cut is None else (not is_none(a) and close(a, cut, lang))
-    elif sid == "intersection":
-        try:
-            i, j = int(answers.get("boundary1", "-1")), int(answers.get("boundary2", "-1"))
-        except (TypeError, ValueError):
-            i = j = -1
-        rows = boundaries(m)
-        if i != j and 0 <= i < len(rows) and 0 <= j < len(rows):
-            B = np.array([rows[i]["a"], rows[j]["a"]], dtype=float)
-            valid = abs(np.linalg.det(B)) > EPS
-            checks["boundary1"] = checks["boundary2"] = bool(valid)
-            if valid:
-                p = np.linalg.solve(B, [rows[i]["b"], rows[j]["b"]])
-                checks["crossx"] = close(answers.get("crossx"), p[0], lang)
-                checks["crossy"] = close(answers.get("crossy"), p[1], lang)
+    elif sid == "corner":
+        # two lines that meet at an optimal corner (with several optimal corners, each counts)
+        p = chosen_corner(m, answers.get("boundary1"), answers.get("boundary2"))
+        ok = p is not None and feasible(m, p, False) and close(float(np.dot(m["c"], p)), ex["solution"]["z"])
+        checks["boundary1"] = checks["boundary2"] = bool(ok)
     elif sid == "optimum":
         try:
             p = [num("x"), num("y")]
@@ -545,13 +440,15 @@ def grade_step(ex, step, answers, all_answers=None, lang="en"):
         except LearnError:
             ok = False
         checks["x"] = checks["y"] = bool(ok)   # any optimal point counts (alternative optima)
-    elif sid == "sensitivity" and all_answers:
+    elif sid == "slack" and all_answers:
+        # at the learner's optimum, if it is one (with several optimal points each counts)
         try:
             oa = all_answers.get("optimum", {})
             p = [num("x", oa), num("y", oa)]
             if feasible(m, p) and close(float(np.dot(m["c"], p)), ex["solution"]["z"]):
                 for i, r in enumerate(m["rows"]):
-                    checks[f"slack{i}"] = close(answers.get(f"slack{i}"), abs(np.dot(r["a"], p) - r["b"]), lang)
+                    checks[f"slack{i}"] = close(answers.get(f"slack{i}"), slack(r, p), lang)
+                    checks[f"bind{i}"] = answers.get(f"bind{i}") == ("yes" if binding(r, p) else "no")
         except LearnError:
             pass
     count = sum(bool(v) for v in checks.values())
@@ -559,25 +456,58 @@ def grade_step(ex, step, answers, all_answers=None, lang="en"):
     return {"step": sid, "points": points, "max": step["points"], "correct": count == len(checks), "checks": checks}
 
 
+def solution_values(ex, step, all_answers=None, lang="en"):
+    """The answers of a step as the learner would enter them – “Solution” fills them into the fields.
+    Where grading accepts several answers, the values follow the learner (the optimum at their optimal corner,
+    slack at their optimal point)."""
+    m, sol = ex["model"], ex["solution"]
+    sid = step["id"]
+    out = {q["key"]: q["expected"] for q in step["questions"]}
+    if sid == "lines":
+        out = {k: "–" if v is None else v for k, v in out.items()}
+    elif sid == "corner":
+        best = optimal_corners(m)
+        out = {"boundary1": str(best[0][0]), "boundary2": str(best[0][1])} if best else {}
+    elif sid == "optimum" and step_by_id(ex, "corner"):
+        ca = (all_answers or {}).get("corner", {})
+        p = chosen_corner(m, ca.get("boundary1"), ca.get("boundary2"))
+        if p is not None and feasible(m, p, False) and close(float(np.dot(m["c"], p)), sol["z"]):
+            out.update(x=float(p[0]), y=float(p[1]))
+    elif sid == "slack":
+        x = sol["x"]
+        try:
+            oa = (all_answers or {}).get("optimum", {})
+            p = [number(oa.get("x", ""), lang), number(oa.get("y", ""), lang)]
+            if feasible(m, p) and close(float(np.dot(m["c"], p)), sol["z"]):
+                x = p
+        except LearnError:
+            pass
+        for i, r in enumerate(m["rows"]):
+            out[f"slack{i}"] = slack(r, x)
+            out[f"bind{i}"] = "yes" if binding(r, x) else "no"
+    return {k: v for k, v in out.items() if v is not None}
+
+
 def hint_id(key):
     """Which hint text explains a question (www/learn.js: learn_hint_<id>)."""
     for pattern, hid in ((r"sense", "sense"), (r"vt\d", "vt"), (r"c\d", "c"), (r"(a\d+_\d|op\d+|b\d+)", "row"),
                          (r"ax\d+_\d", "line"), (r"side\d+", "side"), (r"p\d+", "point"), (r"boundary\d", "boundary"),
-                         (r"cross[xy]", "cross"), (r"[xy]", "opt"), (r"z", "z"), (r"slack\d+", "slack"),
-                         (r"shadow\d+", "shadow"), (r"range\d_\d", "range"), (r"idelta", "idelta"), (r"meaning", "meaning"),
-                         (r"round", "round"), (r"enter\d+", "enter"), (r"leave\d+", "leave"), (r"pivot\d+", "pivot"),
-                         (r"nextz\d+", "nextz")):
+                         (r"[xy]", "opt"), (r"z", "z"), (r"slack\d+", "slack"),
+                         (r"bind\d+", "bind"), (r"meaning", "meaning"),
+                         (r"round", "round")):
         if re.fullmatch(pattern, key):
             return hid
     return "general"
 
 
-def hints_for(step, grade):
+def hints_for(ex, step, grade):
     """Hint ids for the questions that are still wrong or empty, in the order of the questions."""
     out = []
     for q in step["questions"]:
         if not grade["checks"].get(q["key"]):
             hid = hint_id(q["key"])
+            if hid == "opt" and step_by_id(ex, "corner"):
+                hid = "opt_corner"   # the optimum of an LP is calculated from the corner found before
             if hid not in out:
                 out.append(hid)
     return out
@@ -585,11 +515,5 @@ def hints_for(step, grade):
 
 def public_steps(ex):
     """The steps without expected answers."""
-    out = []
-    for s in ex["steps"]:
-        item = {"id": s["id"], "points": s["points"],
-                "questions": [{k: v for k, v in q.items() if k != "expected"} for q in s["questions"]]}
-        if "tableaus" in s:
-            item["tableaus"] = s["tableaus"]
-        out.append(item)
-    return out
+    return [{"id": s["id"], "points": s["points"],
+             "questions": [{k: v for k, v in q.items() if k != "expected"} for q in s["questions"]]} for s in ex["steps"]]

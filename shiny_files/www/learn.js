@@ -52,7 +52,8 @@
     }
     return /^-?(\d+\.?\d*|\.\d+)(e-?\d+)?$/i.test(s) ? Number(s) : NaN;
   }
-  function pt(x, y) { return "(" + fmt(x) + " | " + fmt(y) + ")"; }
+  // a point; no line break inside it (narrow buttons on phones)
+  function pt(x, y) { return "(" + fmt(x) + "\u00a0|\u00a0" + fmt(y) + ")"; }
   var NONE = ["-", "–", "—", "--", "keiner", "keine", "kein", "none", "no", "n/a"];
   function isNone(v) { return NONE.indexOf(String(v === undefined || v === null ? "" : v).trim().toLowerCase()) >= 0; }
   // a1·x1 + a2·x2 as on “Model & solution”: no zero terms, no written 1
@@ -74,20 +75,33 @@
   // ------------------------------------------------------------------ state
   var S = {
     view: "home",
-    opts: { difficulty: "easy", form: "text", kind: "LP", mode: "practice", method: "both", topic: "random", sensitivity: false, simplex: false },
-    ownOpts: { mode: "practice", method: "both", sensitivity: false, simplex: false },
-    more: false, ownMore: false, own: null,
-    ex: null, step: 0, answers: {}, feedback: {}, hints: {}, solutions: {}, result: null,
-    activeRow: 0, level: null, help: false, sidebar: true, tableaus: 1, busy: null
+    opts: { difficulty: "easy", form: "text", kind: "LP", mode: "practice", topic: "random" },
+    ownOpts: { mode: "practice" },
+    more: false, own: null,
+    ex: null, step: 0, answers: {}, feedback: {}, hints: {}, solutions: {}, solWay: {}, result: null,
+    activeRow: 0, level: null, help: false, sidebar: true, busy: null
   };
 
+  // steps of the exercise; the first one ("task", added in the browser) only shows the task and has no points
   function steps() { return S.ex ? S.ex.steps : []; }
+  function graded() { return steps().filter(function (s) { return s.id !== "task"; }); }
+  function stepIndex(id) { return steps().findIndex(function (s) { return s.id === id; }); }
+  function isModel(sid) { return sid === "objective" || sid === "constraints"; }
   function cur() { return steps()[S.step]; }
   function nRows() { return S.ex ? S.ex.colors.length : 0; }
   function exam() { return S.ex && S.ex.options.mode === "exam"; }
   function tutorial() { return S.ex && S.ex.source === "tutorial"; }
   function textTask() { return S.ex && S.ex.options.form === "text"; }
-  function hasGraph() { return S.ex && S.ex.options.method !== "calc"; }
+  // while the model is set up the graph would stay empty: it appears with the lines
+  function showsGraph() { return !isModel(cur().id); }
+  // LP: the optimal corner is found with the objective line, then calculated; integer tasks pick a point instead
+  function hasCorner() { return stepIndex("corner") >= 0; }
+  function tapsPoint(sid) { return sid === "optimum" && !hasCorner(); }
+  function dragsObjective(sid) { return sid === "corner" || tapsPoint(sid); }
+  function picked() {
+    var a = S.answers.corner || {};
+    return [a.boundary1, a.boundary2].filter(function (v) { return v !== undefined && v !== ""; });
+  }
   function ans(sid) { return S.answers[sid] || (S.answers[sid] = {}); }
   function val(sid, key) { var a = S.answers[sid]; return a && a[key] !== undefined ? a[key] : ""; }
   function label(i) { return S.ex.labels[i]; }
@@ -96,7 +110,7 @@
   // the model the graph and the step texts use: given, or the learner's own from step 1
   function model() {
     if (S.ex.model) return S.ex.model;
-    var a = S.answers.model || {};
+    var a = Object.assign({}, S.answers.objective, S.answers.constraints);
     var rows = [];
     for (var i = 0; i < nRows(); i++) {
       rows.push({ a: [num(a["a" + i + "_0"]), num(a["a" + i + "_1"])], op: a["op" + i] || "", b: num(a["b" + i]) });
@@ -212,14 +226,11 @@
   }
 
   // ------------------------------------------------------------------ start page
-  function practiceSimplexOk() { return S.opts.form === "math" && S.opts.kind === "LP"; }
-
   function homeHTML() {
     var o = S.opts, oo = S.ownOpts;
-    var diff = seg("o-difficulty", [["easy", L("diff_easy")], ["medium", L("diff_medium")], ["hard", L("diff_hard")]], o.difficulty, 'data-opt="difficulty" aria-label="' + esc(L("opt_difficulty")) + '"');
+    var diff = seg("o-difficulty", [["easy", L("diff_easy")], ["medium", L("diff_medium")]], o.difficulty, 'data-opt="difficulty" aria-label="' + esc(L("opt_difficulty")) + '"');
     var form = seg("o-form", [["text", L("form_text")], ["math", L("form_math")]], o.form, 'data-opt="form" aria-label="' + esc(L("opt_form")) + '"');
-    var kind = seg("o-kind", [["LP", L("kind_LP")], ["ILP", L("kind_ILP")], ["MILP", L("kind_MILP")]], o.kind, 'data-opt="kind" aria-label="' + esc(L("opt_kind")) + '"');
-    var methodItems = [["both", L("method_both")], ["graph", L("method_graph")], ["calc", L("method_calc")]];
+    var kind = seg("o-kind", [["LP", L("kind_LP")], ["ILP", L("kind_ILP")]], o.kind, 'data-opt="kind" aria-label="' + esc(L("opt_kind")) + '"');
     var topics = ["random", "gastro", "production", "farming", "events", "transport", "advertising"];
 
     var practice =
@@ -228,11 +239,8 @@
       '<div class="ol-field"><div class="ol-field-label">' + esc(L("opt_kind")) + "</div>" + kind + '<p class="ol-field-hint">' + esc(L("kind_" + o.kind + "_hint")) + "</p></div>" +
       switchRow("o-exam", L("opt_exam"), L("opt_exam_hint"), o.mode === "exam", false, 'data-opt="mode"') +
       '<details class="ol-more"' + (S.more ? " open" : "") + ' data-more="practice"><summary>' + esc(L("more_options")) + "</summary>" +
-      '<div class="ol-field"><div class="ol-field-label">' + esc(L("opt_method")) + "</div>" + seg("o-method", methodItems, o.method, 'data-opt="method" aria-label="' + esc(L("opt_method")) + '"', "is-small") + "</div>" +
       '<div class="ol-field"><label class="ol-field-label" for="o-topic">' + esc(L("opt_topic")) + '</label><select id="o-topic" class="form-select ol-select" data-opt="topic">' +
       topics.map(function (tp) { return '<option value="' + tp + '"' + (o.topic === tp ? " selected" : "") + ">" + esc(L("topic_" + tp)) + "</option>"; }).join("") + "</select></div>" +
-      switchRow("o-sens", L("opt_sens"), L("opt_sens_hint"), o.sensitivity, false, 'data-opt="sensitivity"') +
-      switchRow("o-simplex", L("opt_simplex"), practiceSimplexOk() ? L("opt_simplex_hint") : L("opt_simplex_off"), o.simplex && practiceSimplexOk(), !practiceSimplexOk(), 'data-opt="simplex"') +
       "</details>";
 
     var own = S.own;
@@ -244,18 +252,13 @@
         }).join("") + '<div class="ol-mini-row ol-mini-type">' + esc(T("type_" + own.kind.replace(/[12]$/, ""))) + "</div></div>";
       ownBody = rows +
         switchRow("oo-exam", L("opt_exam"), L("opt_exam_hint"), oo.mode === "exam", false, 'data-own-opt="mode"') +
-        '<details class="ol-more"' + (S.ownMore ? " open" : "") + ' data-more="own"><summary>' + esc(L("more_options")) + "</summary>" +
-        '<div class="ol-field"><div class="ol-field-label">' + esc(L("opt_method")) + "</div>" + seg("oo-method", methodItems, oo.method, 'data-own-opt="method" aria-label="' + esc(L("opt_method")) + '"', "is-small") + "</div>" +
-        switchRow("oo-sens", L("opt_sens"), L("opt_sens_hint"), oo.sensitivity, false, 'data-own-opt="sensitivity"') +
-        switchRow("oo-simplex", L("opt_simplex"), own.simplex ? L("opt_simplex_hint_own") : L("opt_simplex_off_own"), oo.simplex && own.simplex, !own.simplex, 'data-own-opt="simplex"') +
-        "</details>" +
         '<button class="btn os-btn os-btn-primary ol-cta" id="ol-start-own" data-act="own">' + esc(L("start_own")) + "</button>";
     } else {
       ownBody = '<div class="ol-empty"><p>' + esc(L("own_empty")) + '</p><button class="btn os-btn" id="ol-goto-work" data-act="goto-work">' + esc(L("own_goto")) + "</button></div>" +
         '<button class="btn os-btn os-btn-primary ol-cta" disabled>' + esc(L("start_own")) + "</button>";
     }
 
-    var flow = ["flow_model", "flow_lines", "flow_optimum", "flow_sens", "flow_result"];
+    var flow = ["flow_task", "flow_model", "flow_lines", "flow_optimum", "flow_slack", "flow_result"];
     return '<div class="ol-page">' +
       '<header class="ol-hero"><h1>' + esc(L("home_title")) + "</h1><p>" + esc(L("home_lead")) + "</p></header>" +
       '<div class="ol-cards">' +
@@ -282,8 +285,9 @@
   // ------------------------------------------------------------------ starting and ending an exercise
   function startWith(action, payload) {
     return busy(action, call(action, payload)).then(function (ex) {
-      S.ex = ex; S.step = 0; S.answers = {}; S.feedback = {}; S.hints = {}; S.solutions = ex.solutions || {}; S.result = null;
-      S.activeRow = 0; S.level = null; S.tableaus = 1; S.help = false; S.view = "work";
+      ex.steps.unshift({ id: "task", questions: [], points: 0 });   // first read the task, then enter answers
+      S.ex = ex; S.step = 0; S.answers = {}; S.feedback = {}; S.hints = {}; S.solutions = ex.solutions || {}; S.solWay = {}; S.result = null;
+      S.activeRow = 0; S.level = null; S.help = false; S.view = "work";
       S.sidebar = true; S.taskOpen = null;
       render();
       var el = root();
@@ -301,11 +305,10 @@
   }
 
   // ------------------------------------------------------------------ workspace
-  var SHORT = { model: "short_model", lines: "short_lines", region: "short_region", intersection: "short_intersection", optimum: "short_optimum", sensitivity: "short_sensitivity", interpret: "short_interpret", simplex: "short_simplex" };
+  var SHORT = { task: "short_task", objective: "short_objective", constraints: "short_constraints", lines: "short_lines", region: "short_region", corner: "short_corner", optimum: "short_optimum", slack: "short_slack", interpret: "short_interpret" };
 
-  function sensOnlySlack(s) { return s.id === "sensitivity" && !s.questions.some(function (q) { return /^(shadow|range|idelta)/.test(q.key); }); }
-  function stepTitle(s) { return L(sensOnlySlack(s) ? "step_slack" : "step_" + s.id); }
-  function stepShort(s) { return L(sensOnlySlack(s) ? "short_slack" : SHORT[s.id]); }
+  function stepTitle(s) { return L(s.id === "optimum" && hasCorner() ? "step_optimum_calc" : "step_" + s.id); }
+  function stepShort(s) { return L(SHORT[s.id]); }
 
   function filled(s) {
     return s.questions.filter(function (q) { return String(val(s.id, q.key)).trim() !== ""; }).length;
@@ -330,9 +333,9 @@
       '</ol><button type="button" class="btn btn-link os-header-action" id="ol-quit" data-act="quit">' + esc(L("quit")) + "</button></nav>";
   }
 
-  function sideHTML() {
-    var st = S.ex.story, m = model(), s = cur(), html = "";
-    var task = '<h3 class="ol-story-title">' + esc(st.title) + "</h3>";
+  // the task text (word problems) or the given model (formulas)
+  function taskHTML() {
+    var st = S.ex.story, task = '<h3 class="ol-story-title">' + esc(st.title) + "</h3>";
     if (st.intro) {
       task += '<p class="ol-story-intro">' + esc(st.intro) + "</p>" +
         '<div class="ol-sought"><span class="ol-sought-title">' + esc(L("story_sought")) + "</span>" +
@@ -347,25 +350,32 @@
       task += modelListHTML(S.ex.model, false);
     }
     if (st.question) task += '<p class="ol-story-q">' + esc(st.question) + "</p>";
-    var open = S.taskOpen !== null ? S.taskOpen : window.innerWidth >= 1024 || s.id === "model";
-    if (tutorial()) html += coachHTML(s);
+    return task;
+  }
+
+  function sideHTML() {
+    var m = model(), s = cur(), html = "";
+    // phones: the task was read in step 1 and would push the step far down – one tap opens it.
+    // Word problems: once the model is set up, “Your model” stands in for the long task text.
+    var open = S.taskOpen !== null ? S.taskOpen : !phone() && (isModel(s.id) || (window.innerWidth >= 1024 && !textTask()));
+    if (tutorial() && !phone()) html += coachHTML(s);
     html += '<details class="os-card ol-panel ol-task"' + (open ? " open" : "") + '><summary class="ol-panel-head"><h2>' + esc(L("task")) + "</h2>" +
-      '<span class="ol-task-title">' + esc(st.title) + '</span></summary><div class="ol-panel-body">' + task + "</div></details>";
-    if (!exam()) html += helpCardHTML(s);
-    if (textTask() && s.id !== "model") {
-      html += '<section class="os-card ol-panel ol-yourmodel"><header class="ol-panel-head"><h2>' + esc(L("your_model")) + '</h2><button type="button" class="btn btn-link os-header-action" data-act="goto" data-step="0">' + esc(L("edit_model")) + '</button></header><div class="ol-panel-body">' + modelListHTML(m, true) + "</div></section>";
+      '<span class="ol-task-title">' + esc(S.ex.story.title) + '</span></summary><div class="ol-panel-body">' + taskHTML() + "</div></details>";
+    if (textTask() && !isModel(s.id)) {
+      html += '<section class="os-card ol-panel ol-yourmodel"><header class="ol-panel-head"><h2>' + esc(L("your_model")) + '</h2><button type="button" class="btn btn-link os-header-action" data-act="goto" data-step="' + stepIndex("objective") + '">' + esc(L("edit_model")) + '</button></header><div class="ol-panel-body">' + modelListHTML(m, true) + "</div></section>";
     }
     return '<aside class="ol-side" aria-label="' + esc(L("task")) + '">' + html + "</aside>";
   }
 
   function modelListHTML(m, own) {
-    var obj = isNum(m.c[0]) || isNum(m.c[1]) || !own ? "<b>F</b> = " + esc(formula(m.c)) + " → " + esc(m.sense || "?") : '<span class="ol-muted">' + esc(L("model_incomplete")) + "</span>";
+    // names in front, as in the task: “Revenue: F = …”, “C1 Buns: …”
+    var obj = (fName() ? "<b>" + esc(fName()) + ":</b> " : "") +
+      (isNum(m.c[0]) || isNum(m.c[1]) || !own ? "F = " + esc(formula(m.c)) + " → " + esc(m.sense || "?") : '<span class="ol-muted">' + esc(L("model_incomplete")) + "</span>");
     var rows = m.rows.map(function (r, i) {
       var text = rowComplete(r) ? esc(formula(r.a)) + " " + OP[r.op] + " " + esc(fmt(r.b)) : '<span class="ol-muted">' + esc(L("model_incomplete")) + "</span>";
-      var name = S.ex.names && S.ex.names[i] ? ' <span class="ol-muted">· ' + esc(S.ex.names[i]) + "</span>" : "";
-      return '<div class="ol-mini-row">' + swatch(color(i)) + '<span><b style="color:' + color(i) + '">' + esc(label(i)) + ":</b> " + text + name + "</span></div>";
+      return '<div class="ol-mini-row">' + swatch(color(i)) + '<span><b style="color:' + color(i) + '">' + esc(boundaryName(i)) + ":</b> " + text + "</span></div>";
     }).join("");
-    var a = S.answers.model || {};
+    var a = S.answers.objective || {};
     var vt = own && (!a.vt0 || !a.vt1) ? '<span class="ol-muted">' + esc(L("model_incomplete")) + "</span>" :
       "x1 " + esc(T(ints(m.kind)[0] ? "integer_short" : "continuous_short")) + ", x2 " + esc(T(ints(m.kind)[1] ? "integer_short" : "continuous_short"));
     return '<div class="ol-mini-list"><div class="ol-mini-row">' + swatch(GREEN, true) + "<span>" + obj + "</span></div>" + rows +
@@ -373,8 +383,10 @@
   }
 
   function workHTML() {
-    var cls = "ol-work" + (hasGraph() ? "" : " is-calc") + (S.sidebar ? "" : " no-side");
-    return '<div class="' + cls + '" data-step="' + cur().id + '">' + stepperHTML() + (S.sidebar ? sideHTML() : "") + (hasGraph() ? graphCardHTML() : "") + stepCardHTML() + "</div>";
+    // the first step shows only the task: one reading column, no graph yet
+    if (cur().id === "task") return '<div class="ol-work is-intro" data-step="task">' + stepperHTML() + stepCardHTML() + "</div>";
+    var cls = "ol-work" + (showsGraph() ? "" : " no-graph") + (S.sidebar ? "" : " no-side");
+    return '<div class="' + cls + '" data-step="' + cur().id + '">' + stepperHTML() + (S.sidebar ? sideHTML() : "") + (showsGraph() ? graphCardHTML() : "") + stepCardHTML() + "</div>";
   }
 
   function sidebarButton() {
@@ -383,38 +395,37 @@
 
   // ------------------------------------------------------------------ step card
   function stepCardHTML() {
-    var s = cur(), total = steps().length;
-    var head = '<header class="ol-panel-head ol-step-head">' + (hasGraph() ? "" : sidebarButton()) +
-      '<div class="ol-step-heading"><div class="ol-step-meta">' + esc(L("step_of", { n: S.step + 1, total: total })) + " · " + esc(L("points", { n: s.points })) + "</div>" +
+    var s = cur(), total = steps().length, intro = s.id === "task";
+    var head = '<header class="ol-panel-head ol-step-head">' + (showsGraph() || intro ? "" : sidebarButton()) +
+      '<div class="ol-step-heading"><div class="ol-step-meta">' + esc(L("step_of", { n: S.step + 1, total: total })) + (intro ? "" : " · " + esc(L("points", { n: s.points }))) + "</div>" +
       '<h2 class="ol-step-title" id="ol-step-title">' + esc(stepTitle(s)) + "</h2></div>" +
-      (exam() ? "" : '<button type="button" class="os-help' + (S.help ? " is-on" : "") + '" id="ol-help" data-act="help" aria-expanded="' + S.help + '" aria-label="' + esc(L("help_title")) + '" title="' + esc(L("help_title")) + '">?</button>') +
+      (exam() || intro ? "" : '<button type="button" class="os-help' + (S.help ? " is-on" : "") + '" id="ol-help" data-act="help" aria-expanded="' + S.help + '" aria-label="' + esc(L("help_title")) + '" title="' + esc(L("help_title")) + '">?</button>') +
       "</header>";
-    var body = "";
-    if (textTask() && s.id !== "model" && !tutorial()) {
-      var fb = S.feedback.model;
-      if (!exam() && (!fb || fb.stale || !fb.correct)) body += '<div class="ol-banner is-info">' + esc(L(fb && !fb.stale ? "model_notice_wrong" : "model_notice")) + "</div>";
+    var body = S.help && !exam() && !intro ? howtoHTML(s) : "";
+    if (textTask() && !intro && !isModel(s.id) && !tutorial() && !exam()) {
+      var fbs = [S.feedback.objective, S.feedback.constraints];
+      var wrong = fbs.some(function (f) { return f && !f.stale && !f.correct; });
+      if (wrong || fbs.some(function (f) { return !f || f.stale; })) body += '<div class="ol-banner is-info">' + esc(L(wrong ? "model_notice_wrong" : "model_notice")) + "</div>";
     }
-    body += '<p class="ol-lead">' + esc(lead(s)) + "</p>";
-    body += ({ model: modelStep, lines: linesStep, region: regionStep, intersection: crossStep, optimum: optimumStep, sensitivity: sensStep, interpret: interpretStep, simplex: simplexStep })[s.id](s);
+    // phones, guided example: the explanation of the example stands in for the general lead, right above the fields
+    body += tutorial() && phone() && !intro ? coachInlineHTML(s) : '<p class="ol-lead">' + esc(lead(s)) + "</p>";
+    body += ({ task: taskStep, objective: objectiveStep, constraints: constraintsStep, lines: linesStep, region: regionStep, corner: cornerStep, optimum: optimumStep, slack: slackStep, interpret: interpretStep })[s.id](s);
     body += feedbackHTML(s) + hintHTML(s) + solutionHTML(s);
 
     var last = S.step === total - 1, fbS = S.feedback[s.id], solved = fbS && !fbS.stale && fbS.correct;
     var foot = '<footer class="ol-step-foot">' +
       '<button type="button" class="ol-icon-btn" id="ol-prev" data-act="prev" aria-label="' + esc(L("back")) + '" title="' + esc(L("back")) + '"' + (S.step === 0 ? " disabled" : "") + ">‹</button>" +
-      (exam() ? "" : '<button type="button" class="ol-link-btn" id="ol-hint" data-act="hint">' + esc(L("hint")) + '</button><button type="button" class="ol-link-btn" id="ol-solution" data-act="solution">' + esc(L("solution")) + "</button>") +
+      (exam() || intro ? "" : '<button type="button" class="ol-link-btn" id="ol-hint" data-act="hint">' + esc(L("hint")) + '</button><button type="button" class="ol-link-btn" id="ol-solution" data-act="solution">' + esc(L("solution")) + "</button>") +
       '<span class="ol-grow"></span>' +
-      (exam() ? "" : '<button type="button" class="btn os-btn' + (solved ? "" : " os-btn-primary") + '" id="ol-check" data-act="check">' + esc(L("check")) + "</button>") +
-      '<button type="button" class="btn os-btn' + (solved || exam() || last ? " os-btn-primary" : "") + '" id="ol-next" data-act="' + (last ? "finish" : "next") + '">' +
+      (exam() || intro ? "" : '<button type="button" class="btn os-btn' + (solved ? "" : " os-btn-primary") + '" id="ol-check" data-act="check">' + esc(L("check")) + "</button>") +
+      '<button type="button" class="btn os-btn' + (solved || exam() || last || intro ? " os-btn-primary" : "") + '" id="ol-next" data-act="' + (last ? "finish" : "next") + '">' +
       esc(last ? L(tutorial() ? "finish_short" : "to_submit") : L("next")) + " ›</button></footer>";
     return '<section class="os-card ol-panel ol-stepcard" aria-labelledby="ol-step-title">' + head + '<div class="ol-step-body">' + body + "</div>" + foot + "</section>";
   }
 
   function lead(s) {
-    if (s.id === "optimum") return L(hasGraph() ? "lead_optimum" : "lead_optimum_calc");
-    if (s.id === "sensitivity") {
-      var keys = s.questions.map(function (q) { return q.key; });
-      return L(keys.indexOf("shadow0") >= 0 ? "lead_sensitivity_full" : keys.indexOf("idelta") >= 0 ? "lead_sensitivity_int" : "lead_sensitivity");
-    }
+    if (s.id === "task") return L(textTask() ? "lead_task_text" : "lead_task_math");
+    if (s.id === "optimum") return L(hasCorner() ? "lead_optimum_calc" : "lead_optimum");
     if (s.id === "lines" && tutorial()) return L("lead_lines");
     return L("lead_" + s.id);
   }
@@ -423,7 +434,7 @@
   function input(sid, key, aria, ph, wide, text) {
     var v = val(sid, key), mark = markOf(sid, key);
     return '<input class="ol-in' + (wide ? " is-wide" : "") + mark + '" id="q-' + key + '" data-q="' + key + '" value="' + esc(v) + '" autocomplete="off" spellcheck="false" inputmode="' + (text ? "text" : "decimal") + '"' +
-      (ph ? ' placeholder="' + esc(ph) + '"' : "") + ' aria-label="' + esc(aria) + '"' + (locked(key) ? " readonly" : "") + ">";
+      (ph ? ' placeholder="' + esc(ph) + '"' : "") + ' aria-label="' + esc(aria) + '">';
   }
   function choice(sid, key, items, aria, cls) {
     var mark = markOf(sid, key), empty = !mark && String(val(sid, key)) === "" ? " is-empty" : "";
@@ -443,10 +454,6 @@
     if (fb.checks[key]) return " is-right";
     return String(val(sid, key)).trim() === "" ? " is-missing" : " is-wrong";
   }
-  function locked(key) {
-    var m = /^(enter|leave|pivot|nextz)(\d+)$/.exec(key);
-    return !!(m && exam() && Number(m[2]) < S.tableaus - 1);
-  }
   function rowHead(i, eq) {
     var name = S.ex.names && S.ex.names[i] ? '<span class="ol-row-name">' + esc(S.ex.names[i]) + "</span>" : "";
     return '<div class="ol-row-head">' + swatch(color(i)) + '<b style="color:' + color(i) + '">' + esc(label(i)) + "</b>" + name +
@@ -458,19 +465,35 @@
     return esc(formula(r.a)) + " " + (withOp ? OP[r.op] || "?" : "=") + " " + esc(fmt(r.b));
   }
 
-  function modelStep(s) {
-    var sid = s.id, h = "";
-    h += '<section class="ol-group" data-group="obj"><h3 class="ol-group-title">' + esc(T("objective_function")) + "</h3>" +
+  // the task, then once how the following steps work (exam mode: without hints and solutions)
+  function taskStep() {
+    var tips = (exam() ? [] : ["intro_help", "intro_check", "intro_solution"]).concat("task_note");
+    return '<div class="ol-intro"><div>' + taskHTML() + '</div><section class="ol-note ol-howto"><h3 class="ol-note-title">' + esc(L("intro_title")) + "</h3><ul>" +
+      tips.map(function (k) { return "<li>" + esc(L(k)) + "</li>"; }).join("") + "</ul></section></div>";
+  }
+
+  // phones, word problems: the sentence of the task that belongs to these fields, right above them
+  // (the task card is closed there – otherwise the fields would move far down)
+  function storyHint(text) { return textTask() && phone() && text ? '<p class="ol-story-inline">' + esc(text) + "</p>" : ""; }
+
+  function objectiveStep(s) {
+    var sid = s.id, h = "", st = S.ex.story;
+    h += '<section class="ol-group" data-group="obj"><h3 class="ol-group-title">' + esc(T("objective_function") + (fName() ? ": " + fName() : "")) + "</h3>" + storyHint(st.objective) +
       '<div class="ol-formula is-capped">' + sym("F =") + cell(cap("c1"), input(sid, "c0", L("a_c", { n: 1 }))) + sym("·x1 +") + cell(cap("c2"), input(sid, "c1", L("a_c", { n: 2 }))) + sym("·x2 →") +
       cell(pickCap(sid, "sense", "cap_sense", "cap_sense_pick"), choice(sid, "sense", [["max", "max"], ["min", "min"]], L("a_sense"), "is-inline")) + "</div></section>";
-    h += '<section class="ol-group" data-group="vt"><h3 class="ol-group-title">' + esc(L("g_range")) + "</h3>" +
+    var dom = st.domain || [];   // one sentence per variable, or one for both
+    h += '<section class="ol-group" data-group="vt"><h3 class="ol-group-title">' + esc(L("g_range")) + "</h3>" + (dom.length === 2 ? "" : storyHint(dom.join(" "))) +
       [0, 1].map(function (j) {
-        return '<div class="ol-vt-row"><span class="os-var">x' + (j + 1) + "</span>" + choice(sid, "vt" + j, [["con", esc(T("continuous_short"))], ["int", esc(T("integer_short"))]], L("a_vt", { n: j + 1 })) + "</div>";
+        return (dom.length === 2 ? storyHint(dom[j]) : "") + '<div class="ol-vt-row"><span class="os-var">x' + (j + 1) + "</span>" + choice(sid, "vt" + j, [["con", esc(T("continuous_short"))], ["int", esc(T("integer_short"))]], L("a_vt", { n: j + 1 })) + "</div>";
       }).join("") + "</section>";
-    h += '<section class="ol-group"><h3 class="ol-group-title">' + esc(T("constraints")) + "</h3>";
+    return h;
+  }
+
+  function constraintsStep(s) {
+    var sid = s.id, h = '<section class="ol-group"><h3 class="ol-group-title">' + esc(T("constraints")) + "</h3>";
     for (var i = 0; i < nRows(); i++) {
       var lab = label(i);
-      h += '<div class="ol-row" data-group="row' + i + '">' + rowHead(i) + '<div class="ol-formula is-capped">' +
+      h += '<div class="ol-row" data-group="row' + i + '">' + rowHead(i) + storyHint((S.ex.story.rows || [])[i]) + '<div class="ol-formula is-capped">' +
         cell(cap("a1"), input(sid, "a" + i + "_0", L("a_a", { label: lab, n: 1 }))) + sym("·x1 +") +
         cell(cap("a2"), input(sid, "a" + i + "_1", L("a_a", { label: lab, n: 2 }))) + sym("·x2") +
         cell(pickCap(sid, "op" + i, "cap_op", "cap_op_pick"), choice(sid, "op" + i, [["<=", "≤"], [">=", "≥"], ["=", "="]], L("a_op", { label: lab }), "is-inline is-ops")) +
@@ -495,13 +518,13 @@
   }
 
   function regionStep(s) {
-    var h = '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_sides")) + "</h3>";
+    var h = '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_sides")) + '</h3><p class="ol-field-hint">' + esc(L("sides_how")) + "</p>";
     for (var i = 0; i < nRows(); i++) {
       var tp = S.ex.testPoints[i];
       h += '<div class="ol-row ol-pick' + (i === S.activeRow ? " is-active" : "") + '" data-row="' + i + '" data-group="row' + i + '">' + rowHead(i, rowEq(i, true)) +
         choice(s.id, "side" + i, [["in", esc(L("side_in", { p: pt(tp[0], tp[1]) }))], ["out", esc(L("side_out"))], ["line", esc(L("side_line"))]], L("a_side", { label: label(i) }), "is-wrap") + "</div>";
     }
-    h += '</section><section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_points")) + "</h3>";
+    h += '</section><section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_points")) + '</h3><p class="ol-field-hint">' + esc(L("points_how")) + "</p>";
     S.ex.points.forEach(function (p, n) {
       h += '<div class="ol-check-row"><span class="ol-pt-label"><b>P' + (n + 1) + "</b> " + pt(p[0], p[1]) + "</span>" +
         choice(s.id, "p" + n, [["yes", esc(L("feasible_yes"))], ["no", esc(L("feasible_no"))]], L("a_point", { n: n + 1 }), "is-inline") + "</div>";
@@ -510,49 +533,45 @@
   }
 
   function boundaryName(i) {
-    return i < nRows() ? label(i) : i === nRows() ? L("axis_x1") : L("axis_x2");
+    return i < nRows() ? label(i) + (S.ex.names && S.ex.names[i] ? " " + S.ex.names[i] : "") : i === nRows() ? L("axis_x1") : L("axis_x2");
   }
-  function crossStep(s) {
-    var a = ans(s.id), picked = [a.boundary1, a.boundary2].filter(function (v) { return v !== undefined && v !== ""; });
-    var chips = "";
+  // what F stands for (revenue, costs …) in word problems
+  function fName() { return S.ex.story && S.ex.story.fname; }
+  function cornerStep(s) {
+    var picks = picked(), chips = "";
     for (var i = 0; i < nRows() + 2; i++) {
-      var on = picked.indexOf(String(i)) >= 0;
+      var on = picks.indexOf(String(i)) >= 0;
       chips += '<button type="button" class="ol-chip' + (on ? " is-on" + markOf(s.id, "boundary1") : "") + '" id="ol-b-' + i + '" data-act="boundary" data-b="' + i + '" aria-pressed="' + on + '">' +
-        (i < nRows() ? swatch(color(i)) : "") + esc(boundaryName(i)) + (i < nRows() ? '<span class="ol-chip-eq">' + rowEq(i, false) + "</span>" : "") + "</button>";
+        (i < nRows() ? swatch(color(i)) : "") + "<b>" + esc(boundaryName(i)) + "</b>" + (i < nRows() ? '<span class="ol-chip-eq">' + rowEq(i, false) + "</span>" : "") + "</button>";
     }
     return '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_pick")) + '</h3><div class="ol-chips">' + chips + "</div>" +
-      '<p class="ol-field-hint">' + esc(picked.length === 2 ? L("picked", { a: boundaryName(+picked[0]), b: boundaryName(+picked[1]) }) : L("pick_two")) + "</p></section>" +
-      '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_cross")) + '</h3><div class="ol-formula"><span class="ol-sym">(</span>' +
-      input(s.id, "crossx", L("a_cross", { n: 1 }), "x1") + '<span class="ol-sym">|</span>' + input(s.id, "crossy", L("a_cross", { n: 2 }), "x2") + '<span class="ol-sym">)</span></div></section>';
+      '<p class="ol-field-hint">' + esc(picks.length === 2 ? L("picked", { a: boundaryName(+picks[0]), b: boundaryName(+picks[1]) }) : L("pick_two")) + "</p></section>";
   }
 
   function optimumStep(s) {
-    return '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_optimum")) + '</h3><div class="ol-formula"><span class="ol-sym">x* = (</span>' +
+    var h = "";
+    if (hasCorner()) {
+      // the corner from the step before: the two equations to solve
+      var picks = picked();
+      h = picks.length === 2 ? '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_your_corner")) + "</h3>" + picks.map(function (b) {
+        return +b < nRows() ? rowHead(+b, rowEq(+b, false)) : '<div class="ol-row-head"><b>' + esc(boundaryName(+b)) + "</b></div>";
+      }).join("") + "</section>" : '<div class="ol-banner is-info">' + esc(L("corner_missing")) + "</div>";
+    }
+    return h + '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_optimum")) + '</h3><div class="ol-formula"><span class="ol-sym">x* = (</span>' +
       input(s.id, "x", L("a_opt", { n: 1 }), "x1") + '<span class="ol-sym">|</span>' + input(s.id, "y", L("a_opt", { n: 2 }), "x2") + '<span class="ol-sym">)</span></div></section>' +
-      '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_value")) + '</h3><div class="ol-formula"><span class="ol-sym">F =</span>' + input(s.id, "z", L("a_z"), "", true) + "</div></section>";
+      '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_value") + (fName() ? " (" + fName() + ")" : "")) + '</h3><div class="ol-formula"><span class="ol-sym">F =</span>' + input(s.id, "z", L("a_z"), "", true) + "</div></section>";
   }
 
-  function sensStep(s) {
-    var keys = s.questions.map(function (q) { return q.key; }), shadow = keys.indexOf("shadow0") >= 0;
+  // what is left over of every constraint at the optimum, and whether it is used up (binding)
+  function slackStep(s) {
     var o = S.answers.optimum || {}, h = "";
     if (o.x || o.y) h += '<p class="ol-ref">' + esc(L("your_opt")) + " <b>" + pt(num(o.x), num(o.y)) + "</b></p>";
-    h += '<table class="ol-sens"><thead><tr><th>' + esc(T("col_constraint")) + "</th><th>" + esc(T("col_slack")) + "</th>" + (shadow ? "<th>" + esc(T("col_shadow")) + "</th>" : "") + "</tr></thead><tbody>";
+    h += '<table class="ol-sens"><thead><tr><th>' + esc(T("col_constraint")) + "</th><th>" + esc(T("col_slack")) + "</th><th>" + esc(L("g_bind")) + "</th></tr></thead><tbody>";
     for (var i = 0; i < nRows(); i++) {
       h += '<tr data-group="row' + i + '"><th scope="row">' + rowHead(i) + '<div class="ol-eq-small">' + rowEq(i, true) + "</div></th><td>" + input(s.id, "slack" + i, L("a_slack", { label: label(i) })) + "</td>" +
-        (shadow ? "<td>" + input(s.id, "shadow" + i, L("a_shadow", { label: label(i) }), "", false, true) + "</td>" : "") + "</tr>";
+        "<td>" + choice(s.id, "bind" + i, [["yes", esc(L("bind_yes"))], ["no", esc(L("bind_no"))]], L("a_bind", { label: label(i) }), "is-inline") + "</td></tr>";
     }
-    h += "</tbody></table>";
-    if (keys.indexOf("range0_0") >= 0) {
-      h += '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_ranges")) + "</h3>" + [0, 1].map(function (j) {
-        return '<div class="ol-formula">' + input(s.id, "range" + j + "_0", L("a_rlo", { n: j + 1 }), "", false, true) + '<span class="ol-sym">≤ c' + (j + 1) + " ≤</span>" +
-          input(s.id, "range" + j + "_1", L("a_rhi", { n: j + 1 }), "", false, true) + "</div>";
-      }).join("") + '<p class="ol-field-hint">' + esc(L("inf_hint")) + "</p></section>";
-    }
-    if (keys.indexOf("idelta") >= 0) {
-      h += '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("g_idelta", { label: label(0) })) + '</h3><div class="ol-formula"><span class="ol-sym">ΔF =</span>' +
-        input(s.id, "idelta", L("a_idelta", { label: label(0) }), "", false, true) + "</div></section>";
-    }
-    return h;
+    return h + "</tbody></table>";
   }
 
   function interpretStep(s) {
@@ -565,42 +584,12 @@
     }).join("");
   }
 
-  function colName(j) { return j < 2 ? "x" + (j + 1) : "s" + (j - 1); }
-  function simplexStep(s) {
-    var a = ans(s.id), h = '<p class="ol-field-hint">' + esc(L("pick_hint")) + "</p>";
-    var shown = Math.min(S.tableaus, s.tableaus.length);
-    for (var i = 0; i < shown; i++) {
-      var t = s.tableaus[i], col = Number(a["enter" + i]) - 1, row = Number(a["leave" + i]);
-      var lockT = locked("enter" + i);
-      h += '<section class="ol-group"><h3 class="ol-group-title">' + esc(L("tableau_n", { n: i + 1 })) + '</h3><div class="ol-scroll"><table class="ol-tableau"><thead><tr><th></th>' +
-        t[0].map(function (_, j) {
-          if (j === t[0].length - 1) return '<th class="ol-rs">' + esc(L("rhs")) + "</th>" + (exam() ? "" : '<th class="ol-q">Q</th>');
-          return '<th><button type="button" class="ol-tb' + (col === j ? " is-on" : "") + '" id="ol-tc-' + i + "-" + j + '" data-act="pivot" data-key="enter' + i + '" data-value="' + (j + 1) + '" aria-pressed="' + (col === j) + '"' + (lockT ? " disabled" : "") + ">" + colName(j) + "</button></th>";
-        }).join("") + "</tr></thead><tbody>" +
-        t.map(function (r, k) {
-          return "<tr><th>" + (k === 0 ? '<span class="ol-tb is-static">F</span>' : '<button type="button" class="ol-tb' + (row === k ? " is-on" : "") + '" id="ol-tr-' + i + "-" + k + '" data-act="pivot" data-key="leave' + i + '" data-value="' + k + '" aria-pressed="' + (row === k) + '"' + (lockT ? " disabled" : "") + ">" + esc(label(k - 1)) + "</button>") + "</th>" +
-            r.map(function (v, j) {
-              var c = (j === col ? " is-col" : "") + (k === row && k > 0 ? " is-row" : "") + (j === col && k === row && k > 0 ? " is-pivot" : "");
-              return '<td class="' + c + '">' + esc(fmt(v)) + "</td>";
-            }).join("") + (exam() ? "" : '<td class="ol-q' + (k === row && k > 0 ? " is-row" : "") + '">' + (k > 0 && col >= 0 ? (r[col] > 1e-12 ? esc(fmt(r[r.length - 1] / r[col])) : "–") : "") + "</td>") + "</tr>";
-        }).join("") + "</tbody></table></div>" +
-        '<div class="ol-pivot-picked">' + esc(L("pivot_col")) + ": <b class=\"" + markOf(s.id, "enter" + i).trim() + '">' + (col >= 0 ? colName(col) : "–") + "</b> · " + esc(L("pivot_row")) + ': <b class="' + markOf(s.id, "leave" + i).trim() + '">' + (row > 0 ? esc(label(row - 1)) : "–") + "</b></div>" +
-        '<div class="ol-formula"><span class="ol-sym">' + esc(L("pivot_el")) + "</span>" + input(s.id, "pivot" + i, L("a_pivot", { n: i + 1 })) +
-        '<span class="ol-sym">' + esc(L("next_z")) + "</span>" + input(s.id, "nextz" + i, L("a_nextz", { n: i + 1 }), "", false, true) + "</div></section>";
-    }
-    if (shown < s.tableaus.length) {
-      var ready = tableauReady(shown - 1);
-      h += '<button type="button" class="btn os-btn" id="ol-next-tableau" data-act="tableau"' + (ready ? "" : " disabled") + ">" + esc(L("show_next_tableau")) + "</button>" +
-        '<p class="ol-field-hint"' + (ready ? " hidden" : "") + ">" + esc(L("next_tableau_hint")) + "</p>";
-    }
-    return h;
-  }
-
   function feedbackHTML(s) {
     var fb = S.feedback[s.id];
     if (exam() || !fb || fb.stale) return "";
     var keys = Object.keys(fb.checks), right = keys.filter(function (k) { return fb.checks[k]; }).length;
     var missing = keys.filter(function (k) { return !fb.checks[k] && String(val(s.id, k)).trim() === ""; }).length;
+    if (fb.correct && S.solutions[s.id]) return "";   // the solution box says it
     if (fb.correct) return '<div class="ol-banner is-ok" role="status"><b>' + esc(L("fb_correct")) + "</b> " + esc(L("points_of", { got: fmt(fb.points), max: fmt(fb.max) })) + "</div>";
     var detail = [right < keys.length - missing ? L("fb_marked") : "", missing ? L("fb_missing", { n: missing }) : ""].filter(Boolean).join(" ");
     return '<div class="ol-banner is-partial" role="status"><div><b>' + esc(L("fb_partial", { right: right, total: keys.length })) + "</b> " + esc(detail) +
@@ -609,46 +598,40 @@
   }
   function hintHTML(s) {
     var h = S.hints[s.id];
-    if (!h || exam()) return "";
+    if (!h || exam() || S.solutions[s.id]) return "";   // with the solution filled in, the hint is not needed any more
     if (!h.level) return '<div class="ol-note ol-hintbox" role="status"><div class="ol-note-title">' + esc(L("hint")) + "</div><p>" + esc(L("hint_none")) + "</p></div>";
     return '<div class="ol-note ol-hintbox" role="status"><div class="ol-note-title">' + esc(L("hint_level", { n: h.level })) + "</div><ul>" +
       h.ids.map(function (id) { return "<li>" + L("hint_" + id) + "</li>"; }).join("") + "</ul>" +
       (h.more ? '<button type="button" class="ol-link-btn" id="ol-more-hints" data-act="hint">' + esc(L("more_hints")) + "</button>" : "") + "</div>";
   }
+  // after “Solution” the values are in the fields; the worked solution stays one click away
   function solutionHTML(s) {
     var lines = S.solutions[s.id];
     if (!lines || exam()) return "";
-    return '<div class="ol-note ol-solbox"><div class="ol-note-title">' + esc(L("sol_title")) + '</div><ul class="ol-sol">' +
-      lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul></div>";
+    return '<div class="ol-note ol-solbox" role="status"><div class="ol-note-title">' + esc(L("sol_filled_title")) + "</div><p>" + esc(L("sol_filled")) + "</p>" +
+      '<details class="ol-calc-toggle" data-sol="' + s.id + '"' + (S.solWay[s.id] ? " open" : "") + "><summary>" + esc(L("sol_way")) + '</summary><ul class="ol-sol">' +
+      lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ul></details></div>";
   }
 
   // ------------------------------------------------------------------ left column: example coach and help
   function coachHTML(s) {
-    var calc = s.id === "simplex" ? simplexCalc(s) : L("tut_calc_" + s.id);
+    var calc = L("tut_calc_" + s.id);
     return '<section class="os-card ol-panel ol-coachcard" id="ol-coach"><header class="ol-panel-head"><span class="ol-badge">' + icon("route") + "</span><h2>" + esc(L("coach_title")) + "</h2>" +
       '<span class="ol-head-note">' + esc(stepShort(s)) + "</span></header><div class=\"ol-panel-body ol-coach\">" +
-      (S.step === 0 ? '<p class="ol-coach-intro">' + esc(L("coach_intro")) + "</p>" : "") +
       "<p>" + esc(L("tut_coach_" + s.id)) + "</p>" +
-      (calc ? '<details class="ol-calc-toggle"><summary>' + esc(L("coach_calc")) + '</summary><pre class="ol-calc">' + esc(calc) + "</pre></details>" : "") +
-      '<button type="button" class="btn os-btn" id="ol-fill" data-act="fill">' + esc(L("coach_fill")) + "</button></div></section>";
+      (calc ? '<details class="ol-calc-toggle"><summary>' + esc(L("coach_calc")) + '</summary><pre class="ol-calc">' + esc(calc) + "</pre></details>" : "") + "</div></section>";
   }
-  function helpCardHTML(s) {
-    return '<details class="os-card ol-panel ol-helpcard" id="ol-helpcard"' + (S.help ? " open" : "") + '><summary class="ol-panel-head"><span class="ol-badge is-help">?</span><h2>' + esc(L("help_title")) + "</h2>" +
-      '<span class="ol-head-note">' + esc(stepShort(s)) + '</span></summary><div class="ol-panel-body ol-help-panel">' + L("help_" + s.id) + "</div></details>";
+  function coachInlineHTML(s) {
+    var calc = L("tut_calc_" + s.id);
+    return '<div class="ol-note ol-coach ol-coach-inline"><div class="ol-note-title">' + esc(L("coach_title")) + "</div><p>" + esc(L("tut_coach_" + s.id)) + "</p>" +
+      (calc ? '<details class="ol-calc-toggle"><summary>' + esc(L("coach_calc")) + '</summary><pre class="ol-calc">' + esc(calc) + "</pre></details>" : "") + "</div>";
   }
-  function simplexCalc(s) {
-    var demo = S.ex.tutorial.answers.simplex || {}, out = [];
-    s.tableaus.forEach(function (t, i) {
-      var col = Number(demo["enter" + i]) - 1, row = Number(demo["leave" + i]);
-      out.push(L("tableau_n", { n: i + 1 }) + ": " + L("pivot_col") + " " + colName(col) + " (" + fmt(t[0][col]) + ")");
-      t.slice(1).forEach(function (r, k) {
-        out.push("  " + label(k) + ": " + (r[col] > 0 ? fmt(r[r.length - 1]) + " ÷ " + fmt(r[col]) + " = " + fmt(r[r.length - 1] / r[col]) : "—"));
-      });
-      out.push("  → " + L("pivot_row") + " " + label(row - 1) + ", " + L("pivot_el") + " " + fmt(t[row][col]) + ", " + L("next_z") + " " + fmt(Number(demo["nextz" + i])));
-    });
-    return out.join("\n");
+  // “?”: how to do this step, right below the step's title
+  function howtoHTML(s) {
+    return '<section class="ol-note ol-howto is-help" id="ol-howto" aria-labelledby="ol-howto-title"><div class="ol-howto-head"><h3 class="ol-note-title" id="ol-howto-title">' + esc(L("help_title")) + "</h3>" +
+      '<button type="button" class="ol-howto-close" data-act="help" aria-label="' + esc(T("close")) + '" title="' + esc(T("close")) + '">×</button></div>' +
+      '<div class="ol-help-panel">' + L(s.id === "optimum" && hasCorner() ? "help_optimum_calc" : "help_" + s.id) + "</div></section>";
   }
-
   // ------------------------------------------------------------------ graph card
   function graphCardHTML() {
     var s = cur(), tools = "";
@@ -656,35 +639,35 @@
       tools = '<div class="ol-chips is-compact" role="group" aria-label="' + esc(L("active_line")) + '">' + S.ex.colors.map(function (c, i) {
         return '<button type="button" class="ol-chip' + (i === S.activeRow ? " is-on" : "") + '" id="ol-gr-' + i + '" data-act="row" data-row="' + i + '" aria-pressed="' + (i === S.activeRow) + '">' + swatch(c) + esc(label(i)) + "</button>";
       }).join("") + "</div>";
-    } else if (s.id === "optimum") {
-      var m = model();
-      if (isNum(m.c[0]) && isNum(m.c[1])) {
-        tools = '<label class="ol-level"><span>F =</span><input class="ol-in" id="ol-level" data-act="level" inputmode="decimal" autocomplete="off" value="' + esc(fmtInput(levelValue())) + '" aria-label="' + esc(L("a_level")) + '"></label>';
-      }
     }
     return '<section class="os-card ol-panel ol-graph"><header class="ol-panel-head">' + sidebarButton() + "<h2>" + esc(L("graph_title")) + "</h2>" + tools + "</header>" +
       '<div class="ol-plot-wrap"><div class="ol-plot" id="ol-plot"></div></div><p class="ol-graph-note" id="ol-graph-note">' + esc(graphNote(s)) + "</p></section>";
   }
   function graphNote(s) {
-    if (s.id === "model") return L("gn_model");
+    if (isModel(s.id)) return L("gn_model");
     if (s.id !== "lines" && steps().some(function (x) { return x.id === "lines"; }) && learnerLines().some(function (l) { return !l; })) return L("gn_need_lines");
     if (s.id === "lines") return L("gn_lines", { label: label(S.activeRow) });
     if (s.id === "region") return L("gn_region");
-    if (s.id === "intersection") return L("gn_intersection");
-    if (s.id === "optimum") return L("gn_optimum");
+    if (s.id === "corner") return L("gn_corner");
+    if (s.id === "optimum") return L(hasCorner() ? "gn_optimum_calc" : "gn_optimum");
     return L("gn_after");
   }
 
+  // the green line: where it was dragged, else through the chosen corner or the learner's optimum
   function levelValue() {
-    var m = model(), o = S.answers.optimum || {}, x = num(o.x), y = num(o.y);
     if (S.level !== null) return S.level;
-    if (isNum(x) && isNum(y)) return m.c[0] * x + m.c[1] * y;
+    var m = model(), o = S.answers.optimum || {}, x = num(o.x), y = num(o.y), c = cornerPoint(), typed = isNum(x) && isNum(y);
+    var p = c && (cur().id === "corner" || !typed) ? c : typed ? [x, y] : null;
+    if (p) return m.c[0] * p[0] + m.c[1] * p[1];
     var e = S.ex.extent;
     return Math.round((m.c[0] * e[0] + m.c[1] * e[1]) * 0.3 * 100) / 100;
   }
 
   // ------------------------------------------------------------------ graph drawing (SVG, same colours as the matplotlib graph)
   var G = null;   // geometry of the current drawing, used by the pointer handlers
+  // smartphones: the same query as the one-column layout in learn.css
+  var PHONE = "(max-width: 575.98px), (max-width: 1023.98px) and (max-height: 500px)";
+  function phone() { return !!(window.matchMedia && window.matchMedia(PHONE).matches); }
   // touch screens: the handles get an invisible ring of about a fingertip (44 px), the drawing stays the same
   var COARSE = !!(window.matchMedia && window.matchMedia("(pointer: coarse)").matches);
   function halo(cx, cy, k) { return COARSE ? '<circle cx="' + cx + '" cy="' + cy + '" r="' + 22 * k + '" fill="transparent"/>' : ""; }
@@ -750,8 +733,10 @@
     return lo <= hi ? [lo, hi] : null;
   }
   // the region from the chosen sides: a polygon, or a segment for an equation
-  function region(lines, ex, ey) {
-    var sides = S.answers.region || {}, poly = [[0, 0], [ex, 0], [ex, ey], [0, ey]], any = false, eqLine = null;
+  // sides: the answers of the region step (side0 … : in / out / line)
+  function region(lines, ex, ey, sides) {
+    var poly = [[0, 0], [ex, 0], [ex, ey], [0, ey]], any = false, eqLine = null;
+    sides = sides || {};
     lines.forEach(function (ln, i) {
       var side = sides["side" + i];
       if (!ln || !side) return;
@@ -763,6 +748,39 @@
       any = true;
     });
     return any ? { poly: poly, line: eqLine } : null;
+  }
+  // where two lines a·x = b meet, or null if they are parallel
+  function meet(u, v) {
+    var det = u.a[0] * v.a[1] - u.a[1] * v.a[0];
+    if (Math.abs(det) <= 1e-9 * Math.hypot(u.a[0], u.a[1]) * Math.hypot(v.a[0], v.a[1])) return null;
+    return [(u.b * v.a[1] - u.a[1] * v.b) / det, (u.a[0] * v.b - u.b * v.a[0]) / det];
+  }
+  // the learner's lines and the two axes, numbered like the boundaries on the server
+  function boundaryLines() { return learnerLines().concat([{ a: [1, 0], b: 0 }, { a: [0, 1], b: 0 }]); }
+  // the corners that can be tapped: where two lines meet inside the grey region (three lines through one point: the first pair)
+  function cornersOf(reg) {
+    var ls = boundaryLines(), poly = reg && reg.poly.length > 2 ? reg.poly : null, out = [], tol = 1e-7 * (1 + G.ex + G.ey);
+    for (var i = 0; i < ls.length; i++) for (var j = i + 1; j < ls.length; j++) {
+      var xy = ls[i] && ls[j] ? meet(ls[i], ls[j]) : null;
+      if (!xy || xy[0] < -tol || xy[1] < -tol || xy[0] > G.ex + tol || xy[1] > G.ey + tol) continue;
+      if (poly && !inPoly(xy, poly) && !onBoundary(xy, poly)) continue;
+      if (out.some(function (c) { return Math.abs(c.p[0] - xy[0]) + Math.abs(c.p[1] - xy[1]) < tol; })) continue;
+      out.push({ p: xy, b: [i, j] });
+    }
+    return out;
+  }
+  function cornerPoint() {
+    var b = picked(), ls = boundaryLines();
+    return b.length === 2 && ls[+b[0]] && ls[+b[1]] ? meet(ls[+b[0]], ls[+b[1]]) : null;
+  }
+  // the feasible sides of a model, in the form of the region step's answers
+  function feasibleSides(m) {
+    var out = {};
+    m.rows.forEach(function (r, i) {
+      var tp = S.ex.testPoints[i], lhs = r.a[0] * tp[0] + r.a[1] * tp[1];
+      out["side" + i] = r.op === "=" ? "line" : (r.op === "<=" ? lhs <= r.b : lhs >= r.b) ? "in" : "out";
+    });
+    return out;
   }
   function inPoly(p, poly) {
     var inside = false;
@@ -787,14 +805,19 @@
     if (!host || !S.ex) return;
     var w = host.clientWidth, h = host.clientHeight;
     if (w < 50 || h < 50) return;
+    host.innerHTML = graphSVG(cur().id, w, h);
+  }
+  // the graph of a step as SVG (sets the geometry G for the pointer handlers);
+  // sol (after handing in): the correct model and optimum instead of the learner's answers
+  function graphSVG(sid, w, h, sol) {
     var fs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16, k = fs / 16;
     var ex = S.ex.extent[0], ey = S.ex.extent[1];
     var L0 = 44 * k, R0 = 18 * k, T0 = 16 * k, B0 = 34 * k;
     var pw = w - L0 - R0, ph = h - T0 - B0;
     var X = function (x) { return L0 + x / ex * pw; }, Y = function (y) { return T0 + ph - y / ey * ph; };
     G = { X: X, Y: Y, ex: ex, ey: ey, L0: L0, T0: T0, pw: pw, ph: ph, k: k };
-    var s = cur(), sid = s.id, m = model(), o = [];
-    var lines = sid === "model" ? [] : learnerLines();
+    var m = sol ? sol.model : model(), o = [];
+    var lines = sol ? m.rows.map(function (r) { return { a: r.a, b: r.b }; }) : isModel(sid) ? [] : learnerLines();
 
     // grid, axes, ticks
     var sx = niceStep(ex), sy = niceStep(ey);
@@ -811,7 +834,7 @@
 
     // integer lattice
     var it = ints(m.kind), spacing = Math.min(pw / ex, ph / ey);
-    var reg = sid !== "model" && sid !== "lines" ? region(lines, ex, ey) : null;
+    var reg = !isModel(sid) && sid !== "lines" ? region(lines, ex, ey, sol ? feasibleSides(m) : S.answers.region) : null;
     if ((it[0] || it[1]) && spacing >= 5) {
       if (it[0] && it[1]) {
         for (var ix = 0; ix <= ex; ix++) for (var iy = 0; iy <= ey; iy++) {
@@ -838,7 +861,7 @@
       else o.push('<polygon points="' + pts + '" fill="' + GREY + '" fill-opacity=".1"/>');
     }
     // constraint lines
-    var picks = sid === "intersection" ? [val("intersection", "boundary1"), val("intersection", "boundary2")] : [];
+    var picks = sid === "corner" || sid === "optimum" ? picked() : [];
     lines.forEach(function (ln, i) {
       if (!ln) return;
       var seg2 = clipToBox(ln.a, ln.b, ex, ey);
@@ -850,25 +873,15 @@
       var lx = Math.min(X(end[0]) - 4 * k, X(ex) - 4 * k), ly = Math.max(Y(end[1]) - 6 * k, Y(ey) + 12 * k);
       o.push('<text class="ol-line-label" x="' + lx + '" y="' + ly + '" text-anchor="end" fill="' + color(i) + '" font-size="' + 12 * k + '">' + esc(label(i)) + "</text>");
     });
-    // the axes as boundaries in the intersection step
+    // the axes as chosen boundaries of the corner
     picks.forEach(function (p) {
       if (p === String(nRows())) o.push('<line x1="' + X(0) + '" y1="' + Y(0) + '" x2="' + X(0) + '" y2="' + Y(ey) + '" stroke="' + INK + '" stroke-width="' + 4 * k + '"/>');
       if (p === String(nRows() + 1)) o.push('<line x1="' + X(0) + '" y1="' + Y(0) + '" x2="' + X(ex) + '" y2="' + Y(0) + '" stroke="' + INK + '" stroke-width="' + 4 * k + '"/>');
     });
     // objective line
-    var showObj = ["optimum", "sensitivity", "interpret", "simplex"].indexOf(sid) >= 0 && isNum(m.c[0]) && isNum(m.c[1]) && (Math.abs(m.c[0]) + Math.abs(m.c[1]) > 0);
-    if (showObj) {
-      var segO = clipToBox(m.c, levelValue(), ex, ey);
-      if (segO) {
-        o.push('<line x1="' + X(segO[0][0]) + '" y1="' + Y(segO[0][1]) + '" x2="' + X(segO[1][0]) + '" y2="' + Y(segO[1][1]) + '" stroke="' + GREEN + '" stroke-width="' + 2.4 * k + '" stroke-dasharray="' + 9 * k + " " + 6 * k + '"/>');
-        if (sid === "optimum") {
-          o.push('<line class="ol-drag-line" data-drag="objective" x1="' + X(segO[0][0]) + '" y1="' + Y(segO[0][1]) + '" x2="' + X(segO[1][0]) + '" y2="' + Y(segO[1][1]) + '" stroke-width="' + 26 * k + '"/>');
-          var mx = (segO[0][0] + segO[1][0]) / 2, my = (segO[0][1] + segO[1][1]) / 2;
-          o.push('<g class="ol-grip" data-drag="objective">' + halo(X(mx), Y(my), k) + '<circle cx="' + X(mx) + '" cy="' + Y(my) + '" r="' + 11 * k + '" fill="#fff" stroke="' + GREEN + '" stroke-width="' + 2.4 * k + '"/>' +
-            '<path d="M' + X(mx) + " " + (Y(my) - 5.5 * k) + " l" + 3.5 * k + " " + 3.5 * k + " h" + -7 * k + "z M" + X(mx) + " " + (Y(my) + 5.5 * k) + " l" + 3.5 * k + " " + -3.5 * k + " h" + -7 * k + 'z" fill="' + GREEN + '"/></g>');
-        }
-      }
-    }
+    var showObj = ["corner", "optimum", "slack", "interpret"].indexOf(sid) >= 0 && isNum(m.c[0]) && isNum(m.c[1]) && (Math.abs(m.c[0]) + Math.abs(m.c[1]) > 0);
+    var segO = showObj ? clipToBox(m.c, sol ? sol.z : levelValue(), ex, ey) : null;
+    if (segO) o.push('<line x1="' + X(segO[0][0]) + '" y1="' + Y(segO[0][1]) + '" x2="' + X(segO[1][0]) + '" y2="' + Y(segO[1][1]) + '" stroke="' + GREEN + '" stroke-width="' + 2.4 * k + '" stroke-dasharray="' + 9 * k + " " + 6 * k + '"/>');
     o.push("</g>");
     // axes on top
     o.push('<g class="ol-axes"><line x1="' + X(0) + '" y1="' + Y(0) + '" x2="' + (X(ex) + 10 * k) + '" y2="' + Y(0) + '"/><line x1="' + X(0) + '" y1="' + Y(0) + '" x2="' + X(0) + '" y2="' + (Y(ey) - 10 * k) + '"/>' +
@@ -884,21 +897,31 @@
           '<text x="' + (X(p[0]) + 8 * k) + '" y="' + (Y(p[1]) - 7 * k) + '" font-size="' + 12 * k + '">P' + (n + 1) + "</text></g>");
       });
       var tp = S.ex.testPoints[S.activeRow];
-      if (tp && (tp[0] || tp[1])) o.push('<circle cx="' + X(tp[0]) + '" cy="' + Y(tp[1]) + '" r="' + 6 * k + '" fill="none" stroke="' + color(S.activeRow) + '" stroke-width="' + 2 * k + '" stroke-dasharray="' + 3 * k + '"/>');
+      // the test point of the chosen line – also (0 | 0), which the answer “side with test point (0 | 0)” refers to
+      if (tp) o.push('<circle cx="' + X(tp[0]) + '" cy="' + Y(tp[1]) + '" r="' + 8 * k + '" fill="none" stroke="' + color(S.activeRow) + '" stroke-width="' + 2.2 * k + '" stroke-dasharray="' + 3 * k + '"/>');
     }
-    // intersection point entered by the learner
-    if (sid === "intersection") {
-      var cx = num(val("intersection", "crossx")), cy = num(val("intersection", "crossy"));
-      if (isNum(cx) && isNum(cy)) o.push('<circle cx="' + X(cx) + '" cy="' + Y(cy) + '" r="' + 6 * k + '" fill="#fff" stroke="' + RED + '" stroke-width="' + 2.4 * k + '"/>');
+    // the corners to tap, and the chosen one with a red ring
+    G.corners = sid === "corner" ? cornersOf(reg) : [];
+    G.corners.forEach(function (c) { o.push('<circle cx="' + X(c.p[0]) + '" cy="' + Y(c.p[1]) + '" r="' + 4 * k + '" fill="#fff" stroke="' + INK + '" stroke-width="' + 1.6 * k + '"/>'); });
+    var cp = sid === "corner" || sid === "optimum" ? cornerPoint() : null;
+    if (cp) o.push('<circle cx="' + X(cp[0]) + '" cy="' + Y(cp[1]) + '" r="' + 8.5 * k + '" fill="none" stroke="' + RED + '" stroke-width="' + 2.4 * k + '"/>');
+    // the learner's optimum (integer tasks: it can be dragged)
+    var ox = sol ? sol.x[0] : num(val("optimum", "x")), oy = sol ? sol.x[1] : num(val("optimum", "y")), grab = tapsPoint(sid);
+    if (["optimum", "slack", "interpret"].indexOf(sid) >= 0 && isNum(ox) && isNum(oy)) {
+      o.push('<circle class="' + (grab ? "ol-grip" : "") + '" data-drag="' + (grab ? "point" : "") + '" cx="' + X(ox) + '" cy="' + Y(oy) + '" r="' + 6.5 * k + '" fill="' + RED + '" stroke="#fff" stroke-width="' + 2 * k + '"/>');
+      if (grab && COARSE) o.push('<g class="ol-grip" data-drag="point">' + halo(X(ox), Y(oy), k) + "</g>");
+      o.push('<text class="ol-opt-label" x="' + (X(ox) + 10 * k) + '" y="' + (Y(oy) - 9 * k) + '" fill="' + RED + '" font-size="' + 12.5 * k + '">' + esc(pt(ox, oy)) + "</text>");
     }
-    // the learner's optimum
-    if (["optimum", "sensitivity", "interpret", "simplex"].indexOf(sid) >= 0) {
-      var ox = num(val("optimum", "x")), oy = num(val("optimum", "y"));
-      if (isNum(ox) && isNum(oy)) {
-        o.push('<circle class="' + (sid === "optimum" ? "ol-grip" : "") + '" data-drag="' + (sid === "optimum" ? "point" : "") + '" cx="' + X(ox) + '" cy="' + Y(oy) + '" r="' + 6.5 * k + '" fill="' + RED + '" stroke="#fff" stroke-width="' + 2 * k + '"/>');
-        if (sid === "optimum" && COARSE) o.push('<g class="ol-grip" data-drag="point">' + halo(X(ox), Y(oy), k) + "</g>");
-        o.push('<text class="ol-opt-label" x="' + (X(ox) + 10 * k) + '" y="' + (Y(oy) - 9 * k) + '" fill="' + RED + '" font-size="' + 12.5 * k + '">' + esc(pt(ox, oy)) + "</text>");
-      }
+    // the handle of the green line sits away from the corners and points, so a tap there never grabs the line;
+    // its arrows show the two directions in which the line moves
+    if (segO && dragsObjective(sid)) {
+      var avoid = G.corners.map(function (c) { return c.p; }).concat(reg && reg.poly.length > 2 ? reg.poly : []);
+      if (isNum(ox) && isNum(oy)) avoid.push([ox, oy]);
+      if (drag !== "objective" || gripT === null) gripT = gripSpot(segO, avoid);
+      var hx = X(segO[0][0] + gripT * (segO[1][0] - segO[0][0])), hy = Y(segO[0][1] + gripT * (segO[1][1] - segO[0][1]));
+      var ang = Math.atan2(-m.c[1] * ey / ph, m.c[0] * ex / pw) * 180 / Math.PI;
+      o.push('<g class="ol-grip" data-drag="objective">' + halo(hx, hy, k) + '<circle cx="' + hx + '" cy="' + hy + '" r="' + 11 * k + '" fill="#fff" stroke="' + GREEN + '" stroke-width="' + 2.4 * k + '"/>' +
+        '<path transform="rotate(' + ang + " " + hx + " " + hy + ')" d="M' + (hx + 7.5 * k) + " " + hy + " l" + -4 * k + " " + -3.5 * k + " v" + 7 * k + "z M" + (hx - 7.5 * k) + " " + hy + " l" + 4 * k + " " + -3.5 * k + " v" + 7 * k + 'z" fill="' + GREEN + '"/></g>');
     }
     // handles of the active line
     if (sid === "lines") {
@@ -915,7 +938,7 @@
         }
       });
     }
-    host.innerHTML = '<svg class="ol-svg" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="' + esc(L("graph_aria")) + '">' + o.join("") + '<g id="ol-tip"></g></svg>';
+    return '<svg class="ol-svg' + (sid === "corner" || grab ? " is-pick" : "") + '" width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + " " + h + '" role="img" aria-label="' + esc(L("graph_aria")) + '">' + o.join("") + '<g id="ol-tip"></g></svg>';
   }
 
   function toData(ev) {
@@ -924,6 +947,18 @@
     return [Math.max(0, Math.min(G.ex, x)), Math.max(0, Math.min(G.ey, y))];
   }
   function snap(v, ext) { var st = niceStep(ext) / 20; return Math.round(v / st) * st; }
+  // the spot on the green line farthest from the points to avoid (far enough is enough – then rather the middle)
+  var gripT = null;
+  function gripSpot(seg, avoid) {
+    var best = 0.5, score = -Infinity;
+    for (var t = 0.15; t <= 0.851; t += 0.05) {
+      var px = G.X(seg[0][0] + t * (seg[1][0] - seg[0][0])), py = G.Y(seg[0][1] + t * (seg[1][1] - seg[0][1]));
+      var d = avoid.reduce(function (mn, p) { return Math.min(mn, Math.hypot(G.X(p[0]) - px, G.Y(p[1]) - py)); }, Infinity);
+      d = Math.min(d, 64 * G.k) - Math.abs(t - 0.5) * 12 * G.k;
+      if (d > score) { score = d; best = t; }
+    }
+    return best;
+  }
 
   var drag = null;
   function onPointerDown(ev) {
@@ -938,25 +973,46 @@
       return;
     }
     if (hit && (sid === "lines" || sid === "region")) { setActiveRow(+hit.getAttribute("data-row")); ev.preventDefault(); return; }
-    if (sid === "optimum" && ev.pointerType === "touch") { tapStart = { id: ev.pointerId, x: ev.clientX, y: ev.clientY }; return; }   // a swipe scrolls the page
-    if (sid === "optimum") { setOptPoint(toData(ev)); drag = "point"; host.setPointerCapture(ev.pointerId); ev.preventDefault(); }
+    if (sid !== "corner" && !tapsPoint(sid)) return;
+    if (ev.pointerType === "touch") { tapStart = { id: ev.pointerId, x: ev.clientX, y: ev.clientY }; return; }   // a swipe scrolls the page
+    ev.preventDefault();
+    if (sid === "corner") { pickCorner(ev); return; }
+    setOptPoint(toData(ev)); drag = "point"; host.setPointerCapture(ev.pointerId);
   }
-  // touch: a tap sets the optimum; dragging works on the handles, which stop the page from scrolling
+  // touch: a tap chooses the corner or sets the optimum; dragging works on the handles, which stop the page from scrolling
   var tapStart = null;
   function onTouchStart(ev) {
     var t = ev.target.closest && ev.target.closest("#ol-plot [data-drag]");
     if (t && t.getAttribute("data-drag") && ev.cancelable) ev.preventDefault();
   }
+  // a tap near a corner chooses the two lines that meet there; the green line then runs through it
+  function pickCorner(ev) {
+    var r = document.querySelector("#ol-plot svg").getBoundingClientRect(), px = ev.clientX - r.left, py = ev.clientY - r.top;
+    var best = null, dist = (COARSE ? 32 : 24) * G.k;
+    G.corners.forEach(function (c) { var d = Math.hypot(G.X(c.p[0]) - px, G.Y(c.p[1]) - py); if (d < dist) { dist = d; best = c; } });
+    if (!best) { toast(L("corner_none")); return; }
+    setAnswer("corner", "boundary1", String(best.b[0]));
+    setAnswer("corner", "boundary2", String(best.b[1]));
+    S.level = null;
+    refresh();
+  }
+  // integer coordinates round; a continuous one (mixed tasks) snaps onto a line nearby, where the optimum lies
   function setOptPoint(p) {
-    var it = ints(model().kind);
-    var x = it[0] ? Math.round(p[0]) : snap(p[0], G.ex), y = it[1] ? Math.round(p[1]) : snap(p[1], G.ey);
+    var it = ints(model().kind), x = it[0] ? Math.round(p[0]) : snap(p[0], G.ex), y = it[1] ? Math.round(p[1]) : snap(p[1], G.ey);
+    if (it[0] !== it[1]) {
+      var j = it[0] ? 1 : 0, q = [x, y], tol = (COARSE ? 24 : 14) * G.k, near = null;
+      boundaryLines().forEach(function (ln) {
+        if (!ln || Math.abs(ln.a[j]) < 1e-12) return;
+        var w = (ln.b - ln.a[1 - j] * q[1 - j]) / ln.a[j], d = j ? Math.abs(G.Y(w) - G.Y(p[1])) : Math.abs(G.X(w) - G.X(p[0]));
+        if (w >= 0 && d < tol) { tol = d; near = w; }
+      });
+      if (near !== null) { if (j) y = near; else x = near; }
+    }
     setAnswer("optimum", "x", fmtInput(x));
     setAnswer("optimum", "y", fmtInput(y));
     var m = model();
     S.level = m.c[0] * x + m.c[1] * y;
     syncInputs(["x", "y"]);
-    var lv = document.getElementById("ol-level");
-    if (lv) lv.value = fmtInput(S.level);
     drawGraph();
   }
   function onPointerMove(ev) {
@@ -964,9 +1020,7 @@
     var p = toData(ev), sid = cur().id;
     if (drag === "objective") {
       var m = model();
-      S.level = Math.round((m.c[0] * p[0] + m.c[1] * p[1]) * 100) / 100;
-      var lv = document.getElementById("ol-level");
-      if (lv) lv.value = fmtInput(S.level);
+      S.level = m.c[0] * p[0] + m.c[1] * p[1];
     } else if (drag === "point") {
       setOptPoint(p);
       return;
@@ -979,9 +1033,10 @@
   }
   function onPointerUp(ev) {
     if (tapStart && ev.pointerId === tapStart.id) {
-      var tap = ev.type === "pointerup" && Math.hypot(ev.clientX - tapStart.x, ev.clientY - tapStart.y) < 10 && G && cur().id === "optimum";
+      var tap = ev.type === "pointerup" && Math.hypot(ev.clientX - tapStart.x, ev.clientY - tapStart.y) < 10 && G;
       tapStart = null;
-      if (tap) { setOptPoint(toData(ev)); paintStatus(); }
+      if (tap && cur().id === "corner") pickCorner(ev);
+      else if (tap && tapsPoint(cur().id)) { setOptPoint(toData(ev)); paintStatus(); }
     }
     if (drag === null) return;
     drag = null;
@@ -1000,7 +1055,7 @@
     var m;
     if ((m = /^(?:a(\d+)_\d|op(\d+)|b(\d+))$/.exec(key))) { var i = m[1] || m[2] || m[3]; return ["a" + i + "_0", "a" + i + "_1", "op" + i, "b" + i]; }
     if (key === "x" || key === "y") return ["x", "y"];
-    if (/^(boundary\d|cross[xy])$/.test(key)) return ["boundary1", "boundary2", "crossx", "crossy"];
+    if (/^boundary\d$/.test(key)) return ["boundary1", "boundary2"];
     return [key];
   }
   function setAnswer(sid, key, value) {
@@ -1044,10 +1099,11 @@
   // ------------------------------------------------------------------ actions
   function goto(i) {
     if (i < 0 || i >= steps().length) return;
-    S.step = i; S.activeRow = 0; S.level = null;
+    S.step = i; S.activeRow = 0; S.level = null; S.help = false;
     render();
     var body = root().querySelector(".ol-step-body");
     if (body) body.scrollTop = 0;
+    if (phone()) window.scrollTo(0, 0);
   }
 
   function check() {
@@ -1069,26 +1125,22 @@
       if (b) b.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }, function () {});
   }
+  // fills the correct values into the fields (again, if the learner changed them since)
   function showSolution() {
     var s = cur();
-    if (S.solutions[s.id]) { var b0 = root().querySelector(".ol-solbox"); if (b0) b0.scrollIntoView({ block: "nearest", behavior: "smooth" }); return; }
-    var go = tutorial() ? Promise.resolve(true) : ask(L("sol_confirm_title"), "<p>" + esc(L("sol_confirm")) + "</p>", L("sol_show"));
+    var go = tutorial() || S.solutions[s.id] ? Promise.resolve(true) : ask(L("sol_confirm_title"), "<p>" + esc(L("sol_confirm")) + "</p>", L("sol_show"));
     go.then(function (ok) {
       if (!ok) return;
-      busy("solution", call("solution", { step: s.id })).then(function (d) {
+      busy("solution", call("solution", { step: s.id, answers: S.answers })).then(function (d) {
+        Object.keys(d.values).forEach(function (k) { var v = d.values[k]; setAnswer(s.id, k, typeof v === "number" ? fmtInput(v) : String(v)); });
         S.solutions[s.id] = d.lines;
+        S.feedback[s.id] = d.grade;
+        if (s.id === "optimum" || s.id === "corner") S.level = null;
         refresh();
         var b = root().querySelector(".ol-solbox");
         if (b) b.scrollIntoView({ block: "nearest", behavior: "smooth" });
       }, function () {});
     });
-  }
-  function fill() {
-    var s = cur(), demo = (S.ex.tutorial.answers || {})[s.id] || {};
-    Object.keys(demo).forEach(function (k) { setAnswer(s.id, k, lang() === "de" ? String(demo[k]).replace(".", ",") : String(demo[k])); });
-    if (s.id === "simplex") S.tableaus = s.tableaus.length;
-    if (s.id === "optimum") S.level = null;
-    refresh();
   }
   function missingCount() {
     return steps().reduce(function (n, s) { return n + s.questions.length - filled(s); }, 0);
@@ -1117,9 +1169,8 @@
     if ((m = /^side(\d+)$/.exec(key))) { var tp = S.ex.testPoints[+m[1]]; return v === "in" ? L("side_in", { p: pt(tp[0], tp[1]) }) : L("side_" + v); }
     if (/^p\d+$/.test(key)) return L(v === "yes" ? "feasible_yes" : "feasible_no");
     if (key === "round") return L("round_" + v);
+    if (/^bind\d+$/.test(key)) return L("bind_" + v);
     if (/^boundary\d$/.test(key)) return boundaryName(+v);
-    if (/^enter\d+$/.test(key)) return colName(+v - 1);
-    if (/^leave\d+$/.test(key)) return label(+v - 1);
     return v;
   }
   function qLabel(key) {
@@ -1134,18 +1185,11 @@
     if ((m = /^side(\d+)$/.exec(key))) return L("a_side", { label: label(+m[1]) });
     if ((m = /^p(\d+)$/.exec(key))) { var p = S.ex.points[+m[1]]; return "P" + (+m[1] + 1) + " " + pt(p[0], p[1]); }
     if (key === "boundary1" || key === "boundary2") return L("a_boundary", { n: key.slice(-1) });
-    if (key === "crossx" || key === "crossy") return L("a_cross", { n: key === "crossx" ? 1 : 2 });
     if (key === "x" || key === "y") return L("a_opt", { n: key === "x" ? 1 : 2 });
     if (key === "z") return L("a_z");
     if ((m = /^slack(\d+)$/.exec(key))) return L("a_slack", { label: label(+m[1]) });
-    if ((m = /^shadow(\d+)$/.exec(key))) return L("a_shadow", { label: label(+m[1]) });
-    if ((m = /^range(\d)_(\d)$/.exec(key))) return L(m[2] === "0" ? "a_rlo" : "a_rhi", { n: +m[1] + 1 });
-    if (key === "idelta") return L("a_idelta", { label: label(0) });
+    if ((m = /^bind(\d+)$/.exec(key))) return L("a_bind", { label: label(+m[1]) });
     if (key === "meaning" || key === "round") return L("q_" + key);
-    if ((m = /^enter(\d+)$/.exec(key))) return L("tableau_n", { n: +m[1] + 1 }) + ": " + L("pivot_col");
-    if ((m = /^leave(\d+)$/.exec(key))) return L("tableau_n", { n: +m[1] + 1 }) + ": " + L("pivot_row");
-    if ((m = /^pivot(\d+)$/.exec(key))) return L("a_pivot", { n: +m[1] + 1 });
-    if ((m = /^nextz(\d+)$/.exec(key))) return L("a_nextz", { n: +m[1] + 1 });
     return key;
   }
   // review rows; the two coordinates of a drawn point form one row
@@ -1157,14 +1201,14 @@
   }
 
   function resultHTML() {
-    var r = S.result, score = r.score, tut = tutorial();
+    var r = S.result, score = r.score, tut = tutorial();   // r.grades: one per graded step, in order
     var ok = r.grades.filter(function (g) { return g.correct; }).length;
     var verdict = tut ? L("res_tut_title") : score >= 99.9 ? L("res_great") : score >= 70 ? L("res_good") : L("res_try");
     var note = tut ? L("res_tut_text") : exam() ? L("res_note_exam") : L("res_note_practice");
     var kpis = '<div class="os-kpis ol-kpis"><div class="os-kpi is-value"><small>' + esc(L("kpi_score")) + "</small><b>" + fmt(score) + ' <span class="ol-of">/ 100</span></b></div>' +
       '<div class="os-kpi"><small>' + esc(L("kpi_steps")) + "</small><b>" + ok + ' <span class="ol-of">/ ' + r.grades.length + "</span></b></div>" +
       (exam() ? "" : '<div class="os-kpi"><small>' + esc(L("kpi_hints")) + "</small><b>" + Object.keys(r.hints).length + '</b></div><div class="os-kpi"><small>' + esc(L("kpi_seen")) + "</small><b>" + r.reveals.length + "</b></div>") + "</div>";
-    var items = steps().map(function (s, i) {
+    var items = graded().map(function (s, i) {
       var g = r.grades[i], badges = [];
       if (r.reveals.indexOf(s.id) >= 0) badges.push(L("res_seen"));
       else if (r.hints[s.id]) badges.push(L("res_with_hint"));
@@ -1180,19 +1224,31 @@
     return '<div class="ol-page ol-result"><section class="os-card ol-result-head"><div class="ol-result-text"><span class="os-tag ol-mode is-' + (tut ? "mode_tutorial" : exam() ? "mode_exam" : "mode_practice") + '">' + esc(L(tut ? "mode_tutorial" : exam() ? "mode_exam" : "mode_practice")) + "</span>" +
       "<h1>" + esc(verdict) + "</h1><p>" + esc(S.ex.story.title) + "</p><p class=\"ol-muted\">" + esc(note) + "</p></div>" + kpis + "</section>" +
       '<section class="os-card ol-panel ol-review-list"><header class="ol-panel-head"><h2>' + esc(L("res_steps")) + '</h2></header><div class="ol-panel-body">' + items + "</div></section>" +
-      (r.python ? '<section class="os-card ol-panel ol-pycard"><header class="ol-panel-head"><h2>' + esc(L("py_title")) + '</h2><button type="button" class="btn btn-link os-header-action" id="ol-copy-py" data-act="copy-py">' + esc(L("py_copy")) + "</button></header>" +
-        '<div class="ol-panel-body"><p class="ol-muted">' + esc(L("py_text")) + '</p><pre class="ol-code" id="ol-py-code">' + esc(r.python) + "</pre></div></section>" : "") +
       '<div class="ol-actions"><button class="btn os-btn os-btn-primary" id="ol-new" data-act="new">' + esc(L(tut ? "res_to_practice" : "res_new")) + "</button>" +
       (S.ex.source === "generated" ? '<button class="btn os-btn" id="ol-again" data-act="again">' + esc(L("res_again")) + "</button>" : "") +
-      '<button class="btn os-btn" id="ol-download" data-act="download">' + esc(L("res_download")) + '</button><button class="btn os-btn" id="ol-print" data-act="print">' + esc(L("res_print")) + "</button></div></div>";
+      '<button class="btn os-btn" id="ol-download" data-act="download">' + esc(L("res_download")) + "</button></div></div>";
   }
 
+  // a file that can be read on its own: the score, the task, the graphical solution and every step
   function download() {
     var el = root().querySelector(".ol-result").cloneNode(true);
     el.querySelectorAll("details").forEach(function (d) { d.setAttribute("open", ""); });
     var actions = el.querySelector(".ol-actions");
     if (actions) actions.remove();
-    var css = "body{font:15px/1.5 system-ui,sans-serif;color:#1d1f21;max-width:60rem;margin:2rem auto;padding:0 1rem}h1{font-size:1.5rem;margin:.25rem 0}" +
+    var sol = S.result.solution, graph = "";
+    if (sol) {
+      // the feasible region, the green line and the optimal point – like the graphical solution in the lecture
+      graph = '<section class="ol-export"><h2>' + esc(L("res_graph")) + "</h2>" + graphSVG("interpret", 640, 460, sol) +
+        '<p class="ol-export-opt">' + esc(L("res_optimum", { x1: fmt(sol.x[0]), x2: fmt(sol.x[1]), f: fName() ? fName() + " F" : "F", z: fmt(sol.z) })) + "</p></section>";
+    }
+    el.querySelector(".ol-result-head").insertAdjacentHTML("afterend", '<section class="ol-export"><h2>' + esc(L("task")) + "</h2>" + taskHTML() + "</section>" + graph);
+    var css = "body{font:15px/1.5 system-ui,sans-serif;color:#1d1f21;max-width:60rem;margin:2rem auto;padding:0 1rem}h1{font-size:1.5rem;margin:.25rem 0}h2{font-size:1.15rem;margin:1.5rem 0 .5rem}" +
+      ".ol-export{border:1px solid #dee2e6;border-radius:8px;padding:.5rem 1rem;margin:1rem 0}.ol-story-title{font-size:1rem;margin:.25rem 0}.ol-story,.ol-story-domain{list-style:none;padding:0;margin:.5rem 0}.ol-story li{margin:.2rem 0}" +
+      ".ol-export-opt{font-weight:600;margin:.5rem 0}.ol-sought{margin:.5rem 0}.ol-sought-title{font-weight:600;display:block}.ol-sought-row b{margin-right:.4rem}.ol-story-q{font-weight:600}.ol-mini-row{margin:.2rem 0}" +
+      ".os-swatch{display:inline-block;width:.75rem;height:.75rem;border-radius:3px;margin-right:.4rem;vertical-align:-1px}.os-swatch.is-dashed{height:.25rem;vertical-align:3px;background:repeating-linear-gradient(90deg,currentColor 0 5px,transparent 5px 8px)!important}" +
+      "svg{display:block;max-width:100%;height:auto;font-family:system-ui,sans-serif}.ol-grid line{stroke:#dee2e6;stroke-dasharray:4 3;stroke-width:1}.ol-ticks text,.ol-axis-label{fill:#1d1f21}.ol-axis-label{font-weight:700}" +
+      ".ol-axes line{stroke:#1d1f21;stroke-width:1.3}.ol-axes path{fill:#1d1f21}.ol-lattice{stroke:#c4c9ce;stroke-width:1;stroke-dasharray:2 4}.ol-bar{stroke:#a6a6a6;stroke-opacity:.85;stroke-linecap:round}.ol-hit{stroke:transparent}" +
+      ".ol-line-label,.ol-opt-label{font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}" +
       ".os-kpis{display:flex;gap:.75rem;flex-wrap:wrap;margin:1rem 0}.os-kpi{border:1px solid #dee2e6;border-radius:8px;padding:.4rem .75rem}.os-kpi small{display:block;color:#555}.os-kpi b{font-size:1.3rem}" +
       "table{border-collapse:collapse;width:100%;margin:.5rem 0}td,th{border-bottom:1px solid #dee2e6;padding:.35rem;text-align:left}.num{text-align:right}.ol-good{color:#1f7a1f}.ol-bad{color:#cc0000}" +
       "details{border:1px solid #dee2e6;border-radius:8px;padding:.5rem .75rem;margin:.5rem 0}summary{font-weight:600;display:flex;gap:.5rem}.ol-review-pts{margin-left:auto}.os-tag{font-size:.75rem;border:1px solid #dee2e6;border-radius:.6rem;padding:0 .4rem}.ol-muted{color:#555}";
@@ -1208,70 +1264,57 @@
   function onClick(ev) {
     var sum = ev.target.closest && ev.target.closest("details.ol-task > summary");
     if (sum) { S.taskOpen = !sum.parentElement.open; return; }
-    var hsum = ev.target.closest && ev.target.closest("details.ol-helpcard > summary");
-    if (hsum) { S.help = !hsum.parentElement.open; var hb = document.getElementById("ol-help"); if (hb) { hb.classList.toggle("is-on", S.help); hb.setAttribute("aria-expanded", S.help); } return; }   // remember the learner's choice (the toggle event also fires on render)
     var el = ev.target.closest && ev.target.closest("[data-act]");
     if (!el || !root() || !root().contains(el) || el.disabled) return;
     var act = el.getAttribute("data-act");
     if (S.busy && ["tutorial", "create", "own", "check", "hint", "solution", "finish"].indexOf(act) >= 0) return;
     switch (act) {
       case "tutorial": startWith("tutorial"); break;
-      case "create": startWith("create", { options: Object.assign({}, S.opts, { simplex: S.opts.simplex && practiceSimplexOk() }) }); break;
-      case "own": startWith("own", { options: Object.assign({}, S.ownOpts, { form: "math", simplex: S.ownOpts.simplex && S.own && S.own.simplex }) }); break;
+      case "create": startWith("create", { options: S.opts }); break;
+      case "own": startWith("own", { options: Object.assign({}, S.ownOpts, { form: "math" }) }); break;
       case "goto-work": var tab = document.querySelector('.navbar [data-value="work"]'); if (tab) tab.click(); break;
       case "goto": goto(+el.getAttribute("data-step")); break;
       case "prev": goto(S.step - 1); break;
       case "next": goto(S.step + 1); break;
       case "finish": finish(); break;
       case "quit": quit(); break;
-      case "help":
-        S.help = !S.help || !S.sidebar;
-        S.sidebar = true;
+      case "help": {
+        S.help = !S.help;
         refresh();
-        if (S.help) { var hc = document.getElementById("ol-helpcard"); if (hc) hc.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+        var hb = document.getElementById(S.help ? "ol-howto" : "ol-help");
+        if (S.help && hb) { hb.closest(".ol-step-body").scrollTop = 0; hb.scrollIntoView({ block: "nearest", behavior: "smooth" }); }
+        if (!S.help && hb) hb.focus({ preventScroll: true });
         break;
+      }
       case "none": {
         var nk = el.getAttribute("data-key"), sidN = cur().id;
         setAnswer(sidN, nk, isNone(val(sidN, nk)) ? "" : "–");
         refresh();
         break;
       }
-      case "copy-py": {
-        var code = document.getElementById("ol-py-code");
-        if (code && navigator.clipboard) navigator.clipboard.writeText(code.textContent).then(function () { el.textContent = L("py_copied"); }, function () {});
-        break;
-      }
       case "sidebar": S.sidebar = !S.sidebar; render(); break;
       case "check": check(); break;
       case "hint": hint(); break;
       case "solution": showSolution(); break;
-      case "fill": fill(); break;
       case "row": setActiveRow(+el.getAttribute("data-row")); break;
       case "boundary": {
-        var a = ans("intersection"), b = el.getAttribute("data-b"), picked = [a.boundary1, a.boundary2].filter(function (v) { return v !== undefined && v !== ""; });
-        if (picked.indexOf(b) >= 0) picked.splice(picked.indexOf(b), 1); else { picked.push(b); if (picked.length > 2) picked.shift(); }
-        setAnswer("intersection", "boundary1", picked[0] || "");
-        setAnswer("intersection", "boundary2", picked[1] || "");
+        var b = el.getAttribute("data-b"), picks = picked();
+        if (picks.indexOf(b) >= 0) picks.splice(picks.indexOf(b), 1); else { picks.push(b); if (picks.length > 2) picks.shift(); }
+        setAnswer("corner", "boundary1", picks[0] || "");
+        setAnswer("corner", "boundary2", picks[1] || "");
+        S.level = null;
         refresh();
         break;
       }
-      case "pivot": setAnswer("simplex", el.getAttribute("data-key"), el.getAttribute("data-value")); refresh(); break;
-      case "tableau": S.tableaus += 1; refresh(); break;
       case "new": S.view = "home"; S.ex = null; render(); window.scrollTo(0, 0); break;
-      case "again": startWith("create", { options: Object.assign({}, S.opts, { simplex: S.opts.simplex && practiceSimplexOk() }) }); break;
+      case "again": startWith("create", { options: S.opts }); break;
       case "download": download(); break;
-      case "print": root().querySelectorAll("details").forEach(function (d) { d.open = true; }); window.print(); break;
     }
   }
 
   function onInput(ev) {
     var t = ev.target;
     if (!root() || !root().contains(t)) return;
-    if (t.id === "ol-level") {
-      var v = num(t.value);
-      if (isNum(v)) { S.level = v; drawGraph(); }
-      return;
-    }
     if (t.type === "radio" && ev.type === "input") return;   // radios are handled on change
     var key = t.getAttribute("data-q") || (t.closest(".ol-seg") && t.closest(".ol-seg").getAttribute("data-q"));
     if (key && S.view === "work") {
@@ -1284,27 +1327,12 @@
         if (capEl) { capEl.textContent = capEl.getAttribute("data-base"); capEl.classList.remove("is-pick"); }
       }
       if (/^ax\d+_\d$/.test(key)) { var nb = document.getElementById("ol-none-" + key); if (nb) { var on = isNone(t.value); nb.classList.toggle("is-on", on); nb.setAttribute("aria-pressed", on); } }
-      if (cur().id === "simplex" && /^(enter|leave)/.test(key)) { refresh(); return; }
-      if (cur().id === "simplex") updateTableauButton();
-      if (hasGraph()) drawGraph();
+      drawGraph();
       paintStatusSoon();
     }
   }
   var statusTimer = null;
   function paintStatusSoon() { clearTimeout(statusTimer); statusTimer = setTimeout(paintStatus, 150); }
-  function tableauReady(n) {
-    var a = S.answers.simplex || {};
-    return ["enter", "leave", "pivot", "nextz"].every(function (k) { return String(a[k + n] || "").trim() !== ""; });
-  }
-  function updateTableauButton() {
-    var b = document.getElementById("ol-next-tableau");
-    if (!b) return;
-    var ready = tableauReady(S.tableaus - 1);
-    b.disabled = !ready;
-    var hint = b.nextElementSibling;
-    if (hint && hint.classList.contains("ol-field-hint")) hint.hidden = ready;
-  }
-
   function onChange(ev) {
     var t = ev.target;
     if (!root() || !root().contains(t) || S.view !== "home") return;
@@ -1312,13 +1340,13 @@
     if (!group) return;
     var own = group.hasAttribute("data-own-opt"), key = group.getAttribute(own ? "data-own-opt" : "data-opt"), target = own ? S.ownOpts : S.opts;
     if (key === "mode") target.mode = t.checked ? "exam" : "practice";
-    else if (key === "sensitivity" || key === "simplex") target[key] = t.checked;
     else target[key] = t.value;
     render();
   }
   function onToggle(ev) {
     var d = ev.target;
-    if (d.matches && d.matches("details[data-more]")) { if (d.getAttribute("data-more") === "own") S.ownMore = d.open; else S.more = d.open; }
+    if (d.matches && d.matches("details[data-more]")) S.more = d.open;
+    if (d.matches && d.matches("details[data-sol]")) S.solWay[d.getAttribute("data-sol")] = d.open;
   }
   function onFocusIn(ev) {
     if (S.view !== "work" || !root().contains(ev.target)) return;
@@ -1329,7 +1357,7 @@
   }
   function onKey(ev) {
     if (S.view !== "work" || !root().contains(ev.target)) return;
-    if (ev.key === "Enter" && ev.target.classList && ev.target.classList.contains("ol-in") && ev.target.id !== "ol-level") {
+    if (ev.key === "Enter" && ev.target.classList && ev.target.classList.contains("ol-in")) {
       ev.preventDefault();
       var inputs = Array.prototype.slice.call(root().querySelectorAll(".ol-step-body .ol-in"));
       var i = inputs.indexOf(ev.target);
@@ -1366,6 +1394,10 @@
   document.addEventListener("pointercancel", onPointerUp);
   document.addEventListener("touchstart", onTouchStart, { passive: false });
   window.addEventListener("resize", onResize);
+  if (window.matchMedia) {
+    var phoneQuery = window.matchMedia(PHONE), onPhoneChange = function () { if (S.view === "work") refresh(); };
+    if (phoneQuery.addEventListener) phoneQuery.addEventListener("change", onPhoneChange); else phoneQuery.addListener(onPhoneChange);
+  }
   window.addEventListener("beforeunload", function (ev) {
     if (S.view === "work" && steps().some(function (s) { return filled(s) > 0; })) { ev.preventDefault(); ev.returnValue = ""; }
   });
