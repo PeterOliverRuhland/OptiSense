@@ -274,6 +274,7 @@
       '<section class="ol-flow os-card"><h2>' + esc(L("flow_title")) + '</h2><ol class="ol-flow-steps">' +
       flow.map(function (k, i) { return '<li><span class="os-num">' + (i + 1) + "</span><span>" + esc(L(k)) + "</span></li>"; }).join("") +
       '</ol><p class="ol-flow-note">' + esc(L("flow_note")) + '</p><p class="ol-flow-note">' + esc(L("numbers_note")) + " " + esc(L("reload_note")) + "</p></section>" +
+      '<p class="ol-imprint"><button type="button" class="btn btn-link os-imprint-link" data-os-imprint>' + esc(T("imprint")) + "</button></p>" +
       "</div>";
   }
 

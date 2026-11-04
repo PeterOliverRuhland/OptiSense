@@ -60,7 +60,8 @@ sidebar = ui.sidebar(
         ui.input_action_button("btn_sens", tr("run_sens"), class_="os-btn", disabled=True),
         ui.output_ui("solve_hint"),
     ),
-    tr("credit", tag="div", class_="os-credit"),
+    ui.div(tr("credit"), ui.tags.br(), tr("imprint", tag="button", type="button", class_="btn btn-link os-imprint-link", **{"data-os-imprint": ""}),
+           class_="os-credit"),
     width="var(--sidebar-width)",
     # smartphones: the steps stay open above the graph (one column, see www/work.css)
     open={"desktop": "open", "mobile": "always-above"},
@@ -95,7 +96,8 @@ panel = ui.nav_panel(
     ui.layout_sidebar(
         sidebar,
         ui.div(graph_card, ui.div(results_card, class_="os-results"),
-               tr("credit", tag="div", class_="os-credit os-credit-end"),   # smartphones: at the end of the page
+               ui.div(tr("credit"), ui.tags.br(), tr("imprint", tag="button", type="button", class_="btn btn-link os-imprint-link", **{"data-os-imprint": ""}),
+                      class_="os-credit os-credit-end"),   # smartphones: at the end of the page
                class_="os-main"),
         class_="os-layout",
         border=False,

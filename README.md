@@ -17,8 +17,9 @@
 
 **OptiSense** is an educational tool designed to solve **linear programming (LP)**, **integer linear programming (ILP)**, and **mixed-integer linear programming (MILP)** problems, including **sensitivity analysis**. 
 
-The application was developed as part of a bachelor's thesis titled:  
-*"Shiny in Python: An interactive visualization, solution, and sensitivity analysis tool for simple LP and (M)ILP problems using `scipy.optimize.milp` and `lp_solve`."*
+OptiSense 1.0 was developed by Peter Ruhland as part of his bachelor's thesis at Aalen University titled:  
+*"Shiny in Python: An interactive visualization, solution, and sensitivity analysis tool for simple LP and (M)ILP problems using `scipy.optimize.milp` and `lp_solve`."*  
+Version 2.0 was further developed and optimized by Peter Ruhland and Robin Heissler as part of their master's studies.
 
 This tool is intended to help users understand linear programming concepts and sensitivity analysis fundamentals.
 

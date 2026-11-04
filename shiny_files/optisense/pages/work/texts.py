@@ -4,8 +4,8 @@ TEXT = {
     # ------------------------------------------------------------------ navigation
     "tab_work": {"en": "Model & solution", "de": "Modell & Lösung"},
     "toggle_sidebar": {"en": "Show or hide the steps", "de": "Schritte ein- oder ausblenden"},
-    "credit": {"en": "OptiSense 2.0 · by Peter Oliver Ruhland and Robin Heißler",
-               "de": "OptiSense 2.0 · von Peter Oliver Ruhland und Robin Heißler"},
+    "credit": {"en": "OptiSense 2.0 · by Peter Ruhland and Robin Heissler",
+               "de": "OptiSense 2.0 · von Peter Ruhland und Robin Heissler"},
     # ------------------------------------------------------------------ step 1
     "step1": {"en": "Enter problem", "de": "Problem eingeben"},
     "n_functions": {"en": "{n} active", "de": "{n} aktiv"},
