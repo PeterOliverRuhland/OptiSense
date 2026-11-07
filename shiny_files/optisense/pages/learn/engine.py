@@ -26,8 +26,8 @@ TOPICS = ("gastro", "production", "farming", "events", "transport", "advertising
 MIN_TOPICS = ("gastro", "farming", "transport", "advertising")   # contexts that also make sense as cost minimisation
 WEIGHTS = {"objective": 10, "constraints": 15, "lines": 15, "region": 10, "corner": 15, "optimum": 25,
            "slack": 15, "interpret": 5}
-# generated tasks: continuous or integer (mixed tasks only come from “Model & solution”)
-OPTIONS = {"mode": ("practice", "exam"), "form": ("text", "math"), "difficulty": ("easy", "medium"), "kind": ("LP", "ILP")}
+# generated tasks: continuous, integer or mixed (MILP: x1 or x2 integer, chosen at random)
+OPTIONS = {"mode": ("practice", "exam"), "form": ("text", "math"), "difficulty": ("easy", "medium"), "kind": ("LP", "ILP", "MILP")}
 MAX_ROWS = 8
 
 
@@ -241,7 +241,8 @@ def binding(r, x):
 # ---------------------------------------------------------------------------------------------- generator
 def generate(options):
     rng = random.Random(options.get("seed"))
-    difficulty, kind = options["difficulty"], options["kind"]
+    difficulty = options["difficulty"]
+    kind = rng.choice(("MILP1", "MILP2")) if options["kind"] == "MILP" else options["kind"]
     topic = options.get("topic") if options.get("topic") in TOPICS else rng.choice(TOPICS)
     for _ in range(150):
         a, b, d, e = rng.randint(1, 3), rng.randint(3, 6), rng.randint(3, 6), rng.randint(1, 3)
@@ -257,8 +258,12 @@ def generate(options):
             rows.append({"a": [1, 1], "b": math.ceil(sum(target)) + rng.randint(3, 8), "op": "<=", "role": "total"})
         m = validate({"c": c, "rows": rows, "sense": sense, "kind": kind})
         sol = solve(m)
-        if sol["status"] == "optimal" and min(sol["x"]) > EPS:
-            return m, {"source": "generated", "topic": topic}, sol
+        if sol["status"] != "optimal" or min(sol["x"]) <= EPS:
+            continue
+        # with integer variables the integrality has to matter: the LP optimum itself must not be allowed
+        if kind != "LP" and feasible(m, solve({**m, "kind": "LP"})["x"]):
+            continue
+        return m, {"source": "generated", "topic": topic}, sol
     raise LearnError("err_generate")
 
 

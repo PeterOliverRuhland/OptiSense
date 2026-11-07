@@ -305,7 +305,7 @@ class Student:
         await self.go("learn")
         await self.think(3, 8)
         options = {"mode": "practice", "form": self.rng.choice(("text", "math")),
-                   "difficulty": self.rng.choice(("easy", "medium")), "kind": self.rng.choice(("LP", "ILP"))}
+                   "difficulty": self.rng.choice(("easy", "medium")), "kind": self.rng.choice(("LP", "ILP", "MILP"))}
         data = await self.learn_req("Aufgabe erstellen", "create", options=options)
         steps = (data or {}).get("steps") or []
         answers = {}

@@ -45,7 +45,7 @@ def typed(value, lang):
 def exercises():
     """Generated tasks of every kind, the guided example and own tasks (also mixed-integer)."""
     out = [tutorial.create()]
-    for form, kind, difficulty, seed in itertools.product(("text", "math"), ("LP", "ILP"), ("easy", "medium"), range(6)):
+    for form, kind, difficulty, seed in itertools.product(("text", "math"), ("LP", "ILP", "MILP"), ("easy", "medium"), range(6)):
         opts = engine.normalize_options({"form": form, "kind": kind, "difficulty": difficulty, "topic": engine.MIN_TOPICS[seed % 4]})
         opts["seed"] = seed
         out.append(engine.make_exercise(opts))
@@ -56,11 +56,12 @@ def exercises():
 
 class GeneratorTests(unittest.TestCase):
     def test_generated_tasks_are_solvable_and_worth_100_points(self):
-        for kind, difficulty, seed in itertools.product(("LP", "ILP"), ("easy", "medium"), range(12)):
+        for kind, difficulty, seed in itertools.product(("LP", "ILP", "MILP"), ("easy", "medium"), range(12)):
             opts = engine.normalize_options({"kind": kind, "difficulty": difficulty, "form": "text"})
             opts["seed"] = seed
             ex = engine.make_exercise(opts)
             m = ex["model"]
+            self.assertIn(m["kind"], ("MILP1", "MILP2") if kind == "MILP" else (kind,))
             self.assertEqual(ex["solution"]["status"], "optimal")
             self.assertTrue(engine.feasible(m, ex["solution"]["x"]))
             self.assertEqual(sum(s["points"] for s in ex["steps"]), 100)
@@ -81,11 +82,25 @@ class GeneratorTests(unittest.TestCase):
         self.assertEqual(senses[("medium", "farming")], {"max", "min"})
 
     def test_options_are_reduced_to_known_values(self):
-        # the removed choices (advanced level, mixed variables, simplex) fall back to the defaults
-        opts = engine.normalize_options({"mode": "cheat", "kind": "MILP", "difficulty": "hard", "topic": "space", "simplex": 1})
+        # unknown and removed choices (advanced level, simplex) fall back to the defaults; mixed is chosen as “MILP”
+        opts = engine.normalize_options({"mode": "cheat", "kind": "MILP1", "difficulty": "hard", "topic": "space", "simplex": 1})
         self.assertEqual((opts["mode"], opts["kind"], opts["difficulty"], opts["topic"]), ("practice", "LP", "easy", "random"))
         self.assertNotIn("simplex", opts)
         self.assertNotIn("method", engine.normalize_options({"method": "calc"}))   # the graph and the calculation always belong together
+        self.assertEqual(engine.normalize_options({"kind": "MILP"})["kind"], "MILP")
+
+    def test_integrality_matters_in_generated_integer_tasks(self):
+        kinds = set()
+        for kind, seed in itertools.product(("ILP", "MILP"), range(20)):
+            opts = engine.normalize_options({"kind": kind, "difficulty": "easy" if seed % 2 else "medium"})
+            opts["seed"] = seed
+            ex = engine.make_exercise(opts)
+            m = ex["model"]
+            kinds.add(m["kind"])
+            relaxed = engine.solve({**m, "kind": "LP"})
+            self.assertFalse(engine.feasible(m, relaxed["x"]), (kind, seed))   # just solving the LP would be wrong
+            self.assertNotIn("corner", [s["id"] for s in ex["steps"]])
+        self.assertTrue({"MILP1", "MILP2"} <= kinds)   # either variable can be the integer one
 
 
 class SolverTests(unittest.TestCase):

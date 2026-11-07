@@ -37,7 +37,8 @@
     if (t && t.id === "lang") setLang(t.value);
   });
 
-  // the legal notice (Impressum): a small dialog, opened by any element with data-os-imprint
+  // the legal notice (Impressum): a small dialog with the link to Aalen University's legal notice and our contact,
+  // opened by any element with data-os-imprint
   function esc(s) {
     return String(s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; });
   }
@@ -45,13 +46,16 @@
     var d = (window.OS_I18N || {})[current] || {}, t = function (k) { return d[k] !== undefined ? d[k] : k; };
     var old = document.getElementById("os-imprint");
     if (old) old.remove();
-    var dlg = document.createElement("dialog"), mail = t("imprint_mail");
+    var dlg = document.createElement("dialog");
     dlg.id = "os-imprint";
     dlg.className = "os-dialog";
     dlg.setAttribute("aria-labelledby", "os-imprint-title");
-    dlg.innerHTML = '<h2 id="os-imprint-title">' + esc(t("imprint")) + '</h2><p class="os-dialog-sub">' + esc(t("imprint_law")) + "</p>" +
-      "<p>" + [t("imprint_name"), t("imprint_street"), t("imprint_city")].map(esc).join("<br>") + "</p>" +
-      "<p><b>" + esc(t("imprint_contact")) + '</b><br><a href="mailto:' + esc(mail) + '">' + esc(mail) + "</a></p>" +
+    var people = [1, 2].map(function (n) {
+      var mail = t("imprint_mail" + n);
+      return esc(t("imprint_person" + n)) + '<br><a href="mailto:' + esc(mail) + '">' + esc(mail) + "</a>";
+    });
+    dlg.innerHTML = '<h2 id="os-imprint-title">' + esc(t("imprint")) + "</h2><p>" + esc(t("imprint_text")) + '<br><a href="' + esc(t("imprint_url")) + '" target="_blank" rel="noopener">' + esc(t("imprint_link")) + " ↗</a></p>" +
+      '<h3 class="os-dialog-h">' + esc(t("imprint_contact")) + "</h3>" + people.map(function (p) { return "<p>" + p + "</p>"; }).join("") +
       '<div class="os-dialog-foot"><button type="button" class="btn os-btn os-btn-primary" data-os-close>' + esc(t("close")) + "</button></div>";
     document.body.appendChild(dlg);
     dlg.addEventListener("click", function (ev) { if (ev.target === dlg || ev.target.closest("[data-os-close]")) dlg.close(); });

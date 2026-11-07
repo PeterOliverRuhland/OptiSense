@@ -230,7 +230,7 @@
     var o = S.opts, oo = S.ownOpts;
     var diff = seg("o-difficulty", [["easy", L("diff_easy")], ["medium", L("diff_medium")]], o.difficulty, 'data-opt="difficulty" aria-label="' + esc(L("opt_difficulty")) + '"');
     var form = seg("o-form", [["text", L("form_text")], ["math", L("form_math")]], o.form, 'data-opt="form" aria-label="' + esc(L("opt_form")) + '"');
-    var kind = seg("o-kind", [["LP", L("kind_LP")], ["ILP", L("kind_ILP")]], o.kind, 'data-opt="kind" aria-label="' + esc(L("opt_kind")) + '"');
+    var kind = seg("o-kind", [["LP", L("kind_LP")], ["ILP", L("kind_ILP")], ["MILP", L("kind_MILP")]], o.kind, 'data-opt="kind" aria-label="' + esc(L("opt_kind")) + '"');
     var topics = ["random", "gastro", "production", "farming", "events", "transport", "advertising"];
 
     var practice =
@@ -650,7 +650,7 @@
     if (s.id === "lines") return L("gn_lines", { label: label(S.activeRow) });
     if (s.id === "region") return L("gn_region");
     if (s.id === "corner") return L("gn_corner");
-    if (s.id === "optimum") return L(hasCorner() ? "gn_optimum_calc" : "gn_optimum");
+    if (s.id === "optimum") return L(hasCorner() ? "gn_optimum_calc" : /^MILP/.test(model().kind) ? "gn_optimum_mixed" : "gn_optimum");
     return L("gn_after");
   }
 

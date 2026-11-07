@@ -18,11 +18,13 @@ TEXT = {
     "binding": {"en": "binding", "de": "bindend"},
     # legal notice (Impressum), opened from “Model & solution”, the guide and the start of “Learn & practice”
     "imprint": {"en": "Legal notice", "de": "Impressum"},
-    "imprint_law": {"en": "Information according to § 5 DDG (German Digital Services Act)", "de": "Angaben gemäß § 5 DDG"},
-    "imprint_name": {"en": "Robin Heissler", "de": "Robin Heissler"},
-    "imprint_street": {"en": "Stresemannstraße 76", "de": "Stresemannstraße 76"},
-    "imprint_city": {"en": "10963 Berlin, Germany", "de": "10963 Berlin"},
+    "imprint_text": {"en": "The legal notice of Aalen University applies to OptiSense:", "de": "Für OptiSense gilt das Impressum der Hochschule Aalen:"},
+    "imprint_link": {"en": "Legal notice of Aalen University", "de": "Impressum der Hochschule Aalen"},
+    "imprint_url": {"en": "https://www.hs-aalen.de/impressum/", "de": "https://www.hs-aalen.de/impressum/"},
     "imprint_contact": {"en": "Contact", "de": "Kontakt"},
-    "imprint_mail": {"en": "robin.heissler@studmail.htw-aalen.de", "de": "robin.heissler@studmail.htw-aalen.de"},
+    "imprint_person1": {"en": "Robin Heissler", "de": "Robin Heissler"},
+    "imprint_mail1": {"en": "robin.heissler@studmail.htw-aalen.de", "de": "robin.heissler@studmail.htw-aalen.de"},
+    "imprint_person2": {"en": "Peter Ruhland", "de": "Peter Ruhland"},
+    "imprint_mail2": {"en": "peter.ruhland@studmail.htw-aalen.de", "de": "peter.ruhland@studmail.htw-aalen.de"},
     "non_binding": {"en": "non-binding", "de": "nicht bindend"},
 }
