@@ -30,7 +30,7 @@ _L = {
                              "Wähle, wie deine Aufgabe aussehen soll."),
     "opt_difficulty": _t("Difficulty", "Schwierigkeit"),
     "diff_easy": _t("Basic", "Einstieg"),
-    "diff_medium": _t("Intermediate", "Aufbau"),
+    "diff_medium": _t("Intermediate", "Fortgeschritten"),
     "diff_easy_hint": _t("2 constraints, maximization", "2 Nebenbedingungen, Maximierung"),
     "diff_medium_hint": _t("3 constraints, also minimization", "3 Nebenbedingungen, auch Minimierung"),
     "opt_form": _t("Task as", "Aufgabe als"),
@@ -46,7 +46,7 @@ _L = {
     "kind_MILP": _t("mixed", "gemischt"),
     "kind_MILP_hint": _t("MILP – only one variable integer", "MILP – nur eine Variable ganzzahlig"),
     "opt_exam": _t("Exam mode", "Prüfungsmodus"),
-    "opt_exam_hint": _t("No hints or solutions – scored after handing in",
+    "opt_exam_hint": _t("No hints or solutions – scored after you submit",
                         "Ohne Tipps und Lösungen, Bewertung am Ende"),
     "more_options": _t("More options", "Weitere Optionen"),
     "opt_topic": _t("Topic", "Thema"),
@@ -76,8 +76,8 @@ _L = {
     "flow_result": _t("Evaluation", "Auswertung"),
     "flow_note": _t("Every task is worth 100 points. In practice mode you can check every step, get hints and look at the solution.",
                     "Jede Aufgabe hat 100 Punkte. Im Übungsmodus kannst du jeden Schritt prüfen, dir Tipps holen und die Lösung ansehen."),
-    "numbers_note": _t("Enter numbers with a point or a comma, fractions like 3/4 and “unlimited” as ∞.",
-                       "Zahlen gibst du mit Komma oder Punkt ein, Brüche wie 3/4 und „unbegrenzt“ als ∞."),
+    "numbers_note": _t("Enter numbers with a point or a comma; fractions like 3/4 work too.",
+                       "Zahlen gibst du mit Komma oder Punkt ein, auch Brüche wie 3/4."),
     "reload_note": _t("Progress is not saved: reloading the page discards an open task.",
                       "Der Fortschritt wird nicht gespeichert: Beim Neuladen der Seite geht eine offene Aufgabe verloren."),
     # ------------------------------------------------------------------ workspace frame
@@ -103,7 +103,7 @@ _L = {
     "gn_lines": _t("Drag the points of {label} along the axes – or type in the values. The buttons above switch the line.",
                    "Ziehe die Punkte von {label} entlang der Achsen – oder tippe die Werte ein. Mit den Knöpfen oben wechselst du die Gerade."),
     "gn_need_lines": _t("Some lines are still missing – draw them in the step “Lines”.", "Es fehlen noch Geraden – zeichne sie im Schritt „Geraden“."),
-    "gn_region": _t("The dashed circle is the test point of the chosen line. The grey area follows your answers; a click on a line chooses it.",
+    "gn_region": _t("The dashed circle is the test point of the chosen line. The gray area follows your answers; a click on a line chooses it.",
                     "Der gestrichelte Kreis ist der Testpunkt der gewählten Geraden. Die graue Fläche folgt deinen Antworten; ein Klick auf eine Gerade wählt sie aus."),
     "gn_corner": _t("Drag the green line by its handle. Then tap the corner it touches last.",
                     "Ziehe die grüne Gerade am Griff. Tippe dann auf die Ecke, die sie zuletzt berührt."),
@@ -113,7 +113,8 @@ _L = {
                            "Ziehe die grüne Gerade am Griff. Ein Tipp setzt deinen Punkt – die ganzzahlige Variable rastet auf ganze Zahlen ein, die andere auf die nächste Gerade."),
     "gn_optimum_calc": _t("The two lines of your corner are highlighted. Your calculated point appears in red.",
                           "Die zwei Geraden deiner Ecke sind hervorgehoben. Dein berechneter Punkt erscheint rot."),
-    "gn_after": _t("Your construction – only “Check” grades it.", "Deine Konstruktion – bewertet wird nur über „Prüfen“."),
+    "gn_after": _t("Your construction – “Check” shows whether it is right.", "Deine Konstruktion – ob sie stimmt, zeigt dir „Prüfen“."),
+    "gn_after_exam": _t("Your construction – it is graded after you submit.", "Deine Konstruktion – bewertet wird sie nach der Abgabe."),
     "step_of": _t("Step {n} of {total}", "Schritt {n} von {total}"),
     "points": _t("{n} points", "{n} Punkte"),
     "points_of": _t("{got} of {max} points", "{got} von {max} Punkten"),
@@ -122,7 +123,7 @@ _L = {
     "back": _t("Back", "Zurück"),
     "hint": _t("Hint", "Tipp"),
     "solution": _t("Solution", "Lösung"),
-    "to_submit": _t("Hand in", "Zur Abgabe"),
+    "to_submit": _t("Submit", "Zur Abgabe"),
     "finish_tutorial": _t("Finish example", "Beispiel abschließen"),
     "finish_short": _t("Finish", "Abschließen"),
     "finish_tutorial_text": _t("Afterwards you see an overview with all worked solutions.",
@@ -142,7 +143,7 @@ _L = {
                          "„Lösung“ trägt die richtigen Werte des Schritts ein; das wird in der Auswertung vermerkt."),
     # ------------------------------------------------------------------ steps
     "step_task": _t("Understand the task", "Aufgabe verstehen"),
-    "step_objective": _t("Objective & value range", "Zielfunktion & Wertebereich"),
+    "step_objective": _t("Objective & variable types", "Zielfunktion & Wertebereich"),
     "step_constraints": _t("Set up the constraints", "Nebenbedingungen aufstellen"),
     "step_lines": _t("Draw the lines", "Geraden zeichnen"),
     "step_region": _t("Find the feasible region", "Zulässigen Bereich bestimmen"),
@@ -172,7 +173,7 @@ _L = {
                            "Übersetze jetzt die Grenzen der Aufgabe: Trage je Nebenbedingung die Zahlen ein und wähle das Vergleichszeichen ≤, ≥ oder =."),
     "lead_lines": _t("Find where each constraint meets the two axes – or drag the points along the axes in the graph. This gives you the lines.",
                      "Bestimme für jede Nebenbedingung die Schnittpunkte mit den Achsen – oder ziehe die Punkte in der Grafik entlang der Achsen. Daraus entstehen die Geraden."),
-    "lead_region": _t("Every line splits the graph into two sides. Decide for each constraint on which side it holds – this forms the grey feasible region. Then check the marked points.",
+    "lead_region": _t("Every line splits the graph into two sides. Decide for each constraint on which side it holds – this forms the gray feasible region. Then check the marked points.",
                       "Jede Gerade teilt die Grafik in zwei Seiten. Lege für jede Nebenbedingung fest, auf welcher Seite sie erfüllt ist – so entsteht der graue zulässige Bereich. Prüfe danach die markierten Punkte."),
     "lead_slack": _t("Put your optimal point into every constraint: how much is left over? If nothing is left, the constraint is binding.",
                      "Setze deinen optimalen Punkt in jede Nebenbedingung ein: Wie viel bleibt übrig? Bleibt nichts übrig, ist die Nebenbedingung bindend."),
@@ -184,14 +185,14 @@ _L = {
                             "Deine Ecke ist der Schnittpunkt der zwei Geraden. Berechne ihn genau und dazu den Zielwert."),
     "lead_interpret": _t("Finally: what does your result mean?", "Zum Schluss: Was bedeutet dein Ergebnis?"),
     # groups, choices and field names
-    "g_range": _t("Value range", "Wertebereich"),
+    "g_range": _t("Variable types", "Wertebereich"),
     "g_sides": _t("On which side does the constraint hold?",
                   "Auf welcher Seite ist die Bedingung erfüllt?"),
     "sides_how": _t("How: put the test point – usually (0 | 0), circled in the graph – into the inequality. If it holds, the side of this point is allowed, otherwise the other side. “Only the line” is for = only.",
                     "So geht's: Setze den Testpunkt – meist (0 | 0), in der Grafik umkreist – in die Ungleichung ein. Stimmt sie, ist die Seite von diesem Punkt erlaubt, sonst die andere. „Nur die Gerade“ gibt es nur bei =."),
     "g_points": _t("Do these points lie in the feasible region?",
                    "Liegen diese Punkte im zulässigen Bereich?"),
-    "points_how": _t("A point is feasible if it satisfies every constraint – it lies in the grey region or on its edge.",
+    "points_how": _t("A point is feasible if it satisfies every constraint – it lies in the gray region or on its edge.",
                      "Ein Punkt ist zulässig, wenn er alle Nebenbedingungen erfüllt – er liegt dann im grauen Bereich oder auf dessen Rand."),
     "g_pick": _t("Which two lines form the corner?",
                  "Welche zwei Geraden bilden die Ecke?"),
@@ -213,7 +214,7 @@ _L = {
     "step_slack": _t("Determine the slack", "Schlupf bestimmen"),
     "short_slack": _t("Slack", "Schlupf"),
     "story_sought": _t("Find", "Gesucht"),
-    "story_q": _t("Which program (x1 | x2) is optimal under these conditions – and what is the objective value?",
+    "story_q": _t("Which plan (x1 | x2) is optimal under these conditions – and what is the objective value?",
                   "Welches Programm (x1 | x2) ist unter diesen Bedingungen optimal – und welcher Zielwert ergibt sich?"),
     "story_q_math": _t("Find the optimal values of x1 and x2 and the optimal objective value F.",
                        "Bestimme die optimalen Werte für x1 und x2 und den optimalen Zielwert F."),
@@ -238,7 +239,7 @@ _L = {
     "picked": _t("Chosen: {a} and {b}", "Gewählt: {a} und {b}"),
     "corner_missing": _t("First choose the optimal corner in the step “Corner”.",
                          "Wähle zuerst im Schritt „Ecke“ die optimale Ecke."),
-    "corner_none": _t("Tap closer to a corner of the grey region.",
+    "corner_none": _t("Tap closer to a corner of the gray region.",
                       "Tippe näher an eine Ecke des grauen Bereichs."),
     "your_opt": _t("Your optimal point:", "Dein optimaler Punkt:"),
     "q_meaning": _t("What does the optimal objective value F mean?", "Was bedeutet der optimale Zielwert F?"),
@@ -253,7 +254,7 @@ _L = {
     "a_op": _t("{label}: comparison", "{label}: Vergleich"),
     "a_b": _t("{label}: right-hand side b", "{label}: rechte Seite b"),
     "a_sense": _t("Direction of optimization", "Optimierungsrichtung"),
-    "a_vt": _t("Value range of x{n}", "Wertebereich x{n}"),
+    "a_vt": _t("Variable type of x{n}", "Wertebereich x{n}"),
     "a_pt": _t("{label}, point {k}: x{n}", "{label}, Punkt {k}: x{n}"),
     "a_side": _t("{label}: feasible side", "{label}: zulässige Seite"),
     "a_point": _t("Is point P{n} feasible?", "Ist Punkt P{n} zulässig?"),
@@ -281,9 +282,13 @@ _L = {
     "sol_filled_title": _t("Solution filled in", "Lösung eingetragen"),
     "sol_filled": _t("The correct values are now in the fields.", "Die richtigen Werte stehen jetzt in den Feldern."),
     "sol_way": _t("Show the worked solution", "Lösungsweg ansehen"),
+    "sol_locked_title": _t("Fill in the earlier steps first", "Erst die vorherigen Schritte ausfüllen"),
+    "sol_locked": _t("The solution of this step builds on the steps before it. Fill them in first – or have the solution filled in there:",
+                     "Die Lösung dieses Schritts baut auf den Schritten davor auf. Fülle sie zuerst aus – oder lass dir dort die Lösung eintragen:"),
+    "sol_locked_go": _t("Go to “{step}”", "Zu „{step}“"),
     "hint_sense": _t("Is it about as much as possible (profit, contribution margin, reach) or as little as possible (costs)?",
                      "Geht es um möglichst viel (Gewinn, Deckungsbeitrag, Reichweite) oder um möglichst wenig (Kosten)?"),
-    "hint_vt": _t("May the quantities take fractions (litres, hectares, planning units) or only whole pieces? The task text says so in its last lines.",
+    "hint_vt": _t("May the quantities take fractions (liters, hectares, planning units) or only whole pieces? The task text says so in its last lines.",
                   "Dürfen die Mengen Bruchteile annehmen (Liter, Hektar, Planungseinheiten) oder nur ganze Stücke? Das steht in den letzten Zeilen des Aufgabentexts."),
     "hint_c": _t("c1 and c2 are the numbers in the sentence about the objective – the contribution (or cost) of <b>one</b> unit.",
                  "c1 und c2 sind die Zahlen aus dem Satz zur Zielfunktion – der Beitrag (oder die Kosten) <b>einer</b> Einheit."),
@@ -295,7 +300,7 @@ _L = {
                     "Setze den Testpunkt in die Ungleichung ein. Stimmt sie, ist seine Seite zulässig – sonst die andere. Bei „=“ bleibt nur die Gerade."),
     "hint_point": _t("Put the point into every constraint. A single violated constraint makes it infeasible. With integer variables only whole values count.",
                      "Setze den Punkt in jede Nebenbedingung ein. Eine einzige verletzte Bedingung genügt für „unzulässig“. Bei ganzzahligen Variablen zählen nur ganze Werte."),
-    "hint_boundary": _t("Move the green line in the direction in which F improves until it touches the grey region at a single corner. If two corners look equally good, calculate F at both and take the better one.",
+    "hint_boundary": _t("Move the green line in the direction in which F improves until it touches the gray region at a single corner. If two corners look equally good, calculate F at both and take the better one.",
                         "Verschiebe die grüne Gerade in die Richtung, in der F besser wird, bis sie den grauen Bereich nur noch in einer Ecke berührt. Sehen zwei Ecken gleich gut aus, berechne F in beiden und nimm die bessere."),
     "hint_opt": _t("The point must satisfy every condition and have the best objective value. Do not just round the LP solution – compare the feasible points near the green line.",
                    "Der Punkt muss alle Bedingungen erfüllen und den besten Zielwert haben. Runde nicht einfach die LP-Lösung – vergleiche die zulässigen Punkte nahe der grünen Geraden."),
@@ -314,7 +319,7 @@ _L = {
     # help panels (simple HTML)
     "help_objective": _t(
         "<p>The first part of the model:</p><ol><li><b>Objective function</b> – what is optimized:<span class=\"ol-f\">F = c1·x1 + c2·x2 → max or min</span>c1 and c2 are the contributions (or costs) per unit. “As much as possible” (profit, contribution margin) means max, “as little as possible” (costs) means min.</li>"
-        "<li><b>Value range</b> – may x1 and x2 take fractions (continuous) or only whole numbers (integer)?</li></ol>"
+        "<li><b>Variable types</b> – may x1 and x2 take fractions (continuous) or only whole numbers (integer)?</li></ol>"
         "<p>The constraints follow in the next step. When you click into a field, the matching sentence of the task is highlighted.</p>",
         "<p>Der erste Teil des Modells:</p><ol><li><b>Zielfunktion</b> – was optimiert wird:<span class=\"ol-f\">F = c1·x1 + c2·x2 → max oder min</span>c1 und c2 sind die Beiträge (oder Kosten) je Einheit. „Möglichst viel“ (Gewinn, Deckungsbeitrag) heißt max, „möglichst wenig“ (Kosten) heißt min.</li>"
         "<li><b>Wertebereich</b> – dürfen x1 und x2 Bruchteile annehmen (stetig) oder nur ganze Zahlen (ganzzahlig)?</li></ol>"
@@ -338,13 +343,13 @@ _L = {
     "help_region": _t(
         "<p><b>Which side?</b> Put a test point, usually (0 | 0), into the inequality. If it holds, the side with the test point is feasible, otherwise the other one. With “=” only the line itself is feasible.</p>"
         "<p><b>Is a point feasible?</b> Put it into every constraint. A single violated constraint makes it infeasible. Also x1, x2 ≥ 0 must hold – and integer variables only take whole values.</p>"
-        "<p>The grey area in the graph follows your answers, so you see right away how the region is formed.</p>",
+        "<p>The gray area in the graph follows your answers, so you see right away how the region is formed.</p>",
         "<p><b>Welche Seite?</b> Setze einen Testpunkt, meist (0 | 0), in die Ungleichung ein. Stimmt sie, ist die Seite mit dem Testpunkt zulässig, sonst die andere. Bei „=“ ist nur die Gerade selbst zulässig.</p>"
         "<p><b>Ist ein Punkt zulässig?</b> Setze ihn in jede Nebenbedingung ein. Schon eine verletzte Bedingung macht ihn unzulässig. Außerdem muss x1, x2 ≥ 0 gelten – und ganzzahlige Variablen nehmen nur ganze Werte an.</p>"
         "<p>Die graue Fläche in der Grafik folgt deinen Antworten – so siehst du sofort, wie der Bereich entsteht.</p>"),
     "help_corner": _t(
         "<p>All points on the green line have the same objective value F. Moving it in parallel changes F.</p>"
-        "<ol><li>Drag the line by its handle in the direction in which F improves (max: larger, min: smaller).</li><li>Stop when it touches the grey region at a single corner only.</li><li>Tap this corner. The two lines that meet there are chosen.</li></ol>"
+        "<ol><li>Drag the line by its handle in the direction in which F improves (max: larger, min: smaller).</li><li>Stop when it touches the gray region at a single corner only.</li><li>Tap this corner. The two lines that meet there are chosen.</li></ol>"
         "<p><b>Close call?</b> If two corners look equally good, calculate F at both and take the better one. You calculate the exact coordinates in the next step.</p>",
         "<p>Alle Punkte auf der grünen Geraden haben denselben Zielwert F. Verschiebst du sie parallel, ändert sich F.</p>"
         "<ol><li>Ziehe die Gerade am Griff in die Richtung, in der F besser wird (max: größer, min: kleiner).</li><li>Hör auf, wenn sie den grauen Bereich nur noch in einer Ecke berührt.</li><li>Tippe auf diese Ecke. Die zwei Geraden, die sich dort schneiden, werden ausgewählt.</li></ol>"
@@ -358,7 +363,7 @@ _L = {
         "<p>Liegt die Ecke auf einer Achse, ist eine Koordinate 0.</p>"),
     "help_optimum": _t(
         "<p><b>Graphically:</b> all points on the green line have the same objective value. Move it in parallel in the direction in which F improves (max: larger, min: smaller). The last feasible point it touches is optimal.</p>"
-        "<p><b>Integer:</b> only the grey lattice points (or lines) are feasible. Do not just round the LP solution – check the points nearby.</p>"
+        "<p><b>Integer:</b> only the gray lattice points (or lines) are feasible. Do not just round the LP solution – check the points nearby.</p>"
         "<p><b>Close call?</b> Put the candidates into F = c1·x1 + c2·x2 and compare.</p>",
         "<p><b>Grafisch:</b> Alle Punkte auf der grünen Geraden haben denselben Zielwert. Verschiebe sie parallel in die Richtung, in der F besser wird (max: größer, min: kleiner). Der letzte zulässige Punkt, den sie berührt, ist optimal.</p>"
         "<p><b>Ganzzahlig:</b> Nur die grauen Gitterpunkte (bzw. Linien) sind zulässig. Runde nicht einfach die LP-Lösung, sondern prüfe die Punkte in der Nähe.</p>"
@@ -381,7 +386,7 @@ _L = {
     "coach_title": _t("In the example", "Im Beispiel"),
     "coach_calc": _t("Show the calculation", "Rechnung ansehen"),
     "tut_title": _t("Burger diner: standard and luxury burgers", "Burger-Diner: Standard- und Luxusburger"),
-    "tut_intro": _t("Michael runs a small burger diner in the city centre of Aalen that is regularly sold out in the evening. He could sell more – but his suppliers only deliver limited quantities per day. He plans his daily production program so that the revenue is as large as possible.",
+    "tut_intro": _t("Michael runs a small burger diner in the city center of Aalen that is regularly sold out in the evening. He could sell more – but his suppliers only deliver limited quantities per day. He sets up his daily production plan so that the revenue is as large as possible.",
                     "Michael betreibt in der Aalener Innenstadt ein kleines Burger-Diner, das abends regelmäßig ausverkauft ist. Mehr verkaufen könnte er schon – aber seine Lieferanten liefern nur begrenzte Mengen pro Tag. Er plant sein tägliches Produktionsprogramm so, dass der Umsatz möglichst groß wird."),
     "tut_var1": _t("number of standard burgers per day", "Anzahl Standardburger pro Tag"),
     "tut_var2": _t("number of luxury burgers per day", "Anzahl Luxusburger pro Tag"),
@@ -395,7 +400,7 @@ _L = {
     "tut_row3": _t("Vegetables: 100 g per standard burger, 150 g per luxury burger – at most 60 kg per day.",
                    "Gemüse: 100 g je Standardburger, 150 g je Luxusburger – höchstens 60 kg pro Tag."),
     "tut_domain": _t("Solve it without integrality first: x1 and x2 are continuous (ℝ≥0).", "Rechne zunächst ohne Ganzzahligkeit: x1 und x2 sind stetig (ℝ≥0)."),
-    "tut_q": _t("Which production program leads to maximum revenue?", "Welches Produktionsprogramm führt zum maximalen Umsatz?"),
+    "tut_q": _t("Which production plan gives the maximum revenue?", "Welches Produktionsprogramm führt zum maximalen Umsatz?"),
     "tut_rn1": _t("Buns", "Brötchen"),
     "tut_rn2": _t("Meat", "Fleisch"),
     "tut_rn3": _t("Vegetables", "Gemüse"),
@@ -430,11 +435,11 @@ _L = {
                               "In Worten: Der maximale Umsatz beträgt 2.550 €. Dafür werden 300 Standard- und 200 Luxusburger hergestellt und verkauft. Es bleiben 15 kg Fleisch übrig, Brötchen und Gemüse werden vollständig verbraucht. Und: Burger sind eigentlich ganze Stücke – eine LP-Lösung darf man nicht einfach runden."),
     "tut_calc_interpret": _t("", ""),
     # ------------------------------------------------------------------ handing in and evaluation
-    "submit_title": _t("Hand in the task?", "Aufgabe abgeben?"),
+    "submit_title": _t("Submit the task?", "Aufgabe abgeben?"),
     "submit_text": _t("Afterwards you see your evaluation and can no longer change anything.",
                       "Danach siehst du deine Auswertung und kannst nichts mehr ändern."),
     "submit_missing": _t("{n} entries are still empty – they earn no points.", "{n} Angaben sind noch leer – dafür gibt es keine Punkte."),
-    "submit_btn": _t("Hand in", "Abgeben"),
+    "submit_btn": _t("Submit", "Abgeben"),
     "res_title": _t("Evaluation", "Auswertung"),
     "res_tut_title": _t("Example completed!", "Beispiel abgeschlossen!"),
     "res_great": _t("Everything solved – great work!", "Alles gelöst – stark!"),
@@ -443,7 +448,7 @@ _L = {
     "res_tut_text": _t("Now you know the procedure. Try a practice task next.", "Jetzt kennst du den Ablauf. Probier als Nächstes eine Übungsaufgabe."),
     "res_note_practice": _t("Your latest entries are graded. Hints and viewed solutions are noted.",
                             "Bewertet wird dein letzter Stand. Tipps und angesehene Lösungen sind vermerkt."),
-    "res_note_exam": _t("Your handed-in answers were graded, with partial points.", "Bewertet wurden deine abgegebenen Antworten, mit Teilpunkten."),
+    "res_note_exam": _t("Your submitted answers were graded, with partial points.", "Bewertet wurden deine abgegebenen Antworten, mit Teilpunkten."),
     "kpi_score": _t("Points", "Punkte"),
     "kpi_steps": _t("Steps correct", "Schritte richtig"),
     "kpi_hints": _t("Steps with hints", "Schritte mit Tipp"),
@@ -453,13 +458,17 @@ _L = {
     "res_your": _t("Your answer", "Deine Antwort"),
     "res_ok": _t("Correct?", "Richtig?"),
     "res_first": _t("First check: {got} of {max} points", "Erster Prüfversuch: {got} von {max} Punkten"),
+    # never checked, the solution was filled in straight away: what the learner had entered until then
+    "res_before_solution": _t("Before the solution was filled in: {got} of {max} points", "Vor dem Eintragen der Lösung: {got} von {max} Punkten"),
     "res_with_hint": _t("with hint", "mit Tipp"),
     "res_seen": _t("solution viewed", "Lösung angesehen"),
-    "res_new": _t("New task", "Neue Aufgabe"),
-    "res_to_practice": _t("To the practice tasks", "Zu den Übungsaufgaben"),
-    "res_again": _t("Same settings, new numbers", "Gleiche Einstellungen, neue Zahlen"),
+    "res_back": _t("Back to Learn & practice", "Zurück zu Lernen & Üben"),
     "res_download": _t("Save evaluation", "Auswertung speichern"),
+    # the evaluation as a PDF (report.py)
+    "res_correct": _t("Correct answer", "Richtige Lösung"),
+    "res_model": _t("The model", "Das Modell"),
     "res_graph": _t("Graphical solution", "Grafische Lösung"),
+    "res_objline": _t("Objective line F = {z}", "Zielfunktionsgerade F = {z}"),
     "res_optimum": _t("Optimum: x1 = {x1}, x2 = {x2}, {f} = {z}", "Optimum: x1 = {x1}, x2 = {x2}, {f} = {z}"),
     # ------------------------------------------------------------------ task texts (server)
     "own_title": _t("Your own task", "Eigene Aufgabe"),
@@ -477,7 +486,7 @@ _L = {
     "dom_con": _t("x{n} ({pl}): fractions allowed.", "x{n} ({pl}): auch Bruchteile erlaubt."),
     "dom_int": _t("x{n} ({pl}): whole numbers only.", "x{n} ({pl}): nur ganze Zahlen."),
     # worked solutions (server)
-    "sol_range": _t("Value range: x1 {vt1}, x2 {vt2}", "Wertebereich: x1 {vt1}, x2 {vt2}"),
+    "sol_range": _t("Variable types: x1 {vt1}, x2 {vt2}", "Wertebereich: x1 {vt1}, x2 {vt2}"),
     "sol_scaled": _t("A multiple of a whole row (e.g. everything times 2) also counts as correct.",
                      "Auch ein Vielfaches einer ganzen Zeile (z. B. alles mal 2) zählt als richtig."),
     "sol_line": _t("{label}: {eq} → x1-axis: {p} · x2-axis: {q}", "{label}: {eq} → x1-Achse: {p} · x2-Achse: {q}"),
@@ -533,16 +542,20 @@ _L = {
     "err_unbounded": _t("This problem is unbounded. The learning path needs a finite optimum – add a limit on “Model & solution”.",
                         "Dieses Problem ist unbeschränkt. Für den Lernweg braucht es ein endliches Optimum – ergänze unter „Modell & Lösung“ eine Grenze."),
     "err_solver": _t("The problem could not be solved reliably.", "Das Problem konnte nicht zuverlässig gelöst werden."),
-    "err_exam": _t("In exam mode you get feedback only after handing in.", "Im Prüfungsmodus gibt es Rückmeldung erst nach der Abgabe."),
+    "err_exam": _t("In exam mode you get feedback only after you submit.", "Im Prüfungsmodus gibt es Rückmeldung erst nach der Abgabe."),
     "err_request": _t("That did not work. Please try again.", "Das hat nicht geklappt. Bitte versuche es noch einmal."),
     "err_expired": _t("This task is no longer available (e.g. after a restart). Please start a new one.",
                       "Diese Aufgabe ist nicht mehr verfügbar (z. B. nach einem Neustart). Bitte beginne eine neue."),
+    "err_prev_steps": _t("Fill in the earlier steps first.", "Fülle zuerst die vorherigen Schritte aus."),
     "err_own_empty": _t("“Model & solution” still needs an active objective function and constraint.",
                         "Unter „Modell & Lösung“ fehlt noch eine aktive Zielfunktion oder Nebenbedingung."),
 }
 
 # Contexts of the generated word problems. For each topic: title, setting, goal and objective sentence
 # (max, and min for topics that also make sense as cost minimisation), the nouns and two resources.
+# Money: German texts use euros. English texts use Philippine pesos (the app is used at a partner university
+# there) with the unit in brackets, like the units of the constraints – “(in ₱100): 6 per shelf” – so the
+# numbers of the model stay the same in both languages and the amounts stay realistic.
 _GOAL_MAX = _t("The contribution margin should be as large as possible.", "Der Deckungsbeitrag soll möglichst groß werden.")
 _GOAL_MIN = _t("The costs should be as low as possible.", "Die Kosten sollen möglichst gering sein.")
 _FMAX = _t("Contribution margin", "Deckungsbeitrag")
@@ -555,16 +568,16 @@ _CONTEXTS = {
         "setting": _t("A kitchen plans how many portions of bowl (x1) and pasta (x2) to prepare.",
                       "Eine Küche plant, wie viele Portionen Bowl (x1) und Pasta (x2) sie vorbereitet."),
         "goalmax": _GOAL_MAX, "goalmin": _GOAL_MIN, "fmax": _FMAX, "fmin": _FMIN,
-        "cmax": _t("Contribution margin: €{c1} per portion of bowl, €{c2} per portion of pasta.",
+        "cmax": _t("Contribution margin (in ₱10): {c1} per portion of bowl, {c2} per portion of pasta.",
                    "Deckungsbeitrag: {c1} € je Portion Bowl, {c2} € je Portion Pasta."),
-        "cmin": _t("Costs: €{c1} per portion of bowl, €{c2} per portion of pasta.", "Kosten: {c1} € je Portion Bowl, {c2} € je Portion Pasta."),
+        "cmin": _t("Costs (in ₱10): {c1} per portion of bowl, {c2} per portion of pasta.", "Kosten: {c1} € je Portion Bowl, {c2} € je Portion Pasta."),
         "one1": _t("portion of bowl", "Portion Bowl"),
         "one2": _t("portion of pasta", "Portion Pasta"),
         "pl1": _t("bowls", "Bowls"), "pl2": _t("pasta", "Pasta"), "all": _t("portions", "Portionen"),
         "r1max": _t("Vegetables", "Gemüse"), "u1max": _t("kg", "kg"),
         "r2max": _t("Kitchen time", "Küchenzeit"), "u2max": _t("min", "min"),
         "r1min": _t("Protein", "Protein"), "u1min": _t("g", "g"),
-        "r2min": _t("Fibre", "Ballaststoffe"), "u2min": _t("g", "g"),
+        "r2min": _t("Fiber", "Ballaststoffe"), "u2min": _t("g", "g"),
     },
     "production": {
         "var1": _t("number of shelves", "Anzahl Regale"), "var2": _t("number of tables", "Anzahl Tische"),
@@ -572,7 +585,7 @@ _CONTEXTS = {
         "setting": _t("A workshop plans how many shelves (x1) and tables (x2) to build.",
                       "Eine Werkstatt plant, wie viele Regale (x1) und Tische (x2) sie baut."),
         "goalmax": _GOAL_MAX, "fmax": _FMAX,
-        "cmax": _t("Contribution margin: €{c1} per shelf, €{c2} per table.", "Deckungsbeitrag: {c1} € je Regal, {c2} € je Tisch."),
+        "cmax": _t("Contribution margin (in ₱100): {c1} per shelf, {c2} per table.", "Deckungsbeitrag: {c1} € je Regal, {c2} € je Tisch."),
         "one1": _t("shelf", "Regal"), "one2": _t("table", "Tisch"),
         "pl1": _t("shelves", "Regale"), "pl2": _t("tables", "Tische"),
         "all": _t("pieces of furniture", "Möbelstücke"),
@@ -587,12 +600,12 @@ _CONTEXTS = {
         "goalmax": _t("The revenue should be as large as possible.", "Der Erlös soll möglichst groß werden."),
         "goalmin": _GOAL_MIN,
         "fmax": _t("Revenue", "Erlös"), "fmin": _FMIN,
-        "cmax": _t("Revenue: €{c1}k per ha of potatoes, €{c2}k per ha of carrots.", "Erlös: {c1} Tsd. € je ha Kartoffeln, {c2} Tsd. € je ha Karotten."),
-        "cmin": _t("Costs: €{c1}k per ha of potatoes, €{c2}k per ha of carrots.", "Kosten: {c1} Tsd. € je ha Kartoffeln, {c2} Tsd. € je ha Karotten."),
+        "cmax": _t("Revenue (in ₱100,000): {c1} per ha of potatoes, {c2} per ha of carrots.", "Erlös: {c1} Tsd. € je ha Kartoffeln, {c2} Tsd. € je ha Karotten."),
+        "cmin": _t("Costs (in ₱10,000): {c1} per ha of potatoes, {c2} per ha of carrots.", "Kosten: {c1} Tsd. € je ha Kartoffeln, {c2} Tsd. € je ha Karotten."),
         "one1": _t("ha of potatoes", "ha Kartoffeln"), "one2": _t("ha of carrots", "ha Karotten"),
         "pl1": _t("potatoes", "Kartoffeln"), "pl2": _t("carrots", "Karotten"), "all": _t("ha", "ha"),
         "r1max": _t("Water", "Wasser"), "u1max": _t("1000 m³", "Tsd. m³"),
-        "r2max": _t("Labour", "Arbeitszeit"), "u2max": _t("days", "Tage"),
+        "r2max": _t("Labor", "Arbeitszeit"), "u2max": _t("days", "Tage"),
         "r1min": _t("Wholesale delivery", "Lieferung Großmarkt"), "u1min": _t("t", "t"),
         "r2min": _t("Canteen delivery", "Lieferung Kantinen"), "u2min": _t("t", "t"),
     },
@@ -602,7 +615,7 @@ _CONTEXTS = {
         "setting": _t("A team puts together basic packages (x1) and premium packages (x2) for parties.",
                       "Ein Team stellt Basispakete (x1) und Premiumpakete (x2) für Feiern zusammen."),
         "goalmax": _GOAL_MAX, "fmax": _FMAX,
-        "cmax": _t("Contribution margin: €{c1} per basic package, €{c2} per premium package.",
+        "cmax": _t("Contribution margin (in ₱1,000): {c1} per basic package, {c2} per premium package.",
                    "Deckungsbeitrag: {c1} € je Basispaket, {c2} € je Premiumpaket."),
         "one1": _t("basic package", "Basispaket"), "one2": _t("premium package", "Premiumpaket"),
         "pl1": _t("basic packages", "Basispakete"), "pl2": _t("premium packages", "Premiumpakete"),
@@ -616,8 +629,8 @@ _CONTEXTS = {
         "setting": _t("A shuttle service plans how many trips to run with cars (x1) and with vans (x2).",
                       "Ein Fahrdienst plant, wie viele Fahrten er mit Kleinwagen (x1) und mit Transportern (x2) anbietet."),
         "goalmax": _GOAL_MAX, "goalmin": _GOAL_MIN, "fmax": _FMAX, "fmin": _FMIN,
-        "cmax": _t("Contribution margin: €{c1} per car trip, €{c2} per van trip.", "Deckungsbeitrag: {c1} € je Kleinwagenfahrt, {c2} € je Transporterfahrt."),
-        "cmin": _t("Costs: €{c1} per car trip, €{c2} per van trip.", "Kosten: {c1} € je Kleinwagenfahrt, {c2} € je Transporterfahrt."),
+        "cmax": _t("Contribution margin (in ₱100): {c1} per car trip, {c2} per van trip.", "Deckungsbeitrag: {c1} € je Kleinwagenfahrt, {c2} € je Transporterfahrt."),
+        "cmin": _t("Costs (in ₱100): {c1} per car trip, {c2} per van trip.", "Kosten: {c1} € je Kleinwagenfahrt, {c2} € je Transporterfahrt."),
         "one1": _t("car trip", "Kleinwagenfahrt"), "one2": _t("van trip", "Transporterfahrt"),
         "pl1": _t("car trips", "Kleinwagenfahrten"), "pl2": _t("van trips", "Transporterfahrten"),
         "all": _t("trips", "Fahrten"),
@@ -636,12 +649,12 @@ _CONTEXTS = {
         "fmax": _t("Reach", "Reichweite"), "fmin": _FMIN,
         "cmax": _t("Reach: {c1} points per online package, {c2} points per poster package.",
                    "Reichweite: {c1} Punkte je Onlinepaket, {c2} Punkte je Plakatpaket."),
-        "cmin": _t("Costs: €{c1}k per online package, €{c2}k per poster package.", "Kosten: {c1} Tsd. € je Onlinepaket, {c2} Tsd. € je Plakatpaket."),
+        "cmin": _t("Costs (in ₱10,000): {c1} per online package, {c2} per poster package.", "Kosten: {c1} Tsd. € je Onlinepaket, {c2} Tsd. € je Plakatpaket."),
         "one1": _t("online package", "Onlinepaket"), "one2": _t("poster package", "Plakatpaket"),
         "pl1": _t("online packages", "Onlinepakete"), "pl2": _t("poster packages", "Plakatpakete"),
         "all": _t("packages", "Pakete"),
         "r1max": _t("Design work", "Gestaltung"), "u1max": _t("h", "h"),
-        "r2max": _t("Budget", "Budget"), "u2max": _t("€k", "Tsd. €"),
+        "r2max": _t("Budget", "Budget"), "u2max": _t("₱10,000", "Tsd. €"),
         "r1min": _t("Young audience", "Kontakte Jüngere"), "u1min": _t("thousand", "Tsd."),
         "r2min": _t("Older audience", "Kontakte Ältere"), "u2min": _t("thousand", "Tsd."),
     },

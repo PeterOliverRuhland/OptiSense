@@ -384,6 +384,7 @@ button[aria-busy="true"] { cursor: progress; opacity: 0.75; }
 .ol-dialog-inner { padding: 1.25rem 1.25rem 1rem; }
 .ol-dialog h2 { font-size: 1.25rem; font-weight: 600; margin: 0 0 0.5rem; }
 .ol-dialog p { margin: 0 0 0.5rem; }
+.ol-dialog-list { margin: 0 0 0.5rem; padding-left: 1.25rem; }
 .ol-warn { color: var(--ol-warn-ink); background: var(--ol-warn-bg); border: 1px solid var(--ol-warn-border); border-radius: 6px; padding: 0.375rem 0.625rem; }
 .ol-dialog-foot { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
 .ol-dialog-foot .btn.os-btn { width: auto; min-width: 6.875rem; min-height: var(--touch-target); }

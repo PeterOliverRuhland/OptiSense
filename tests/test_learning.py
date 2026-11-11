@@ -16,7 +16,7 @@ import numpy as np
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shiny_files"))
 
 from optisense import i18n  # noqa: E402
-from optisense.pages.learn import engine, solution, story, tutorial  # noqa: E402
+from optisense.pages.learn import engine, report, solution, story, tutorial  # noqa: E402
 
 ROOT = os.path.join(os.path.dirname(__file__), "..", "shiny_files")
 
@@ -265,6 +265,79 @@ class GradingTests(unittest.TestCase):
         self.assertNotIn("expected", text)
 
 
+class SolutionLockTests(unittest.TestCase):
+    """“Solution” is only given once every step before is filled in – right or wrong does not matter."""
+
+    def test_steps_before_must_be_filled_in(self):
+        ex = tutorial.create()
+        region = step(ex, "region")
+        self.assertEqual(engine.unfilled_before(ex, step(ex, "objective"), {}), [])
+        self.assertEqual(engine.unfilled_before(ex, region, {}), ["objective", "constraints", "lines"])
+        answers = {sid: dict(tutorial.ANSWERS[sid]) for sid in ("objective", "constraints", "lines")}
+        self.assertEqual(engine.unfilled_before(ex, region, answers), [])
+        answers["constraints"]["b1"] = " "          # one empty field keeps the step open
+        self.assertEqual(engine.unfilled_before(ex, region, answers), ["constraints"])
+        answers["constraints"]["b1"] = "999"        # a wrong value is enough
+        self.assertEqual(engine.unfilled_before(ex, region, answers), [])
+
+    def test_a_given_model_needs_no_step_before_the_lines(self):
+        ex = engine.make_exercise({}, example(), {"source": "own"})
+        self.assertEqual(engine.unfilled_before(ex, ex["steps"][0], {}), [])
+
+
+class ReportTests(unittest.TestCase):
+    """The evaluation as a PDF: the learner's answers next to the correct ones."""
+
+    @staticmethod
+    def result(ex, answers, lang):
+        grades = [engine.grade_step(ex, s, answers.get(s["id"]), answers, lang) for s in ex["steps"]]
+        return {"score": round(sum(g["points"] for g in grades), 1), "grades": grades, "hints": {"lines": 1},
+                "reveals": ["optimum"], "first": {"objective": grades[0]}}
+
+    def test_rows_show_the_answer_and_the_correct_answer(self):
+        ex = tutorial.create()
+        answers = copy.deepcopy(tutorial.ANSWERS)
+        answers["constraints"]["b1"] = "100"
+        answers["slack"]["bind1"] = "yes"
+        grades = self.result(ex, answers, "de")["grades"]
+        rows = {s["id"]: report.review_rows(ex, s, answers, g["checks"], "de") for s, g in zip(ex["steps"], grades)}
+        # one line per constraint
+        self.assertEqual(rows["constraints"][1], ("NB2 Fleisch", "0.1·x1 + 0.3·x2 ≤ 100", "0,1·x1 + 0,3·x2 ≤ 105", False))
+        self.assertTrue(rows["constraints"][0][3])
+        self.assertIn(("NB2: bindend?", "ja", "nein", False), rows["slack"])
+        self.assertIn(("Gerade 1", "NB1 Brötchen", "NB1 Brötchen", True), rows["corner"])
+        self.assertIn(("Zielwert F", "2550", "2.550", True), rows["optimum"])
+        # every field has a label in words, in every language
+        for lang, ex2 in itertools.product(i18n.LANGS, exercises()[:8]):
+            for s in ex2["steps"]:
+                labels = [row[0] for row in report.review_rows(ex2, s, {}, {}, lang)]
+                self.assertNotIn("learn_", " ".join(labels))
+                self.assertFalse(set(labels) & {q["key"] for q in s["questions"]}, labels)
+
+    def test_a_choice_the_page_does_not_offer_is_not_shown(self):
+        ex = tutorial.create()
+        q = step(ex, "interpret")["questions"][0]
+        self.assertEqual(report.shown(ex, q, "x<script>", "en"), "–")
+
+    def test_pdf_for_every_kind_of_task(self):
+        own = engine.validate({"c": [3, 4], "sense": "max", "kind": "MILP1",
+                               "rows": [{"a": [1, 0], "op": "<=", "b": 4.5, "name": "$\\frac{"}, {"a": [1, 1], "op": "<=", "b": 5, "name": "A $x$ B"}]})
+        ilp = engine.normalize_options({"kind": "ILP", "difficulty": "medium", "mode": "exam"})
+        ilp["seed"] = 3
+        cases = [(tutorial.create(), copy.deepcopy(tutorial.ANSWERS)), (engine.make_exercise(ilp), {}),
+                 (engine.make_exercise({}, own, {"source": "own"}), {"lines": {"ax0_0": "$\\alpha$ <b>"}})]
+        for (ex, answers), lang in itertools.product(cases, i18n.LANGS):
+            data = report.pdf(ex, self.result(ex, answers, lang), answers, lang, tz_minutes=-480)
+            self.assertTrue(data.startswith(b"%PDF-"))
+            self.assertGreater(len(data), 20_000)
+
+    def test_time_of_handing_in_is_shown_in_the_learners_zone(self):
+        self.assertRegex(report.handed_in(-480, "de"), r"^\d\d\.\d\d\.\d{4}, \d\d:\d\d \(UTC\+8\)$")
+        self.assertRegex(report.handed_in(300, "en"), r"^\d{1,2} [A-Z][a-z]{2} \d{4}, \d\d:\d\d \(UTC−5\)$")
+        for odd in (None, "x", 10 ** 9, {"a": 1}):
+            self.assertIn("UTC", report.handed_in(odd, "en"))
+
+
 class TextTests(unittest.TestCase):
     def test_every_text_key_of_the_browser_exists(self):
         with open(os.path.join(ROOT, "www", "learn.js"), encoding="utf-8") as f:
@@ -278,6 +351,18 @@ class TextTests(unittest.TestCase):
             for sid in ids:
                 self.assertIn(f"learn_{prefix}{sid}", i18n.TEXT)
         self.assertIn("learn_hint_opt_corner", i18n.TEXT)
+
+    def test_generated_word_problems_use_pesos_in_english_and_euros_in_german(self):
+        for topic, sense_difficulty, seed in itertools.product(engine.TOPICS, ("easy", "medium"), range(6)):
+            opts = engine.normalize_options({"form": "text", "difficulty": sense_difficulty, "topic": topic})
+            opts["seed"] = seed
+            ex = engine.make_exercise(opts)
+            en, de = (json.dumps(story.story(ex, lang), ensure_ascii=False) for lang in ("en", "de"))
+            self.assertNotIn("€", en)
+            self.assertNotIn("₱", de)
+            if ex["model"]["sense"] == "min" or topic != "advertising":   # reach is counted in points
+                self.assertIn("₱", story.story(ex, "en")["objective"])
+                self.assertIn("€", story.story(ex, "de")["objective"])
 
     def test_task_texts_and_solutions_in_all_languages(self):
         for ex, lang in itertools.product(exercises(), i18n.LANGS):

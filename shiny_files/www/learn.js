@@ -651,7 +651,7 @@
     if (s.id === "region") return L("gn_region");
     if (s.id === "corner") return L("gn_corner");
     if (s.id === "optimum") return L(hasCorner() ? "gn_optimum_calc" : /^MILP/.test(model().kind) ? "gn_optimum_mixed" : "gn_optimum");
-    return L("gn_after");
+    return L(exam() ? "gn_after_exam" : "gn_after");
   }
 
   // the green line: where it was dragged, else through the chosen corner or the learner's optimum
@@ -774,15 +774,6 @@
     var b = picked(), ls = boundaryLines();
     return b.length === 2 && ls[+b[0]] && ls[+b[1]] ? meet(ls[+b[0]], ls[+b[1]]) : null;
   }
-  // the feasible sides of a model, in the form of the region step's answers
-  function feasibleSides(m) {
-    var out = {};
-    m.rows.forEach(function (r, i) {
-      var tp = S.ex.testPoints[i], lhs = r.a[0] * tp[0] + r.a[1] * tp[1];
-      out["side" + i] = r.op === "=" ? "line" : (r.op === "<=" ? lhs <= r.b : lhs >= r.b) ? "in" : "out";
-    });
-    return out;
-  }
   function inPoly(p, poly) {
     var inside = false;
     for (var i = 0, j = poly.length - 1; i < poly.length; j = i++) {
@@ -808,17 +799,16 @@
     if (w < 50 || h < 50) return;
     host.innerHTML = graphSVG(cur().id, w, h);
   }
-  // the graph of a step as SVG (sets the geometry G for the pointer handlers);
-  // sol (after handing in): the correct model and optimum instead of the learner's answers
-  function graphSVG(sid, w, h, sol) {
+  // the graph of a step as SVG (sets the geometry G for the pointer handlers)
+  function graphSVG(sid, w, h) {
     var fs = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16, k = fs / 16;
     var ex = S.ex.extent[0], ey = S.ex.extent[1];
     var L0 = 44 * k, R0 = 18 * k, T0 = 16 * k, B0 = 34 * k;
     var pw = w - L0 - R0, ph = h - T0 - B0;
     var X = function (x) { return L0 + x / ex * pw; }, Y = function (y) { return T0 + ph - y / ey * ph; };
     G = { X: X, Y: Y, ex: ex, ey: ey, L0: L0, T0: T0, pw: pw, ph: ph, k: k };
-    var m = sol ? sol.model : model(), o = [];
-    var lines = sol ? m.rows.map(function (r) { return { a: r.a, b: r.b }; }) : isModel(sid) ? [] : learnerLines();
+    var m = model(), o = [];
+    var lines = isModel(sid) ? [] : learnerLines();
 
     // grid, axes, ticks
     var sx = niceStep(ex), sy = niceStep(ey);
@@ -835,7 +825,7 @@
 
     // integer lattice
     var it = ints(m.kind), spacing = Math.min(pw / ex, ph / ey);
-    var reg = !isModel(sid) && sid !== "lines" ? region(lines, ex, ey, sol ? feasibleSides(m) : S.answers.region) : null;
+    var reg = !isModel(sid) && sid !== "lines" ? region(lines, ex, ey, S.answers.region) : null;
     if ((it[0] || it[1]) && spacing >= 5) {
       if (it[0] && it[1]) {
         for (var ix = 0; ix <= ex; ix++) for (var iy = 0; iy <= ey; iy++) {
@@ -881,7 +871,7 @@
     });
     // objective line
     var showObj = ["corner", "optimum", "slack", "interpret"].indexOf(sid) >= 0 && isNum(m.c[0]) && isNum(m.c[1]) && (Math.abs(m.c[0]) + Math.abs(m.c[1]) > 0);
-    var segO = showObj ? clipToBox(m.c, sol ? sol.z : levelValue(), ex, ey) : null;
+    var segO = showObj ? clipToBox(m.c, levelValue(), ex, ey) : null;
     if (segO) o.push('<line x1="' + X(segO[0][0]) + '" y1="' + Y(segO[0][1]) + '" x2="' + X(segO[1][0]) + '" y2="' + Y(segO[1][1]) + '" stroke="' + GREEN + '" stroke-width="' + 2.4 * k + '" stroke-dasharray="' + 9 * k + " " + 6 * k + '"/>');
     o.push("</g>");
     // axes on top
@@ -907,7 +897,7 @@
     var cp = sid === "corner" || sid === "optimum" ? cornerPoint() : null;
     if (cp) o.push('<circle cx="' + X(cp[0]) + '" cy="' + Y(cp[1]) + '" r="' + 8.5 * k + '" fill="none" stroke="' + RED + '" stroke-width="' + 2.4 * k + '"/>');
     // the learner's optimum (integer tasks: it can be dragged)
-    var ox = sol ? sol.x[0] : num(val("optimum", "x")), oy = sol ? sol.x[1] : num(val("optimum", "y")), grab = tapsPoint(sid);
+    var ox = num(val("optimum", "x")), oy = num(val("optimum", "y")), grab = tapsPoint(sid);
     if (["optimum", "slack", "interpret"].indexOf(sid) >= 0 && isNum(ox) && isNum(oy)) {
       o.push('<circle class="' + (grab ? "ol-grip" : "") + '" data-drag="' + (grab ? "point" : "") + '" cx="' + X(ox) + '" cy="' + Y(oy) + '" r="' + 6.5 * k + '" fill="' + RED + '" stroke="#fff" stroke-width="' + 2 * k + '"/>');
       if (grab && COARSE) o.push('<g class="ol-grip" data-drag="point">' + halo(X(ox), Y(oy), k) + "</g>");
@@ -1126,9 +1116,22 @@
       if (b) b.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }, function () {});
   }
-  // fills the correct values into the fields (again, if the learner changed them since)
+  // the steps before the current one that still have empty fields
+  function openBefore() {
+    return steps().slice(0, S.step).filter(function (s) { return filled(s) < s.questions.length; });
+  }
+  // fills the correct values into the fields (again, if the learner changed them since).
+  // The solution builds on the steps before (no feasible region without a model): they have to be filled in first –
+  // whether they are right does not matter.
   function showSolution() {
-    var s = cur();
+    var s = cur(), open = openBefore();
+    if (open.length) {
+      var list = '<ul class="ol-dialog-list">' + open.map(function (o) { return "<li>" + esc(stepTitle(o)) + "</li>"; }).join("") + "</ul>";
+      ask(L("sol_locked_title"), "<p>" + esc(L("sol_locked")) + "</p>" + list, L("sol_locked_go", { step: stepShort(open[0]) }), T("close")).then(function (ok) {
+        if (ok) goto(stepIndex(open[0].id));
+      });
+      return;
+    }
     var go = tutorial() || S.solutions[s.id] ? Promise.resolve(true) : ask(L("sol_confirm_title"), "<p>" + esc(L("sol_confirm")) + "</p>", L("sol_show"));
     go.then(function (ok) {
       if (!ok) return;
@@ -1151,7 +1154,8 @@
     var text = "<p>" + esc(L(tutorial() ? "finish_tutorial_text" : "submit_text")) + "</p>" + (miss ? '<p class="ol-warn">' + esc(L("submit_missing", { n: miss })) + "</p>" : "");
     ask(L(tutorial() ? "finish_tutorial" : "submit_title"), text, L(tutorial() ? "finish_tutorial" : "submit_btn"), L("keep_working")).then(function (ok) {
       if (!ok) return;
-      busy("finish", call("submit", { answers: S.answers })).then(function (r) {
+      // tz: minutes behind UTC – the PDF of the evaluation shows the time of handing in as the learner's local time
+      busy("finish", call("submit", { answers: S.answers, tz: new Date().getTimezoneOffset() })).then(function (r) {
         S.result = r; S.view = "result";
         render();
         window.scrollTo(0, 0);
@@ -1213,7 +1217,7 @@
       var g = r.grades[i], badges = [];
       if (r.reveals.indexOf(s.id) >= 0) badges.push(L("res_seen"));
       else if (r.hints[s.id]) badges.push(L("res_with_hint"));
-      var first = r.first[s.id] && !exam() ? '<p class="ol-muted">' + esc(L("res_first", { got: fmt(r.first[s.id].points), max: fmt(g.max) })) + "</p>" : "";
+      var first = r.first[s.id] && !exam() ? '<p class="ol-muted">' + esc(L(r.first[s.id].via === "solution" ? "res_before_solution" : "res_first", { got: fmt(r.first[s.id].points), max: fmt(g.max) })) + "</p>" : "";
       var table = '<div class="ol-scroll"><table class="os-table"><thead><tr><th>' + esc(L("res_item")) + "</th><th>" + esc(L("res_your")) + '</th><th class="num">' + esc(L("res_ok")) + "</th></tr></thead><tbody>" +
         reviewRows(s, g).map(function (row) { return "<tr><td>" + esc(row[0]) + "</td><td>" + esc(row[1]) + '</td><td class="num ' + (row[2] ? "ol-good" : "ol-bad") + '">' + (row[2] ? "✓" : "✕") + "</td></tr>"; }).join("") + "</tbody></table></div>";
       var sol = (r.solutions[s.id] || []).map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("");
@@ -1225,40 +1229,26 @@
     return '<div class="ol-page ol-result"><section class="os-card ol-result-head"><div class="ol-result-text"><span class="os-tag ol-mode is-' + (tut ? "mode_tutorial" : exam() ? "mode_exam" : "mode_practice") + '">' + esc(L(tut ? "mode_tutorial" : exam() ? "mode_exam" : "mode_practice")) + "</span>" +
       "<h1>" + esc(verdict) + "</h1><p>" + esc(S.ex.story.title) + "</p><p class=\"ol-muted\">" + esc(note) + "</p></div>" + kpis + "</section>" +
       '<section class="os-card ol-panel ol-review-list"><header class="ol-panel-head"><h2>' + esc(L("res_steps")) + '</h2></header><div class="ol-panel-body">' + items + "</div></section>" +
-      '<div class="ol-actions"><button class="btn os-btn os-btn-primary" id="ol-new" data-act="new">' + esc(L(tut ? "res_to_practice" : "res_new")) + "</button>" +
-      (S.ex.source === "generated" ? '<button class="btn os-btn" id="ol-again" data-act="again">' + esc(L("res_again")) + "</button>" : "") +
+      '<div class="ol-actions"><button class="btn os-btn os-btn-primary" id="ol-new" data-act="new">' + esc(L("res_back")) + "</button>" +
       '<button class="btn os-btn" id="ol-download" data-act="download">' + esc(L("res_download")) + "</button></div></div>";
   }
 
-  // a file that can be read on its own: the score, the task, the graphical solution and every step
+  // the evaluation as a PDF file, made by the server (pages/learn/report.py): the task, the graphical solution and,
+  // for every step, the learner's answers next to the correct ones
   function download() {
-    var el = root().querySelector(".ol-result").cloneNode(true);
-    el.querySelectorAll("details").forEach(function (d) { d.setAttribute("open", ""); });
-    var actions = el.querySelector(".ol-actions");
-    if (actions) actions.remove();
-    var sol = S.result.solution, graph = "";
-    if (sol) {
-      // the feasible region, the green line and the optimal point – like the graphical solution in the lecture
-      graph = '<section class="ol-export"><h2>' + esc(L("res_graph")) + "</h2>" + graphSVG("interpret", 640, 460, sol) +
-        '<p class="ol-export-opt">' + esc(L("res_optimum", { x1: fmt(sol.x[0]), x2: fmt(sol.x[1]), f: fName() ? fName() + " F" : "F", z: fmt(sol.z) })) + "</p></section>";
-    }
-    el.querySelector(".ol-result-head").insertAdjacentHTML("afterend", '<section class="ol-export"><h2>' + esc(L("task")) + "</h2>" + taskHTML() + "</section>" + graph);
-    var css = "body{font:15px/1.5 system-ui,sans-serif;color:#1d1f21;max-width:60rem;margin:2rem auto;padding:0 1rem}h1{font-size:1.5rem;margin:.25rem 0}h2{font-size:1.15rem;margin:1.5rem 0 .5rem}" +
-      ".ol-export{border:1px solid #dee2e6;border-radius:8px;padding:.5rem 1rem;margin:1rem 0}.ol-story-title{font-size:1rem;margin:.25rem 0}.ol-story,.ol-story-domain{list-style:none;padding:0;margin:.5rem 0}.ol-story li{margin:.2rem 0}" +
-      ".ol-export-opt{font-weight:600;margin:.5rem 0}.ol-sought{margin:.5rem 0}.ol-sought-title{font-weight:600;display:block}.ol-sought-row b{margin-right:.4rem}.ol-story-q{font-weight:600}.ol-mini-row{margin:.2rem 0}" +
-      ".os-swatch{display:inline-block;width:.75rem;height:.75rem;border-radius:3px;margin-right:.4rem;vertical-align:-1px}.os-swatch.is-dashed{height:.25rem;vertical-align:3px;background:repeating-linear-gradient(90deg,currentColor 0 5px,transparent 5px 8px)!important}" +
-      "svg{display:block;max-width:100%;height:auto;font-family:system-ui,sans-serif}.ol-grid line{stroke:#dee2e6;stroke-dasharray:4 3;stroke-width:1}.ol-ticks text,.ol-axis-label{fill:#1d1f21}.ol-axis-label{font-weight:700}" +
-      ".ol-axes line{stroke:#1d1f21;stroke-width:1.3}.ol-axes path{fill:#1d1f21}.ol-lattice{stroke:#c4c9ce;stroke-width:1;stroke-dasharray:2 4}.ol-bar{stroke:#a6a6a6;stroke-opacity:.85;stroke-linecap:round}.ol-hit{stroke:transparent}" +
-      ".ol-line-label,.ol-opt-label{font-weight:700;paint-order:stroke;stroke:#fff;stroke-width:3px;stroke-linejoin:round}" +
-      ".os-kpis{display:flex;gap:.75rem;flex-wrap:wrap;margin:1rem 0}.os-kpi{border:1px solid #dee2e6;border-radius:8px;padding:.4rem .75rem}.os-kpi small{display:block;color:#555}.os-kpi b{font-size:1.3rem}" +
-      "table{border-collapse:collapse;width:100%;margin:.5rem 0}td,th{border-bottom:1px solid #dee2e6;padding:.35rem;text-align:left}.num{text-align:right}.ol-good{color:#1f7a1f}.ol-bad{color:#cc0000}" +
-      "details{border:1px solid #dee2e6;border-radius:8px;padding:.5rem .75rem;margin:.5rem 0}summary{font-weight:600;display:flex;gap:.5rem}.ol-review-pts{margin-left:auto}.os-tag{font-size:.75rem;border:1px solid #dee2e6;border-radius:.6rem;padding:0 .4rem}.ol-muted{color:#555}";
-    var html = '<!doctype html><html lang="' + lang() + '"><head><meta charset="utf-8"><title>OptiSense – ' + esc(L("res_title")) + "</title><style>" + css + "</style></head><body>" + el.innerHTML + "</body></html>";
-    var url = URL.createObjectURL(new Blob([html], { type: "text/html" }));
-    var a = document.createElement("a");
-    a.href = url; a.download = "OptiSense-" + L("res_title").replace(/\s+/g, "-") + ".html";
-    document.body.appendChild(a); a.click(); a.remove();
-    setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    var url = S.result && S.result.pdf;
+    if (!url || !window.fetch) { toast(L("err_request")); return; }
+    var file = fetch(url + "&lang=" + lang(), { credentials: "same-origin" }).then(function (r) {
+      if (!r.ok) throw new Error(L("err_request"));
+      return r.blob();
+    }, function () { throw new Error(L("err_request")); });
+    busy("download", file).then(function (blob) {
+      var href = URL.createObjectURL(blob), a = document.createElement("a");
+      a.href = href; a.download = "OptiSense-" + L("res_title").replace(/\s+/g, "-") + ".pdf";
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(href); }, 1000);
+      paintBusy();
+    }, function () {});
   }
 
   // ------------------------------------------------------------------ events
@@ -1268,7 +1258,7 @@
     var el = ev.target.closest && ev.target.closest("[data-act]");
     if (!el || !root() || !root().contains(el) || el.disabled) return;
     var act = el.getAttribute("data-act");
-    if (S.busy && ["tutorial", "create", "own", "check", "hint", "solution", "finish"].indexOf(act) >= 0) return;
+    if (S.busy && ["tutorial", "create", "own", "check", "hint", "solution", "finish", "download"].indexOf(act) >= 0) return;
     switch (act) {
       case "tutorial": startWith("tutorial"); break;
       case "create": startWith("create", { options: S.opts }); break;
@@ -1308,7 +1298,6 @@
         break;
       }
       case "new": S.view = "home"; S.ex = null; render(); window.scrollTo(0, 0); break;
-      case "again": startWith("create", { options: S.opts }); break;
       case "download": download(); break;
     }
   }

@@ -3,8 +3,11 @@
 Netcup-Server (VPS/Root-Server) sind **nicht verwaltet**: Netcup kümmert sich um Hardware und Netz, **Updates und
 Absicherung des Betriebssystems liegen beim Kunden**. Diese Liste einmal abarbeiten, danach reicht ein Blick pro Monat.
 
-Stand der Prüfung von außen (7.11.2026): nur Port 22, 80 und 443 offen · SSH für root nur mit Schlüssel ·
-HTTPS mit gültigem Let's-Encrypt-Zertifikat (erneuert sich automatisch) · TLS 1.0/1.1 abgelehnt · Sicherheits-Header gesetzt.
+Stand 7.11.2026 (von außen und mit `tools/server_check.sh`): Ubuntu 24.04 aktuell, automatische Sicherheitsupdates
+aktiv · SSH nur mit Schlüssel · Firewall (ufw) aktiv, nur 22/80/443 offen · Docker startet beim Booten ·
+HTTPS mit gültigem Let's-Encrypt-Zertifikat, SSL-Labs-Note A+ · Sicherheits-Header inkl. Content-Security-Policy ·
+fail2ban aktiv und automatischer Neustart nach Kernel-Updates um 22 Uhr (beides seit 8.11.2026).
+Offen: Zwei-Faktor-Anmeldung bei Netcup.
 
 Den aktuellen Zustand zeigt jederzeit (nur lesen, ändert nichts):
 
@@ -22,11 +25,14 @@ sudo apt install -y unattended-upgrades
 sudo dpkg-reconfigure -plow unattended-upgrades      # „Ja“ wählen
 ```
 
-Kernel-Updates wirken erst nach einem Neustart. Automatisch nachts neu starten (die Container starten danach
-von selbst wieder, `restart: unless-stopped`):
+Kernel-Updates wirken erst nach einem Neustart. Automatisch neu starten lassen – nur wenn ein Update es verlangt
+(wenige Male im Monat), Dauer 1–2 Minuten; die Container starten danach von selbst wieder (`restart: unless-stopped`).
+Die Uhrzeit ist Serverzeit (`timedatectl` zeigt die Zeitzone). 22 Uhr deutscher Zeit ist 5 Uhr auf den Philippinen –
+dort wird OptiSense ebenfalls genutzt, eine Nachtzeit für beide Länder gibt es nicht:
 
 ```bash
-printf 'Unattended-Upgrade::Automatic-Reboot "true";\nUnattended-Upgrade::Automatic-Reboot-Time "04:30";\n' \
+timedatectl | grep "Time zone"
+printf 'Unattended-Upgrade::Automatic-Reboot "true";\nUnattended-Upgrade::Automatic-Reboot-Time "22:00";\n' \
   | sudo tee /etc/apt/apt.conf.d/52optisense-reboot
 sudo systemctl enable docker                          # Docker startet beim Booten
 ```
@@ -74,7 +80,16 @@ sudo ufw enable
 Hinweis: Docker öffnet Ports, die in `docker-compose.yml` unter `ports:` stehen, an ufw vorbei. Dort stehen
 absichtlich nur 80 und 443 (Caddy); die App-Container haben kein `ports:`.
 
-`fail2ban` ist optional: Ohne Passwort-Anmeldung kann niemand Passwörter durchprobieren; es hält nur die Logs sauberer.
+`fail2ban` sperrt IP-Adressen, die immer wieder fehlschlagende SSH-Anmeldungen versuchen (am 7.11.2026: rund
+3.000 Versuche in 24 Stunden – normales Grundrauschen im Internet). Gefährlich sind sie nicht, weil Passwörter
+abgeschaltet sind; fail2ban hält aber Last und Logs klein:
+
+```bash
+sudo apt install -y fail2ban
+printf '[sshd]\nenabled = true\nbackend = systemd\n' | sudo tee /etc/fail2ban/jail.d/sshd.local
+sudo systemctl enable --now fail2ban
+sudo fail2ban-client status sshd
+```
 
 ## 5. Netcup-Konten
 

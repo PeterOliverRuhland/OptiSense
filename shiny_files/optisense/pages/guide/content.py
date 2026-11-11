@@ -6,9 +6,9 @@ GUIDE = {
         "en": """<p>OptiSense takes you from a problem to its solution in three steps. Everything happens on the page “Model &amp; solution”: the steps on the left, the graph in the middle, the results on the right. On a smartphone they are shown one below the other.</p>
 <h3>1 · Enter problem</h3>
 <p>Use “+ New” to add an objective function and one or more constraints (up to 2 objective functions and 5 constraints). Click a row to change or delete it. The switch on the right takes a function out of the calculation without deleting it. Only one objective function is active at a time. “Example” loads the example problem of this guide.</p>
-<h3>2 · Value range</h3>
-<p>Choose for x1 and x2 whether they are continuous or integer. See “Value range” below.</p>
-<h3>3 · Solve &amp; analyse</h3>
+<h3>2 · Variable types</h3>
+<p>Choose for x1 and x2 whether they are continuous or integer. See “Variable types” below.</p>
+<h3>3 · Solve &amp; analyze</h3>
 <p>The graph is redrawn after every change. “Run linear optimization” calculates the optimum; after that you can run the sensitivity analysis. The results appear on the right in the tabs Solution, Sensitivity and Description. A blue button shows that its result is up to date. When you change the problem, the results are cleared and the buttons turn white again.</p>
 <h3>Good to know</h3>
 <ul><li>The ? next to each step explains exactly that step.</li>
@@ -55,9 +55,9 @@ GUIDE = {
 <h3>The graphical solution</h3>
 <p>With two variables, every problem can be drawn:</p>
 <ol><li>Each constraint is a line. The allowed side is the one where the constraint holds.</li>
-<li>The points that satisfy all constraints form the <b>feasible region</b> (grey).</li>
-<li>The dashed green <b>dummy line</b> joins all points with the same objective value.</li>
-<li>This line is shifted in parallel — towards larger values when maximizing, towards smaller values when minimizing — until it just touches the feasible region. That point is the <b>optimum</b> (red).</li></ol>
+<li>The points that satisfy all constraints form the <b>feasible region</b> (gray).</li>
+<li>The dashed green <b>objective line</b> – “F (dummy)” in the legend – joins all points with the same objective value.</li>
+<li>This line is shifted in parallel — toward larger values when maximizing, toward smaller values when minimizing — until it just touches the feasible region. That point is the <b>optimum</b> (red).</li></ol>
 <p>If there is an optimum, at least one optimum lies on a corner of the feasible region. In the example it is the corner x1 = 30, x2 = 60 with F = 10·30 + 20·60 = 1,500.</p>
 <p>Two special cases: if the constraints contradict each other, the region is empty and there is <b>no feasible solution</b>. If the region is open in the direction of the goal, F can improve without limit — the problem is <b>unbounded</b>.</p>""",
         "de": """<p>Lineare Optimierung sucht unter allen erlaubten Lösungen die beste – zum Beispiel den höchsten Gewinn oder die niedrigsten Kosten. Dafür braucht es drei Bausteine:</p>
@@ -69,8 +69,8 @@ GUIDE = {
 <p>Mit zwei Variablen lässt sich jedes Problem zeichnen:</p>
 <ol><li>Jede Nebenbedingung ist eine Gerade. Erlaubt ist die Seite, auf der die Bedingung erfüllt ist.</li>
 <li>Die Punkte, die alle Nebenbedingungen erfüllen, bilden den <b>zulässigen Bereich</b> (grau).</li>
-<li>Die gestrichelte grüne <b>Dummy-Linie</b> verbindet alle Punkte mit demselben Zielwert.</li>
-<li>Diese Linie wird parallel verschoben – beim Maximieren zu größeren Werten, beim Minimieren zu kleineren –, bis sie den zulässigen Bereich gerade noch berührt. Dieser Punkt ist das <b>Optimum</b> (rot).</li></ol>
+<li>Die gestrichelte grüne <b>Zielfunktionsgerade</b> – in der Legende „F (Dummy)“ – verbindet alle Punkte mit demselben Zielwert.</li>
+<li>Diese Gerade wird parallel verschoben – beim Maximieren zu größeren Werten, beim Minimieren zu kleineren –, bis sie den zulässigen Bereich gerade noch berührt. Dieser Punkt ist das <b>Optimum</b> (rot).</li></ol>
 <p>Gibt es ein Optimum, liegt mindestens eines auf einer Ecke des zulässigen Bereichs. Im Beispiel ist das die Ecke x1 = 30, x2 = 60 mit F = 10·30 + 20·60 = 1.500.</p>
 <p>Zwei Sonderfälle: Widersprechen sich die Nebenbedingungen, ist der Bereich leer – es gibt <b>keine zulässige Lösung</b>. Ist der Bereich in Richtung des Ziels offen, kann F sich unbegrenzt verbessern – das Problem ist <b>unbeschränkt</b>.</p>""",
     },
@@ -83,7 +83,7 @@ GUIDE = {
 <li><b>ILP:</b> both variables integer.</li>
 <li><b>MILP:</b> one integer, one continuous.</li></ul>
 <p>With integer variables, the feasible region shrinks to single points (or lines for MILP). The optimum is the best of these points. It does not have to lie on a corner, and simply rounding the LP solution does not always lead to it.</p>
-<p>Changing the value range clears earlier results; run the optimization again afterwards.</p>""",
+<p>Changing a variable type clears earlier results; run the optimization again afterwards.</p>""",
         "de": """<p>Hier legst du fest, welche Werte x1 und x2 annehmen dürfen. Beide sind immer ≥ 0.</p>
 <ul><li><b>stetig (ℝ≥0):</b> jeder Wert, auch mit Nachkommastellen – zum Beispiel 12,5 Stunden.</li>
 <li><b>ganzzahlig (ℕ0):</b> nur ganze Zahlen – zum Beispiel eine Anzahl Tische.</li></ul>

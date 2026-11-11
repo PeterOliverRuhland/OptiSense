@@ -3,18 +3,21 @@
 The browser sends {id, action, lang, …} as input.learn_req and receives {id, ok, data | error} as the
 custom message "os-learn". The exercise and its expected answers stay in this session. The problem
 from “Model & solution” is offered as an own exercise; the custom message "os-learn-own" keeps the
-start page's preview of it up to date.
+start page's preview of it up to date. After handing in, the evaluation can be fetched as a PDF
+(report.py) from an address of this session.
 """
 
+import asyncio
 import math
 
 import numpy as np
 from shiny import reactive
+from starlette.responses import PlainTextResponse, Response
 
 from optisense.config import constraint_color
 from optisense.i18n import norm_lang, t
 
-from . import engine, solution, story, tutorial
+from . import engine, report, solution, story, tutorial
 from .engine import LearnError
 
 OPS = {"≤": "<=", "≥": ">=", "=": "="}
@@ -47,7 +50,7 @@ def register(ctx):
 
     def reset(ex=None):
         state.clear()
-        state.update(ex=ex, hints={}, reveals=set(), first={}, result=None)
+        state.update(ex=ex, hints={}, reveals=set(), first={}, result=None, answers={}, tz=0, pdf={})
 
     reset()
 
@@ -119,7 +122,7 @@ def register(ctx):
         if action == "check":
             ex, step = current_step(req)
             grade = engine.grade_step(ex, step, answers.get(step["id"]), answers, lang)
-            state["first"].setdefault(step["id"], grade)
+            state["first"].setdefault(step["id"], {**grade, "via": "check"})
             return grade
         if action == "hint":
             ex, step = current_step(req)
@@ -133,7 +136,11 @@ def register(ctx):
         if action == "solution":
             # the answers go into the fields; what the learner had entered stays their first attempt
             ex, step = current_step(req)
-            state["first"].setdefault(step["id"], engine.grade_step(ex, step, answers.get(step["id"]), answers, lang))
+            # the solution builds on the steps before: they must be filled in (right or wrong does not matter)
+            if engine.unfilled_before(ex, step, answers):
+                raise LearnError("err_prev_steps")
+            before = engine.grade_step(ex, step, answers.get(step["id"]), answers, lang)
+            state["first"].setdefault(step["id"], {**before, "via": "solution"})
             state["reveals"].add(step["id"])
             values = engine.solution_values(ex, step, answers, lang)
             return {"values": values, "lines": solution.lines(ex, step, lang),
@@ -144,13 +151,26 @@ def register(ctx):
                 grades = [engine.grade_step(ex, s, answers.get(s["id"]), answers, lang) for s in ex["steps"]]
                 state["result"] = {"score": min(100, round(sum(g["points"] for g in grades), 1)), "grades": grades,
                                    "hints": dict(state["hints"]), "reveals": sorted(state["reveals"]),
-                                   "first": dict(state["first"]),
-                                   # after handing in: the correct model and optimum for the graphical solution
-                                   "solution": {"model": {"c": ex["model"]["c"], "sense": ex["model"]["sense"], "kind": ex["model"]["kind"],
-                                                          "rows": [{"a": r["a"], "op": r["op"], "b": r["b"]} for r in ex["model"]["rows"]]},
-                                                "x": [float(v) for v in ex["solution"]["x"]], "z": float(ex["solution"]["z"])}}
-            return {**state["result"], "solutions": solution.all_lines(ex, lang)}
+                                   "first": dict(state["first"])}
+                # what was graded goes into the PDF; tz: the browser's offset to UTC in minutes, for the time on it
+                state.update(answers=answers, tz=req.get("tz"), pdf={})
+            return {**state["result"], "solutions": solution.all_lines(ex, lang), "pdf": pdf_url}
         raise LearnError("err_request")
+
+    async def evaluation_pdf(request):
+        """The evaluation of the handed-in exercise as a PDF file. Made once per language, in a worker thread:
+        it takes about half a second, during which the other learners on this server are not kept waiting."""
+        ex, result, made = state["ex"], state["result"], state["pdf"]
+        if ex is None or result is None:
+            return PlainTextResponse("Not found", 404)
+        lang = norm_lang(request.query_params.get("lang"))
+        if lang not in made:
+            made[lang] = await asyncio.to_thread(report.pdf, ex, result, state["answers"], lang, state["tz"])
+        name = f"OptiSense-{t(lang, 'learn_res_title')}.pdf"
+        return Response(made[lang], media_type="application/pdf",
+                        headers={"Content-Disposition": f'attachment; filename="{name}"', "Cache-Control": "no-store"})
+
+    pdf_url = session.dynamic_route("learn_pdf", evaluation_pdf)
 
     @reactive.effect
     @reactive.event(input.learn_req)

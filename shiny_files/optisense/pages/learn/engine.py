@@ -311,10 +311,11 @@ def check_points(m, ext, sol):
     if vs:
         pts.append(rnd(np.mean(vs, axis=0)))
     pts.append(rnd([ext[0] * 0.7, ext[1] * 0.7]))
-    corners = [v for v in vs if np.linalg.norm(v - np.array(sol["x"])) > 1e-6 and np.linalg.norm(v) > 1e-6]
-    corners.sort(key=lambda v: sum(abs(c * 2 - round(c * 2)) > 1e-9 for c in v))   # prefer corners like (6,5 | 0)
+    # only corners like (6,5 | 0): a rounded one such as (0 | 9,6667) lies just outside the region it is a corner of
+    corners = [v for v in vs if np.linalg.norm(v - np.array(sol["x"])) > 1e-6 and np.linalg.norm(v) > 1e-6
+               and all(abs(c * 2 - round(c * 2)) < 1e-9 for c in v)]
     if corners:
-        pts.append([round(float(v), 4) for v in corners[0]])
+        pts.append([round(float(c) * 2) / 2 for c in corners[0]])
     out = []
     for p in pts:
         if not any(abs(p[0] - q[0]) < 1e-9 and abs(p[1] - q[1]) < 1e-9 for q in out):
@@ -397,6 +398,19 @@ def make_exercise(options, custom=None, info=None, points=None):
 
 def step_by_id(ex, sid):
     return next((s for s in ex["steps"] if s["id"] == sid), None)
+
+
+def unfilled_before(ex, step, answers):
+    """Ids of the steps before `step` that still have an empty field. “Solution” is only given once they are
+    filled in: the region cannot be solved without a model. Whether the entries are right does not matter."""
+    out = []
+    for s in ex["steps"]:
+        if s["id"] == step["id"]:
+            break
+        mine = (answers or {}).get(s["id"], {})
+        if any(str(mine.get(q["key"], "")).strip() == "" for q in s["questions"]):
+            out.append(s["id"])
+    return out
 
 
 # ---------------------------------------------------------------------------------------------- grading
