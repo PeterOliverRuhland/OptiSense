@@ -35,10 +35,13 @@ app_ui = ui.page_navbar(
     window_title="OptiSense",
     header=ui.head_content(
         ui.tags.meta(name="viewport", content="width=device-width, initial-scale=1"),
-        # tab icon: SVG for current browsers, .ico for the rest (also asked for as /favicon.ico), home-screen icon
+        # tab icon: SVG for current browsers, .ico for every other (also asked for as /favicon.ico, e.g. by in-app
+        # browsers); apple-touch-icon for Safari on iPhone, iPad and Mac; the manifest gives Chrome on Android and
+        # Samsung Internet their home-screen icons (192/512 px)
         ui.tags.link(rel="icon", href=asset("favicon.ico"), sizes="32x32"),
         ui.tags.link(rel="icon", href=asset("favicon.svg"), type="image/svg+xml"),
         ui.tags.link(rel="apple-touch-icon", href=asset("apple-touch-icon.png")),
+        ui.tags.link(rel="manifest", href=asset("manifest.json")),
         # optisense.css/.js: design tokens, navbar, shared components and the language switch
         ui.tags.link(rel="stylesheet", href=asset("optisense.css")),
         *[ui.tags.link(rel="stylesheet", href=asset(page.STYLESHEET)) for page in PAGES],

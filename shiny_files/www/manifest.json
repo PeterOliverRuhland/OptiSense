@@ -1,0 +1,14 @@
+{
+  "name": "OptiSense",
+  "short_name": "OptiSense",
+  "description": "Linear optimization and sensitivity analysis – solve, visualize and practice.",
+  "start_url": "./",
+  "display": "browser",
+  "background_color": "#ffffff",
+  "theme_color": "#00629b",
+  "icons": [
+    {"src": "icon-192.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "icon-512.png", "sizes": "512x512", "type": "image/png"},
+    {"src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable"}
+  ]
+}
