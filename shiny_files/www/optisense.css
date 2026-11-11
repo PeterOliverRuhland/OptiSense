@@ -119,6 +119,12 @@ body { background: var(--surface-page); color: var(--ink); }
 .modal-footer .btn-primary, .modal-body .btn-primary, .shiny-download-link.btn-primary { background: var(--primary); border-color: var(--primary); }
 .shiny-notification { border-radius: var(--radius-modal); font-size: 0.9375rem; }
 #shiny-notification-panel { width: 21.25rem; max-width: calc(100% - 2rem); }
+/* smartphones: a message may lie over a button for a moment (“Optimization complete” over “Sensitivity analysis”
+   until the page has scrolled to the graph) – taps go through the message to the button, only its × catches them */
+@media (max-width: 575.98px), (max-width: 1023.98px) and (max-height: 500px) {
+  #shiny-notification-panel { pointer-events: none; }
+  #shiny-notification-panel .shiny-notification-close { pointer-events: auto; }
+}
 
 /* ---------------------------------------------------------------- smartphones
    below 768 px Bootstrap would hide the pages behind a menu button; with three pages they stay visible:

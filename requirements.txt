@@ -1,5 +1,8 @@
-# Fixed versions: every Docker build installs exactly these (tested with Python 3.11 in the Docker image).
-# To update: raise the versions, rebuild, run the tests – and check https://osv.dev for known vulnerabilities.
+# The packages OptiSense uses directly, with fixed versions (tested with Python 3.11 in the Docker image).
+# The Docker image installs requirements.lock, which is generated from this file and also fixes every indirect
+# package (starlette, uvicorn, websockets, ...) with its hashes.
+# To update: raise the versions here, regenerate requirements.lock (command at its top), rebuild, run the tests –
+# and check https://osv.dev for known vulnerabilities.
 shiny == 1.2.1
 matplotlib == 3.11.2
 scipy == 1.17.1

@@ -377,6 +377,11 @@ button[aria-busy="true"] { cursor: progress; opacity: 0.75; }
 .ol-bad { color: var(--ol-bad); font-weight: 700; }
 .ol-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .ol-actions .btn.os-btn { width: auto; }
+/* the graphical solution (correct model and entries) next to the steps; it stays in view while scrolling */
+.ol-result-body { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); gap: 1.25rem; align-items: start; }
+.ol-result-body:not(:has(> .ol-result-graph)) { grid-template-columns: minmax(0, 1fr); }
+.ol-result-graph { position: sticky; top: 1rem; }
+.ol-result-graph .ol-plot-wrap { aspect-ratio: 1 / 0.82; margin: 0.5rem; }
 
 /* ---------------------------------------------------------------- dialog and message */
 .ol-dialog { border: 0; border-radius: var(--radius-modal); padding: 0; width: min(30rem, calc(100vw - 2rem)); color: var(--ink); box-shadow: 0 0.75rem 2.5rem rgba(0, 0, 0, 0.25); }
@@ -426,6 +431,8 @@ button[aria-busy="true"] { cursor: progress; opacity: 0.75; }
 }
 @media (max-width: 1023.98px) {
   .os-learn[data-view="work"] { overflow-y: auto; }
+  .ol-result-body { grid-template-columns: minmax(0, 1fr); }
+  .ol-result-graph { position: static; }
   .ol-intro { grid-template-columns: minmax(0, 1fr); }
   .ol-work, .ol-work.no-side, .ol-work.no-graph, .ol-work.no-graph.no-side { display: flex; flex-direction: column; height: auto; }
   .ol-side, .ol-step-body { overflow: visible; }
@@ -477,6 +484,15 @@ button[aria-busy="true"] { cursor: progress; opacity: 0.75; }
   .ol-kpis .os-kpi { min-width: 0; flex: 1 1 8rem; }
   .ol-review summary { gap: 0.5rem; padding: 0.5rem 0.625rem; }
   .ol-review-pts { white-space: normal; text-align: right; font-size: 0.8125rem; max-width: 6.5rem; }
+  .ol-result-graph .ol-plot-wrap { margin: 0.375rem; }
+  /* four columns (entry, your answer, correct answer, right?) in the width of a phone */
+  .ol-review-body { padding: 0 0.5rem 0.625rem; }
+  .ol-review-table { font-size: 0.8125rem; }
+  .ol-review-table th, .ol-review-table td { padding: 0.375rem 0.25rem; }
+  .ol-review-table th { font-size: 0.75rem; }
+  .ol-review-table td:first-child { hyphens: auto; overflow-wrap: anywhere; }
+  .ol-actions { flex-direction: column; }
+  .ol-actions .btn.os-btn { width: 100%; }   /* the two buttons of the evaluation: full width, one below the other */
 }
 /* smartphones in landscape: the graph fits the screen height above the buttons at the bottom */
 @media (max-width: 1023.98px) and (max-height: 500px) {

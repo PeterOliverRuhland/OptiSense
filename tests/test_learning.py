@@ -102,6 +102,94 @@ class GeneratorTests(unittest.TestCase):
             self.assertNotIn("corner", [s["id"] for s in ex["steps"]])
         self.assertTrue({"MILP1", "MILP2"} <= kinds)   # either variable can be the integer one
 
+    def test_fixed_pool_has_15_good_tasks_per_level_and_variable_type(self):
+        ids = set()
+        for (difficulty, kind), tasks in engine.POOL.items():
+            self.assertEqual(len(tasks), 15, (difficulty, kind))
+            if kind == "MILP":
+                self.assertEqual({t["kind"] for t in tasks}, {"MILP1", "MILP2"})   # either variable can be the integer one
+            for task in tasks:
+                ids.add(task["id"])
+                self.assertEqual(len(task["rows"]), 2 if difficulty == "easy" else 3, task["id"])
+                if difficulty == "easy":
+                    self.assertEqual(task["sense"], "max", task["id"])
+                topic = engine.MIN_TOPICS[0] if task["sense"] == "min" else "production"
+                opts = engine.normalize_options({"kind": kind, "difficulty": difficulty, "topic": topic})
+                for seed in range(60):   # draw until this task comes up
+                    ex = engine.make_exercise({**opts, "seed": seed})
+                    if ex["info"]["task"] == task["id"]:
+                        break
+                self.assertEqual(ex["info"]["task"], task["id"])
+                m, sol = ex["model"], ex["solution"]
+                # every number the learner works out is whole or ,5: axis intercepts, x1, x2, F, slack (no 8,333 or 1,667)
+                for step in ex["steps"]:
+                    for q in step["questions"]:
+                        v = q["expected"]
+                        if isinstance(v, (int, float)) and not isinstance(v, bool):
+                            self.assertTrue(engine.half_steps(v), (task["id"], q["key"], v))
+                self.assertTrue(engine.half_steps(*(r["b"] for r in m["rows"])), task["id"])
+                # every constraint bounds the region, and with integer variables the LP optimum is not allowed
+                used = {i for c in engine.corners(m) for i in c[:2]}
+                self.assertTrue(set(range(len(m["rows"]))) <= used, task["id"])
+                if kind != "LP":
+                    self.assertFalse(engine.feasible(m, engine.solve({**m, "kind": "LP"})["x"]), task["id"])
+                else:
+                    self.assertEqual(len(engine.optimal_corners(m)), 1, task["id"])   # one optimal corner
+                self.assertGreater(min(sol["x"]), 0, task["id"])
+        self.assertEqual(len(ids), 90)
+
+    def test_hints_are_counted_as_they_really_are(self):
+        opts = engine.normalize_options({"form": "text", "difficulty": "medium", "kind": "LP", "seed": 2})
+        ex = engine.make_exercise(opts)
+        empty = {s["id"]: engine.hints_for(ex, s, engine.grade_step(ex, s, {}, {})) for s in ex["steps"]}
+        self.assertEqual(empty["constraints"], ["row"])          # one hint for all rows – so “Hint 1 of 1”
+        self.assertEqual(empty["objective"], ["sense", "vt", "c"])
+        # every click shows one more, up to the real number; after that nothing new
+        reply, seen = engine.hint_reply(empty["objective"], 0)
+        self.assertEqual((reply["level"], reply["total"], reply["ids"], reply["more"], reply["last"]), (1, 3, ["sense"], True, False))
+        reply, seen = engine.hint_reply(empty["objective"], seen)
+        self.assertEqual((reply["level"], reply["ids"]), (2, ["sense", "vt"]))
+        reply, seen = engine.hint_reply(empty["objective"], engine.hint_reply(empty["objective"], seen)[1])
+        self.assertEqual((reply["level"], reply["total"], reply["more"], reply["last"]), (3, 3, False, True))
+        reply, seen = engine.hint_reply(empty["constraints"], 0)
+        self.assertEqual((reply["level"], reply["total"], reply["more"]), (1, 1, False))
+        self.assertTrue(engine.hint_reply(empty["constraints"], seen)[0]["last"])   # a second click: “no further hints”
+        self.assertEqual(engine.hint_reply([], 0)[0]["level"], 0)                    # everything right: no hint needed
+
+    def test_a_filled_in_solution_scores_nothing_a_hint_costs_nothing(self):
+        opts = engine.normalize_options({"form": "text", "difficulty": "easy", "kind": "LP", "seed": 1})
+        ex = engine.make_exercise(opts)
+        answers = {}
+        for s in ex["steps"]:
+            answers[s["id"]] = engine.solution_values(ex, s, answers)
+        grades = [engine.grade_step(ex, s, answers[s["id"]], answers) for s in ex["steps"]]
+        self.assertAlmostEqual(sum(g["points"] for g in grades), 100)
+        # "lines" with its solution filled in, "region" after the learner had it right already: only "lines" loses its points
+        out = engine.without_solutions(ex, grades, {"lines", "region"}, own={"region"})
+        lines = next(g for s, g in zip(ex["steps"], out) if s["id"] == "lines")
+        region = next(g for s, g in zip(ex["steps"], out) if s["id"] == "region")
+        self.assertEqual((lines["points"], lines["correct"], lines["revealed"]), (0, False, True))
+        self.assertEqual(region["points"], next(g for s, g in zip(ex["steps"], grades) if s["id"] == "region")["points"])
+        self.assertAlmostEqual(sum(g["points"] for g in out), 100 - lines["max"])
+        # the guided example is not graded: there the solution costs nothing
+        tut = tutorial.create()
+        tg = [engine.grade_step(tut, s, {}, {}) for s in tut["steps"]]
+        self.assertEqual(engine.without_solutions(tut, tg, {s["id"] for s in tut["steps"]}), tg)
+
+    def test_practice_tasks_fit_the_topic_and_do_not_repeat(self):
+        for seed in range(40):
+            # workshop production cannot be about costs: only maximisation tasks there
+            ex = engine.make_exercise(engine.normalize_options({"difficulty": "medium", "topic": "production", "seed": seed}))
+            self.assertEqual(ex["model"]["sense"], "max")
+            ex = engine.make_exercise({**engine.normalize_options({"difficulty": "medium"}), "seed": seed})
+            if ex["model"]["sense"] == "min":
+                self.assertIn(ex["info"]["topic"], engine.MIN_TOPICS)
+        recent = []
+        for seed in range(30):
+            ex = engine.make_exercise({**engine.normalize_options({"kind": "ILP"}), "seed": seed}, avoid=recent[-5:])
+            self.assertNotIn(ex["info"]["task"], recent[-5:])
+            recent.append(ex["info"]["task"])
+
 
 class SolverTests(unittest.TestCase):
     def test_infeasible_and_unbounded_models_are_refused(self):

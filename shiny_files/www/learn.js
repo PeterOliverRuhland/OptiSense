@@ -71,6 +71,7 @@
   }
   var OP = { "<=": "≤", ">=": "≥", "=": "=" };
   var GREEN = "#1f7a1f", RED = "#cc0000", INK = "#1d1f21", GREY = "#808080";
+  var BLUE = "#0000ff";   // the symbol of F in model lists: the blue square of “Model & solution” (config.OPTIMIZED)
 
   // ------------------------------------------------------------------ state
   var S = {
@@ -192,6 +193,7 @@
       var body = el.querySelector(".ol-step-body");
       if (body && keepScroll) body.scrollTop = scroll;
     }
+    if (S.view === "result") drawResultGraph();
     keepScroll = false;
     if (focus && document.getElementById(focus)) document.getElementById(focus).focus({ preventScroll: true });
     paintBusy();
@@ -246,7 +248,7 @@
     var own = S.own;
     var ownBody;
     if (own && own.ready) {
-      var rows = '<div class="ol-mini-list"><div class="ol-mini-row">' + swatch(GREEN, true) + "<span><b>F</b> = " + esc(formula(own.c)) + " → " + esc(own.sense) + "</span></div>" +
+      var rows = '<div class="ol-mini-list"><div class="ol-mini-row">' + swatch(BLUE) + "<span><b>F</b> = " + esc(formula(own.c)) + " → " + esc(own.sense) + "</span></div>" +
         own.rows.map(function (r) {
           return '<div class="ol-mini-row">' + swatch(r.color) + "<span><b>" + esc(r.name) + ":</b> " + esc(formula(r.a)) + " " + OP[r.op] + " " + esc(fmt(r.b)) + "</span></div>";
         }).join("") + '<div class="ol-mini-row ol-mini-type">' + esc(T("type_" + own.kind.replace(/[12]$/, ""))) + "</div></div>";
@@ -342,7 +344,7 @@
         '<div class="ol-sought"><span class="ol-sought-title">' + esc(L("story_sought")) + "</span>" +
         st.sought.map(function (v, j) { return '<div class="ol-sought-row"><b>x' + (j + 1) + "</b><span>" + esc(v) + "</span></div>"; }).join("") + "</div>" +
         '<ul class="ol-story">' +
-        '<li data-focus="obj">' + swatch(GREEN, true) + "<span>" + esc(st.objective) + "</span></li>" +
+        '<li data-focus="obj">' + swatch(BLUE) + "<span>" + esc(st.objective) + "</span></li>" +
         st.rows.map(function (r, i) {
           return '<li data-focus="row' + i + '">' + swatch(color(i)) + '<span><b class="ol-lab" style="color:' + color(i) + '">' + esc(label(i)) + "</b> " + esc(r) + "</span></li>";
         }).join("") + "</ul>" +
@@ -379,7 +381,7 @@
     var a = S.answers.objective || {};
     var vt = own && (!a.vt0 || !a.vt1) ? '<span class="ol-muted">' + esc(L("model_incomplete")) + "</span>" :
       "x1 " + esc(T(ints(m.kind)[0] ? "integer_short" : "continuous_short")) + ", x2 " + esc(T(ints(m.kind)[1] ? "integer_short" : "continuous_short"));
-    return '<div class="ol-mini-list"><div class="ol-mini-row">' + swatch(GREEN, true) + "<span>" + obj + "</span></div>" + rows +
+    return '<div class="ol-mini-list"><div class="ol-mini-row">' + swatch(BLUE) + "<span>" + obj + "</span></div>" + rows +
       '<div class="ol-mini-row ol-mini-type"><span>' + esc(L("g_range")) + ": " + vt + "</span></div></div>";
   }
 
@@ -468,7 +470,7 @@
 
   // the task, then once how the following steps work (exam mode: without hints and solutions)
   function taskStep() {
-    var tips = (exam() ? [] : ["intro_help", "intro_check", "intro_solution"]).concat("task_note");
+    var tips = (exam() ? [] : ["intro_help", "intro_check", tutorial() ? "intro_solution_tut" : "intro_solution"]).concat("task_note");
     return '<div class="ol-intro"><div>' + taskHTML() + '</div><section class="ol-note ol-howto"><h3 class="ol-note-title">' + esc(L("intro_title")) + "</h3><ul>" +
       tips.map(function (k) { return "<li>" + esc(L(k)) + "</li>"; }).join("") + "</ul></section></div>";
   }
@@ -601,7 +603,7 @@
     var h = S.hints[s.id];
     if (!h || exam() || S.solutions[s.id]) return "";   // with the solution filled in, the hint is not needed any more
     if (!h.level) return '<div class="ol-note ol-hintbox" role="status"><div class="ol-note-title">' + esc(L("hint")) + "</div><p>" + esc(L("hint_none")) + "</p></div>";
-    return '<div class="ol-note ol-hintbox" role="status"><div class="ol-note-title">' + esc(L("hint_level", { n: h.level })) + "</div><ul>" +
+    return '<div class="ol-note ol-hintbox" role="status"><div class="ol-note-title">' + esc(L("hint_level", { n: h.level, total: h.total || h.level })) + "</div><ul>" +
       h.ids.map(function (id) { return "<li>" + L("hint_" + id) + "</li>"; }).join("") + "</ul>" +
       (h.more ? '<button type="button" class="ol-link-btn" id="ol-more-hints" data-act="hint">' + esc(L("more_hints")) + "</button>" : "") + "</div>";
   }
@@ -792,6 +794,18 @@
     return false;
   }
 
+  // the graphical solution on the evaluation page: the drawing of the last step, made with the correct entries and
+  // the correct model (both sent by the server after handing in) instead of the learner's
+  function drawResultGraph() {
+    var host = document.getElementById("ol-res-plot"), r = S.result;
+    if (!host || !r || !r.values || !r.model) return;
+    var w = host.clientWidth, h = host.clientHeight;
+    if (w < 50 || h < 50) return;
+    var keep = { answers: S.answers, model: S.ex.model, level: S.level, G: G };
+    S.answers = r.values; S.ex.model = r.model; S.level = null;
+    try { host.innerHTML = graphSVG("interpret", w, h); }
+    finally { S.answers = keep.answers; S.ex.model = keep.model; S.level = keep.level; G = keep.G; }
+  }
   function drawGraph() {
     var host = document.getElementById("ol-plot");
     if (!host || !S.ex) return;
@@ -1112,6 +1126,7 @@
     busy("hint", call("hint", { step: s.id, answers: S.answers })).then(function (h) {
       S.hints[s.id] = h;
       refresh();
+      if (h.last) toast(L("hint_no_more"));   // every hint of this step is shown already
       var b = root().querySelector(".ol-hintbox");
       if (b) b.scrollIntoView({ block: "nearest", behavior: "smooth" });
     }, function () {});
@@ -1197,11 +1212,11 @@
     if (key === "meaning" || key === "round") return L("q_" + key);
     return key;
   }
-  // review rows; the two coordinates of a drawn point form one row
+  // review rows: entry, the learner's answer, the correct answer (sent by the server after handing in), right?
   function reviewRows(s, g) {
-    var a = S.answers[s.id] || {};
+    var a = S.answers[s.id] || {}, right = (S.result.correct || {})[s.id] || {};
     return s.questions.map(function (q) {
-      return [qLabel(q.key), q.choices ? choiceLabel(q.key, a[q.key]) : (a[q.key] || "–"), !!g.checks[q.key]];
+      return [qLabel(q.key), q.choices ? choiceLabel(q.key, a[q.key]) : (a[q.key] || "–"), right[q.key] || "–", !!g.checks[q.key]];
     });
   }
 
@@ -1215,11 +1230,12 @@
       (exam() ? "" : '<div class="os-kpi"><small>' + esc(L("kpi_hints")) + "</small><b>" + Object.keys(r.hints).length + '</b></div><div class="os-kpi"><small>' + esc(L("kpi_seen")) + "</small><b>" + r.reveals.length + "</b></div>") + "</div>";
     var items = graded().map(function (s, i) {
       var g = r.grades[i], badges = [];
-      if (r.reveals.indexOf(s.id) >= 0) badges.push(L("res_seen"));
+      if (g.revealed) badges.push(L("res_seen_zero"));
+      else if (r.reveals.indexOf(s.id) >= 0) badges.push(L("res_seen"));
       else if (r.hints[s.id]) badges.push(L("res_with_hint"));
       var first = r.first[s.id] && !exam() ? '<p class="ol-muted">' + esc(L(r.first[s.id].via === "solution" ? "res_before_solution" : "res_first", { got: fmt(r.first[s.id].points), max: fmt(g.max) })) + "</p>" : "";
-      var table = '<div class="ol-scroll"><table class="os-table"><thead><tr><th>' + esc(L("res_item")) + "</th><th>" + esc(L("res_your")) + '</th><th class="num">' + esc(L("res_ok")) + "</th></tr></thead><tbody>" +
-        reviewRows(s, g).map(function (row) { return "<tr><td>" + esc(row[0]) + "</td><td>" + esc(row[1]) + '</td><td class="num ' + (row[2] ? "ol-good" : "ol-bad") + '">' + (row[2] ? "✓" : "✕") + "</td></tr>"; }).join("") + "</tbody></table></div>";
+      var table = '<div class="ol-scroll"><table class="os-table ol-review-table"><thead><tr><th>' + esc(L("res_item")) + "</th><th>" + esc(L("res_your")) + "</th><th>" + esc(L("res_correct")) + '</th><th class="num">' + esc(L("res_ok")) + "</th></tr></thead><tbody>" +
+        reviewRows(s, g).map(function (row) { return "<tr><td>" + esc(row[0]) + "</td><td>" + esc(row[1]) + "</td><td>" + esc(row[2]) + '</td><td class="num ' + (row[3] ? "ol-good" : "ol-bad") + '">' + (row[3] ? "✓" : "✕") + "</td></tr>"; }).join("") + "</tbody></table></div>";
       var sol = (r.solutions[s.id] || []).map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("");
       return '<details class="ol-review"' + (g.correct ? "" : " open") + '><summary><span class="ol-review-dot ' + (g.correct ? "is-ok" : "is-warn") + '">' + (g.correct ? "✓" : "○") + "</span>" +
         '<span class="ol-review-title">' + esc(stepTitle(s)) + (badges.length ? ' <span class="os-tag">' + esc(badges.join(" · ")) + "</span>" : "") + "</span>" +
@@ -1228,7 +1244,9 @@
     }).join("");
     return '<div class="ol-page ol-result"><section class="os-card ol-result-head"><div class="ol-result-text"><span class="os-tag ol-mode is-' + (tut ? "mode_tutorial" : exam() ? "mode_exam" : "mode_practice") + '">' + esc(L(tut ? "mode_tutorial" : exam() ? "mode_exam" : "mode_practice")) + "</span>" +
       "<h1>" + esc(verdict) + "</h1><p>" + esc(S.ex.story.title) + "</p><p class=\"ol-muted\">" + esc(note) + "</p></div>" + kpis + "</section>" +
-      '<section class="os-card ol-panel ol-review-list"><header class="ol-panel-head"><h2>' + esc(L("res_steps")) + '</h2></header><div class="ol-panel-body">' + items + "</div></section>" +
+      '<div class="ol-result-body">' + (r.values && r.model ? '<section class="os-card ol-panel ol-result-graph"><header class="ol-panel-head"><h2>' + esc(L("res_graph")) + "</h2></header>" +
+        '<div class="ol-plot-wrap"><div class="ol-plot" id="ol-res-plot"></div></div></section>' : "") +
+      '<section class="os-card ol-panel ol-review-list"><header class="ol-panel-head"><h2>' + esc(L("res_steps")) + '</h2></header><div class="ol-panel-body">' + items + "</div></section></div>" +
       '<div class="ol-actions"><button class="btn os-btn os-btn-primary" id="ol-new" data-act="new">' + esc(L("res_back")) + "</button>" +
       '<button class="btn os-btn" id="ol-download" data-act="download">' + esc(L("res_download")) + "</button></div></div>";
   }
@@ -1365,12 +1383,13 @@
       S.ex.story = d.story; S.ex.labels = d.labels; S.ex.names = d.names;
       Object.keys(d.solutions || {}).forEach(function (k) { S.solutions[k] = d.solutions[k]; });
       if (S.result && d.resultSolutions) S.result.solutions = d.resultSolutions;
+      if (S.result && d.resultCorrect) S.result.correct = d.resultCorrect;
       refresh();
     }, function () {});
   }
 
   var resizeTimer = null;
-  function onResize() { clearTimeout(resizeTimer); resizeTimer = setTimeout(function () { if (S.view === "work") drawGraph(); }, 120); }
+  function onResize() { clearTimeout(resizeTimer); resizeTimer = setTimeout(function () { if (S.view === "work") drawGraph(); if (S.view === "result") drawResultGraph(); }, 120); }
 
   document.addEventListener("click", onClick);
   document.addEventListener("input", onInput);
@@ -1396,7 +1415,7 @@
     render();
     new MutationObserver(onLanguage).observe(document.documentElement, { attributes: true, attributeFilter: ["lang"] });
     // the graph needs its real size: draw again when the tab becomes visible
-    document.addEventListener("shown.bs.tab", function () { if (S.view === "work") drawGraph(); });
+    document.addEventListener("shown.bs.tab", function () { if (S.view === "work") drawGraph(); if (S.view === "result") drawResultGraph(); });
     if (window.ResizeObserver) new ResizeObserver(onResize).observe(root() || document.body);
   });
 

@@ -31,7 +31,9 @@
 		# in fremde Seiten. 'unsafe-inline' braucht Shiny (eingebettete Skripte); 'unsafe-eval' bewusst nicht -
 		# eine Funktionspruefung in shiny.js meldet das einmal in der Konsole, die App laeuft trotzdem vollstaendig.
 		# Getestet mit allen drei Reitern (Optimierung, Sensitivitaet, Import/Export, Lernen, Auswertung speichern).
-		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss: ws:; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
+		# connect-src: WebSocket nur zur eigenen Seite. 'self' deckt wss:// zum eigenen Host in aktuellen Browsern ab;
+		# wss://{host} steht zusaetzlich da fuer aeltere Safari-Versionen, die das noch nicht taten.
+		Content-Security-Policy "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' wss://{host}; frame-ancestors 'self'; base-uri 'self'; form-action 'self'; object-src 'none'"
 		# keine Kamera, kein Mikrofon, kein Standort usw. - braucht die App nicht
 		Permissions-Policy "camera=(), microphone=(), geolocation=(), payment=(), usb=()"
 		-Server

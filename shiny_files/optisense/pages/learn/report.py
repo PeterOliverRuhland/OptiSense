@@ -1,7 +1,9 @@
 """The evaluation of a handed-in exercise as a PDF file (“Save evaluation”).
 
-A document that can be read on its own: the score, the task, the correct model, the graphical solution and,
-for every step, what the learner entered next to the correct answers and the worked solution.
+A compact document that can be read on its own, two A4 pages at most. Page 1: the score, the task text, the correct
+model with the optimal solution next to the graphical solution, and the points of every step. Page 2: for every step,
+what the learner entered next to the correct answers (the font gets smaller rather than the table longer). The worked
+solutions stay in the app.
 
 Drawn with matplotlib alone, so no further package is needed. No pyplot: the pages are plain Figure objects
 that are freed with the document. Texts of learners (names of their own constraints, their answers) are
@@ -19,19 +21,20 @@ import matplotlib
 from matplotlib.backends.backend_pdf import PdfPages
 from matplotlib.figure import Figure
 from matplotlib.font_manager import FontProperties, findfont, get_font
-from matplotlib.patches import Polygon, Rectangle
+from matplotlib.patches import FancyBboxPatch, Polygon, Rectangle
 
 from optisense import core
-from optisense.config import DUMMY, FEASIBLE, GRID, INK, OPTIMUM, constraint_color
+from optisense.config import DUMMY, FEASIBLE, GRID, INK, OPTIMIZED, OPTIMUM, constraint_color
 from optisense.i18n import fmt_num, norm_lang, t
 
 from . import engine, solution, story
 
 W, H = 595.28, 841.89                 # A4 in points
-LEFT, RIGHT, TOP, BOTTOM = 50, W - 50, 48, H - 56
+LEFT, RIGHT, TOP, BOTTOM = 42, W - 42, 40, H - 48
 FONT = "DejaVu Sans"                  # comes with matplotlib and has ≤ ≥ → · ✓ ✗ ℝ ℕ
 MUTED, LINE, SHADE = "#555b61", "#dee2e6", "#f1f3f5"
 GOOD, BAD, BAD_ROW = "#1f7a1f", "#cc0000", "#fdf1f1"
+PRIMARY, PANEL, PANEL_EDGE, AMBER = "#00629b", "#eef6fc", "#cfe3f2", "#a35f00"   # design tokens of the app
 OP_SIGN = solution.OP_SIGN
 LOCK = threading.Lock()
 matplotlib.rcParams["pdf.fonttype"] = 42   # real text in PDF files: searchable, copyable (only this module writes PDFs)
@@ -106,6 +109,11 @@ class Document:
 
     def rect(self, x, y, w, h, fill="none", edge="none", lw=0.6):
         self.ax.add_patch(Rectangle((x, y), w, h, fc=fill, ec=edge, lw=lw))
+
+    def box(self, x, y, w, h, fill=PANEL, edge="none", r=5, lw=0.6):
+        """A rectangle with rounded corners, like the cards of the app."""
+        r = min(r, w / 2, h / 2)
+        self.ax.add_patch(FancyBboxPatch((x + r, y + r), w - 2 * r, h - 2 * r, boxstyle=f"round,pad={r}", fc=fill, ec=edge, lw=lw))
 
     def hline(self, y, x0=LEFT, x1=RIGHT, color=LINE, lw=0.6, **kw):
         self.ax.plot([x0, x1], [y, y], color=color, lw=lw, solid_capstyle="butt", **kw)
@@ -293,7 +301,8 @@ def draw_graph(doc, ex, lang, x, y, w, h):
     ax.yaxis.set_major_formatter(lambda v, _: fmt_num(v, lang))
     text = {"fontsize": 8.5, "fontfamily": FONT, "fontweight": "bold", "parse_math": False}
     ax.annotate("x1", (1, 0), xycoords="axes fraction", xytext=(0, -17), textcoords="offset points", ha="right", va="top", color=INK, **text)
-    ax.annotate("x2", (0, 1), xycoords="axes fraction", xytext=(6, 2), textcoords="offset points", ha="left", va="top", color=INK, **text)
+    ax.annotate("x2", (0, 1), xycoords="axes fraction", xytext=(6, 2), textcoords="offset points", ha="left", va="top", color=INK, zorder=8,
+                bbox={"boxstyle": "round,pad=0.1", "fc": "white", "ec": "none"}, **text)
 
     region = core.feasible_region(cons, {"x1": "int" if ints[0] else "con", "x2": "int" if ints[1] else "con"}, xmax, ymax)
     if region["kind"] == "polygon" and region["points"]:
@@ -313,30 +322,39 @@ def draw_graph(doc, ex, lang, x, y, w, h):
 
     labels = story.row_labels(ex, lang)
     x0, y0 = sol["x"]
-    taken = [(x0 / xmax * w + 20, y0 / ymax * h + 10)]   # label spots in points; the first is the optimum's
+    # label boxes in points (x from the left, y from the bottom of the plot); a name goes where it hits no other label
+    to_pt = lambda px, py: (min(px, 0.99 * xmax) / xmax * w, min(py, 0.95 * ymax) / ymax * h)  # noqa: E731
+    hits = lambda a, b: not (a[1] < b[0] or b[1] < a[0] or a[3] < b[2] or b[3] < a[2])  # noqa: E731
+    opt_right = x0 > 0.6 * xmax
+    ox, oy = to_pt(x0, y0)
+    ow = text_width(solution.point(sol["x"], lang), 8, True) + 4
+    boxes = [(ox - 7 - ow, ox, oy + 5, oy + 17) if opt_right else (ox, ox + 7 + ow, oy + 5, oy + 17), (ox - 5, ox + 5, oy - 5, oy + 5)]
     for i, con in enumerate(cons):
         seg = core.line_in_box(con["a1"], con["a2"], con["b"], xmax, ymax)
         if not seg:
             continue
         (xa, ya), (xb, yb) = sorted(seg)
-        ax.plot([xa, xb], [ya, yb], color=colors[i], lw=1.6, zorder=3)
-        # the name at the right end of the line – or further along it, where no other label is
-        spots = [(xa + f * (xb - xa), ya + f * (yb - ya)) for f in (1, 0, 0.8, 0.2, 0.6, 0.4)]
-        free = lambda p: min(abs(p[0] / xmax * w - q[0]) / 30 + abs(p[1] / ymax * h - q[1]) / 14 for q in taken)  # noqa: E731
-        px, py = next((p for p in spots if free(p) >= 1), max(spots, key=free))
-        taken.append((px / xmax * w, py / ymax * h))
-        right = px > 0.8 * xmax
+        ax.plot([xa, xb], [ya, yb], color=colors[i], lw=1.8, zorder=3)
         short = labels[i] if len(labels[i]) <= 14 else labels[i][:13] + "…"   # own names can be long; the legend has them in full
+        tw = text_width(short, 7.5, True) + 3
+        options = []
+        for f in (1, 0, 0.85, 0.15, 0.7, 0.3, 0.55, 0.45):
+            px, py = xa + f * (xb - xa), ya + f * (yb - ya)
+            right = px > 0.8 * xmax
+            bx, by = to_pt(px, py)
+            box = (bx - 3 - tw, bx - 3, by + 2, by + 12) if right else (bx + 3, bx + 3 + tw, by + 2, by + 12)
+            options.append((sum(hits(box, b) for b in boxes), (px, py, right, box)))
+        px, py, right, box = min(options, key=lambda o: o[0])[1]   # the first spot without a collision, else the fewest
+        boxes.append(box)
         ax.annotate(short, (min(px, 0.99 * xmax), min(py, 0.95 * ymax)), xytext=(-3 if right else 3, 3), textcoords="offset points",
                     ha="right" if right else "left", va="bottom", color=colors[i], zorder=5,
                     bbox={"boxstyle": "round,pad=0.12", "fc": "white", "ec": "none", "alpha": 0.8}, **{**text, "fontsize": 7.5})
     seg = core.line_in_box(m["c"][0], m["c"][1], sol["z"], xmax, ymax)
     if seg:
-        ax.plot(*zip(*seg), color=DUMMY, lw=1.6, ls=(0, (5, 3.5)), zorder=4)
-    ax.plot([x0], [y0], "o", color=OPTIMUM, ms=6.5, mec="white", mew=1.1, zorder=6, clip_on=False)
-    right = x0 > 0.6 * xmax
-    ax.annotate(solution.point(sol["x"], lang), (x0, y0), xytext=(-7 if right else 7, 7), textcoords="offset points",
-                ha="right" if right else "left", color=OPTIMUM, zorder=7,
+        ax.plot(*zip(*seg), color=DUMMY, lw=1.8, ls=(0, (5, 3.5)), zorder=4)
+    ax.plot([x0], [y0], "o", color=OPTIMUM, ms=7.5, mec="white", mew=1.2, zorder=6, clip_on=False)
+    ax.annotate(solution.point(sol["x"], lang), (x0, y0), xytext=(-7 if opt_right else 7, 7), textcoords="offset points",
+                ha="right" if opt_right else "left", color=OPTIMUM, zorder=7,
                 bbox={"boxstyle": "round,pad=0.15", "fc": "white", "ec": "none", "alpha": 0.85}, **{**text, "fontsize": 8})
     return colors
 
@@ -353,149 +371,220 @@ def build(ex, result, answers, lang, tz_minutes):
     num = lambda v: fmt_num(v, lang)  # noqa: E731
     m, sol, info, options = ex["model"], ex["solution"], ex["info"], ex["options"]
     st = story.story(ex, lang)
-    names = boundary_names(ex, lang)
+    labels, names = story.row_labels(ex, lang), boundary_names(ex, lang)
     colors = ex.get("colors") or [constraint_color(i) for i in range(len(m["rows"]))]
     tutorial, exam = info["source"] == "tutorial", options.get("mode") == "exam"
     fname = st.get("fname")
+    grades = result["grades"]
+    graded = list(zip(ex["steps"], grades))
     doc = Document()
 
-    # ---- head: what was handed in, and the score
-    doc.put("OptiSense", LEFT, doc.y, 9, bold=True, color=MUTED)
-    doc.put(handed_in(tz_minutes, lang), RIGHT, doc.y, 8.5, color=MUTED, ha="right")
-    doc.y += 15
-    doc.write(tr("res_title"), size=18, bold=True, after=1)
-    doc.write(st["title"], size=11.5, bold=True, after=2)
+    def section(title, x=LEFT, width=RIGHT - LEFT):
+        doc.put(title, x, doc.y, 10.5, bold=True, color=PRIMARY)
+        doc.hline(doc.y + 16.5, x, x + width, color=PANEL_EDGE, lw=0.9)
+        doc.y += 23
+
+    def marked(color, text, x=LEFT, width=RIGHT - LEFT, size=8.8, label=None, label_color=INK):
+        """A line with the colour square in front, like the model list of the app; optionally a bold label."""
+        doc.swatch(x, doc.y, color, size=size)
+        tx = x + 14
+        if label:
+            doc.put(label, tx, doc.y, size, bold=True, color=label_color)
+            tx += text_width(label, size, True) + 5
+        doc.write(text, x=tx, width=x + width - tx, size=size, after=2)
+
+    # ---- head: what was handed in on the left, the score on the right
+    doc.rect(0, 0, W, 4, fill=PRIMARY)
+    doc.put(f"OptiSense · {t(lang, 'tab_learn')}", LEFT, 16, 8, bold=True, color=PRIMARY)
+    doc.put(handed_in(tz_minutes, lang), RIGHT, 16, 8, color=MUTED, ha="right")
+    card_w = 150
+    card_x, head_w = RIGHT - card_w, RIGHT - card_w - LEFT - 18
+    doc.y = 40
+    doc.put(tr("res_title").upper(), LEFT, doc.y, 7.5, bold=True, color=MUTED)
+    doc.y += 13
+    doc.write(st["title"], width=head_w, size=15, bold=True, after=2)
     facts = [tr("mode_tutorial" if tutorial else "mode_exam" if exam else "mode_practice"), t(lang, f"type_{m['kind'].rstrip('12')}")]
     if info["source"] == "generated":
-        facts += [tr(f"form_{options['form']}"), f"{tr('opt_difficulty')}: {tr('diff_' + options['difficulty'])}"]
-    doc.write(" · ".join(facts), size=9.5, color=MUTED, after=8)
-
-    grades = result["grades"]
-    kpis = [(tr("kpi_score"), f"{num(result['score'])} / 100"),
-            (tr("kpi_steps"), f"{sum(1 for g in grades if g['correct'])} / {len(grades)}")]
+        facts += [tr(f"form_{options['form']}"), tr("diff_" + options["difficulty"])]
+    if info.get("task"):
+        facts.append(tr("res_task_id", id=info["task"]))
+    doc.write(" · ".join(facts), width=head_w, size=8.5, color=MUTED, after=0)
+    card_h = 80 if not exam else 68
+    doc.box(card_x, 36, card_w, card_h, fill=PANEL, edge=PANEL_EDGE)
+    score = num(result["score"])
+    doc.put(tr("kpi_score"), card_x + 12, 44, 8, color=MUTED)
+    doc.put(score, card_x + 12, 54, 22, bold=True, color=PRIMARY)
+    doc.put("/ 100", card_x + 17 + text_width(score, 22, True), 63.5, 10.5, color=MUTED)
+    doc.put(f"{tr('kpi_steps')}: {sum(1 for g in grades if g['correct'])} / {len(grades)}", card_x + 12, 86, 7.8, color=MUTED)
     if not exam:
-        kpis += [(tr("kpi_hints"), str(len(result["hints"]))), (tr("kpi_seen"), str(len(result["reveals"])))]
-    box_w = (RIGHT - LEFT - 8 * (len(kpis) - 1)) / len(kpis)
-    for n, (label, value) in enumerate(kpis):
-        x = LEFT + n * (box_w + 8)
-        doc.rect(x, doc.y, box_w, 40, fill=SHADE if n else "#e7f1ff", edge=LINE)
-        doc.put(label, x + 8, doc.y + 6, 8, color=MUTED)
-        doc.put(value, x + 8, doc.y + 18, 14, bold=True)
-    doc.y += 46
-    doc.write(tr("res_tut_text" if tutorial else "res_note_exam" if exam else "res_note_practice"), size=8.5, color=MUTED, after=2)
+        doc.put(tr("res_hints_seen", h=len(result["hints"]), s=len(result["reveals"])), card_x + 12, 97, 7.8, color=MUTED)
+    doc.y = max(doc.y + 6, 36 + card_h + 8)
+    doc.write(tr("res_tut_text" if tutorial else "res_note_exam" if exam else "res_note_practice"), width=head_w + card_w + 18,
+              size=8, color=MUTED, after=10)
 
-    def model_lines(model_names):
-        """F and the constraints with their colours, then the value range – like the model list in the app."""
-        doc.room(14)
-        doc.swatch(LEFT, doc.y, DUMMY, dashed=True)
-        doc.write((f"{fname}: " if fname else "") + f"F = {solution.formula(m['c'], lang)} → {m['sense']}", x=LEFT + 16, after=1)
-        for i, r in enumerate(m["rows"]):
-            doc.room(14)
-            doc.swatch(LEFT, doc.y, colors[i])
-            doc.write(f"{model_names[i]}: {solution.formula(r['a'], lang)} {OP_SIGN[r['op']]} {num(r['b'])}", x=LEFT + 16, after=1)
-        vt = [t(lang, "integer_short" if k else "continuous_short") for k in engine.integrality(m)]
-        doc.write(tr("sol_range", vt1=vt[0], vt2=vt[1]), x=LEFT + 16, color=MUTED, after=3)
-
-    # ---- the task
-    doc.heading(tr("task"))
+    # ---- the task as it was given: the text of a word problem (formulas only: the model below is the task)
+    section(tr("task"))
     if st.get("intro"):
-        doc.write(st["intro"], after=5)
-        doc.write(tr("story_sought"), size=9, bold=True, after=1)
-        for j, sought in enumerate(st["sought"]):
-            doc.room(14)
-            doc.put(f"x{j + 1}", LEFT, doc.y, bold=True)
-            doc.write(sought, x=LEFT + 20, after=1)
-        doc.y += 4
-        doc.room(14)
-        doc.swatch(LEFT, doc.y, DUMMY, dashed=True)
-        doc.write(st["objective"], x=LEFT + 16, after=1.5)
-        labels = story.row_labels(ex, lang)
+        doc.write(st["intro"], size=8.8, after=3)
+        doc.put(f"{tr('story_sought')}:", LEFT, doc.y, 8.8, bold=True)
+        sx = LEFT + text_width(f"{tr('story_sought')}:", 8.8, True) + 5
+        doc.write("  ·  ".join(f"x{j + 1} = {sought}" for j, sought in enumerate(st["sought"])), x=sx, width=RIGHT - sx, size=8.8, after=3)
+        marked(OPTIMIZED, st["objective"])
         for i, row in enumerate(st["rows"]):
-            doc.room(14)
-            doc.swatch(LEFT, doc.y, colors[i])
-            doc.put(labels[i], LEFT + 16, doc.y, bold=True, color=colors[i])
-            doc.write(row, x=LEFT + 22 + text_width(labels[i], 9.5, True), after=1.5)
-        for line in st["domain"]:
-            doc.write(line, x=LEFT + 16, color=MUTED, after=1.5)
-        doc.y += 3
-    else:
-        model_lines(names)
+            marked(colors[i], row, label=labels[i], label_color=colors[i])
+        doc.write(" ".join(st["domain"]), x=LEFT + 14, size=8.3, color=MUTED, after=3)
     if st.get("question"):
-        doc.write(st["question"], bold=True, after=2)
-    if st.get("intro"):
-        doc.heading(tr("res_model"))
-        model_lines(names)
+        doc.write(st["question"], size=8.8, bold=True, after=2)
 
-    # ---- the graphical solution, with its legend on the right
-    # full size if it fits; a little smaller rather than leaving the rest of the page empty
-    room = BOTTOM - doc.y - 82
-    gh = 204 if room >= 204 or room < 160 else room
-    gw = gh * 1.255
-    doc.heading(tr("res_graph"), keep=gh + 44)
-    top = doc.y + 4
-    draw_graph(doc, ex, lang, LEFT + 30, top, gw, gh)
-    lx, ly, lw = LEFT + 30 + gw + 28, top + 2, RIGHT - (LEFT + 30 + gw + 28) - 16
+    # ---- the model and the optimal solution on the left, the graph on the right
+    top = doc.y + 8
+    col_l, gap = 212, 22
+    xr = LEFT + col_l + gap
+    col_r = RIGHT - xr
+    n_legend = 3 + len(m["rows"])
+    legend_h = -(-n_legend // 2) * 12.5
+    points_h = 23 + len(graded) * 15.5 + 22
+    room = BOTTOM - top - 23 - 24 - legend_h
+    gh = min(col_r * 0.88, room - points_h - 10)
+    points_first_page = gh >= 150
+    if not points_first_page:
+        gh = max(130, min(col_r * 0.88, room))
 
-    def legend(mark, text, bold=False):
-        nonlocal ly
-        mark(ly)
-        for line in wrap(text, 8.8, lw, bold):
-            doc.put(line, lx + 16, ly, 8.8, bold=bold)
-            ly += 12.2
-        ly += 3.5
+    doc.y = top
+    section(tr("res_model"), LEFT, col_l)
+    model = [(OPTIMIZED, f"{fname}:" if fname else "", INK, f"F = {solution.formula(m['c'], lang)} → {m['sense']}")]
+    model += [(colors[i], f"{names[i]}:", colors[i], f"{solution.formula(r['a'], lang)} {OP_SIGN[r['op']]} {num(r['b'])}")
+              for i, r in enumerate(m["rows"])]
+    label_w = max(text_width(lab, 8.8, True) for _, lab, _, _ in model) + 6
+    aligned = 14 + label_w + max(text_width(f, 8.8) for *_, f in model) <= col_l
+    for color, lab, lab_color, formula in model:
+        if aligned:   # the formulas one below the other
+            doc.swatch(LEFT, doc.y, color)
+            doc.put(lab, LEFT + 14, doc.y, 8.8, bold=True, color=lab_color)
+            doc.put(formula, LEFT + 14 + (label_w if lab else 0), doc.y, 8.8)   # F of an own task has no name
+            doc.y += 8.8 * 1.38 + 2
+        else:
+            marked(color, formula, width=col_l, label=lab or None, label_color=lab_color)
+    vt = [t(lang, "integer_short" if k else "continuous_short") for k in engine.integrality(m)]
+    doc.write(tr("sol_range", vt1=vt[0], vt2=vt[1]), x=LEFT + 14, width=col_l - 14, size=8.3, color=MUTED, after=10)
+    section(tr("res_solution"), LEFT, col_l)
+    doc.put(f"x1 = {num(sol['x'][0])}    x2 = {num(sol['x'][1])}", LEFT, doc.y, 10, bold=True)
+    doc.y += 15
+    doc.put(f"{fname}: F = {num(sol['z'])}" if fname else f"F = {num(sol['z'])}", LEFT, doc.y, 10, bold=True, color=OPTIMUM)
+    doc.y += 17
+    for i, r in enumerate(m["rows"]):
+        sl = engine.slack(r, sol["x"])
+        bound = tr("res_binding") if engine.binding(r, sol["x"]) else tr("res_not_binding")
+        doc.write(f"{tr('a_slack', label=labels[i])} {num(sl)} · {bound}", width=col_l, size=8.3, after=0.5)
+    left_end = doc.y
 
-    legend(lambda yy: doc.ax.plot([lx + 5], [yy + 6.2], "o", color=OPTIMUM, ms=6, mec="white", mew=0.8),
-           f"{t(lang, 'plot_optimum')} {solution.point(sol['x'], lang)}", bold=True)
-    legend(lambda yy: doc.swatch(lx, yy, DUMMY, dashed=True, size=8.8), tr("res_objline", z=num(sol["z"])))
+    doc.y = top
+    section(tr("res_graph"), xr, col_r)
+    gy = doc.y + 2
+    draw_graph(doc, ex, lang, xr + 26, gy, col_r - 30, gh)
+    legend = [(lambda x, y: doc.ax.plot([x + 5], [y + 5.6], "o", color=OPTIMUM, ms=6, mec="white", mew=0.8),
+               f"{t(lang, 'plot_optimum')} {solution.point(sol['x'], lang)}"),
+              (lambda x, y: doc.swatch(x, y, DUMMY, dashed=True, size=8), tr("res_objline", z=num(sol["z"])))]
     if m["kind"] == "LP":
-        legend(lambda yy: doc.rect(lx, yy + 2.6, 9, 8, fill="#cfcfcf"), t(lang, "plot_region"))
+        legend.append((lambda x, y: doc.rect(x, y + 1.6, 9, 8, fill="#cfcfcf"), t(lang, "plot_region")))
     elif m["kind"] == "ILP":
-        legend(lambda yy: doc.ax.plot([lx + 5], [yy + 6.2], "o", color=FEASIBLE, ms=3.2, mew=0), t(lang, "plot_points"))
+        legend.append((lambda x, y: doc.ax.plot([x + 5], [y + 5.6], "o", color=FEASIBLE, ms=3.2, mew=0), t(lang, "plot_points")))
     else:
-        legend(lambda yy: doc.hline(yy + 6.4, lx, lx + 11, color=FEASIBLE, lw=1.6, alpha=0.65), t(lang, "plot_points"))
+        legend.append((lambda x, y: doc.hline(y + 5.6, x, x + 11, color=FEASIBLE, lw=1.6, alpha=0.65), t(lang, "plot_points")))
     for i in range(len(m["rows"])):
-        legend(lambda yy, c=colors[i]: doc.hline(yy + 6.4, lx, lx + 11, color=c, lw=1.8), names[i])
-    doc.y = max(top + gh + 26, ly + 4)
-    doc.write(tr("res_optimum", x1=num(sol["x"][0]), x2=num(sol["x"][1]), f=f"{fname} F" if fname else "F", z=num(sol["z"])), bold=True, after=2)
+        legend.append((lambda x, y, c=colors[i]: doc.hline(y + 5.6, x, x + 11, color=c, lw=1.8), names[i]))
+    ly = gy + gh + 24
+    lx = xr
+    for mark, text in legend:   # the entries side by side, a new row when one does not fit any more
+        item = 15 + text_width(text, 7.8) + 14
+        if lx > xr and lx + item - 14 > xr + col_r:
+            lx, ly = xr, ly + 12.5
+        mark(lx, ly)
+        doc.put(text, lx + 15, ly, 7.8)
+        lx += item
+    doc.y = max(left_end, ly + 12.5) + 12
 
-    # ---- every step: the learner's answers next to the correct ones, then the worked solution
-    worked = solution.all_lines(ex, lang)
-    widths = [168, 136, 136, RIGHT - LEFT - 440]
-    for step, grade in zip(ex["steps"], grades):
-        sid = step["id"]
-        rows = [([(label, INK, False), (mine, INK, False), (right, INK, False), ("✓" if ok else "✗", GOOD if ok else BAD, True)],
-                 None if ok else BAD_ROW) for label, mine, right, ok in review_rows(ex, step, answers, grade["checks"], lang)]
-        layout, height = doc.table_layout(widths, [tr("res_item"), tr("res_your"), tr("res_correct"), tr("res_ok")], rows)
-        # a step stays on one page: title, notes, table and worked solution
-        lines = sum(len(wrap(line, 8.5, RIGHT - LEFT - 18)) for line in worked.get(sid, []))
-        keep = min(23 + 14 + height + 18 + lines * 12.3 + 4, BOTTOM - TOP - 40)
-        if step is ex["steps"][0]:
-            doc.heading(tr("res_steps"), keep=keep)
-        doc.room(keep)
-        doc.rect(LEFT, doc.y, RIGHT - LEFT, 20, fill="#e7f1ff")
-        doc.put(step_title(ex, step, lang), LEFT + 6, doc.y + 4.5, 10.5, bold=True)
-        doc.put(tr("points_of", got=num(grade["points"]), max=num(grade["max"])), RIGHT - 6, doc.y + 5.5, 9, bold=True, ha="right",
-                color=GOOD if grade["correct"] else INK)
-        doc.y += 23
-        notes = []
-        if sid in result["reveals"]:
+    # ---- points of every step: a bar, the points, and whether a hint or the solution was used
+    def points_table():
+        section(tr("res_points_steps"))
+        bar_x, bar_w = LEFT + 214, 112
+        for step, g in graded:
+            y, sid = doc.y, step["id"]
+            doc.put(step_title(ex, step, lang), LEFT, y, 8.6)
+            doc.box(bar_x, y + 3.2, bar_w, 6.5, fill=LINE, r=3.2)
+            share = g["points"] / g["max"] if g["max"] else 0
+            if share > 0:
+                doc.box(bar_x, y + 3.2, max(6.5, bar_w * share), 6.5, fill=GOOD if g["correct"] else AMBER, r=3.2)
+            doc.put(f"{num(g['points'])} / {num(g['max'])}", bar_x + bar_w + 12, y, 8.6, bold=True)
+            note = (tr("res_seen_zero") if g.get("revealed") else tr("res_seen") if sid in result["reveals"]
+                    else tr("res_with_hint") if result["hints"].get(sid) else "")
+            doc.put(note, bar_x + bar_w + 62, y + 0.6, 7.6, color=AMBER if g.get("revealed") else MUTED)
+            doc.y += 15.5
+        doc.hline(doc.y + 1, LEFT, RIGHT, color=LINE)
+        doc.y += 6
+        doc.put(tr("res_total"), LEFT, doc.y, 8.8, bold=True)
+        doc.put(f"{score} / 100", bar_x + bar_w + 12, doc.y, 8.8, bold=True, color=PRIMARY)
+        doc.y += 16
+
+    if points_first_page:
+        points_table()
+
+    # ---- page 2: every entry next to the correct answer – one page, the font adapts
+    doc.new_page()
+    if not points_first_page:
+        points_table()
+        doc.y += 6
+    section(tr("res_detail"))
+    widths = [176, 140, 140, RIGHT - LEFT - 456]
+    blocks = []
+    for step, g in graded:
+        rows = review_rows(ex, step, answers, g["checks"], lang)
+        notes = [tr("points_of", got=num(g["points"]), max=num(g["max"]))]
+        if g.get("revealed"):
+            notes.append(tr("res_seen_zero"))
+        elif step["id"] in result["reveals"]:
             notes.append(tr("res_seen"))
-        elif result["hints"].get(sid):
+        elif result["hints"].get(step["id"]):
             notes.append(tr("res_with_hint"))
-        if sid in result["first"] and not exam:
-            first = result["first"][sid]
-            notes.append(tr("res_before_solution" if first.get("via") == "solution" else "res_first", got=num(first["points"]), max=num(grade["max"])))
-        if notes:
-            doc.write(" · ".join(notes), x=LEFT + 6, size=8, color=MUTED, after=2)
-        doc.table(widths, layout)
-        doc.y += 5
-        doc.room(26)
-        doc.put(tr("sol_title"), LEFT + 6, doc.y, 8.5, bold=True, color=MUTED)
-        doc.y += 12.5
-        for line in worked.get(sid, []):
-            doc.room(12)
-            doc.put("•", LEFT + 8, doc.y, 8.5, color=MUTED)
-            doc.write(line, x=LEFT + 18, size=8.5, after=0.5)
-        doc.y += 10
+        blocks.append((step_title(ex, step, lang), " · ".join(notes), g, rows))
+
+    def measure(size):
+        line, pad = size * 1.3, size * 0.32
+        total = line + 2 * pad + 2    # column titles
+        for _, _, _, rows in blocks:
+            total += line + 2 * pad + 5
+            for cells in rows:
+                n = max(len(wrap(str(c), size, w - 2 * pad)) for c, w in zip(cells[:3], widths))
+                total += n * line + 2 * pad
+        return total
+
+    size = next((sz for sz in (8.6, 8.2, 7.8, 7.4, 7.0, 6.6, 6.2) if doc.y + measure(sz) <= BOTTOM), 6.2)
+    line, pad = size * 1.3, size * 0.32
+    xs = [LEFT + sum(widths[:i]) for i in range(len(widths))]
+    for x, title in zip(xs, [tr("res_item"), tr("res_your"), tr("res_correct"), tr("res_ok")]):
+        doc.put(title, x + pad, doc.y + pad, size * 0.95, bold=True, color=MUTED)
+    doc.y += line + 2 * pad
+    doc.hline(doc.y, LEFT, RIGHT, color=INK, lw=0.6)
+    doc.y += 2
+    for title, note, g, rows in blocks:
+        doc.room(line + 2 * pad + 5 + line + 2 * pad)
+        doc.y += 3
+        doc.box(LEFT, doc.y, RIGHT - LEFT, line + 2 * pad, fill=PANEL, r=3)
+        doc.put(title, LEFT + pad + 2, doc.y + pad, size + 0.2, bold=True)
+        doc.put(note, RIGHT - pad - 2, doc.y + pad + 0.3, size * 0.95, bold=g["correct"],
+                color=GOOD if g["correct"] else AMBER if g.get("revealed") else INK, ha="right")
+        doc.y += line + 2 * pad + 2
+        for label, mine, right, ok in rows:
+            wrapped = [wrap(str(c), size, w - 2 * pad) for c, w in zip((label, mine, right), widths)]
+            h = max(len(w_) for w_ in wrapped) * line + 2 * pad
+            doc.room(h)
+            if not ok:
+                doc.rect(LEFT, doc.y, RIGHT - LEFT, h, fill=BAD_ROW)
+            for x, lines_, color in zip(xs, wrapped, (INK, INK, GOOD if not ok else INK)):
+                for n, text in enumerate(lines_):
+                    doc.put(text, x + pad, doc.y + pad + n * line - 0.5, size, color=color)
+            doc.put("✓" if ok else "✗", xs[3] + widths[3] / 2, doc.y + pad - 0.5, size, bold=True, color=GOOD if ok else BAD, ha="center")
+            doc.y += h
+            doc.hline(doc.y, LEFT, RIGHT, color=LINE, lw=0.5)
 
     return doc.save(f"OptiSense · {tr('res_title')} · {st['title']}", f"OptiSense – {tr('res_title')}")

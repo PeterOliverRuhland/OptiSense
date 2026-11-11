@@ -1,10 +1,10 @@
-"""Exercises with two variables: model check, generation, reference solution and grading.
+"""Exercises with two variables: model check, the fixed practice tasks (tasks.py), reference solution and grading.
 
 No Shiny code and no texts. Questions are identified by keys (c0, a1_0, line0_1_0 …); the browser
 (www/learn.js) labels them in the chosen language, story.py and solution.py write the texts that
 depend on the numbers. Expected answers never leave the server.
 
-Every generated task is solved with SciPy before it is used. After the optimum the learner determines the
+Every task is solved with SciPy when it is created. After the optimum the learner determines the
 slack of every constraint and whether it is binding – the interpretation used in the lecture.
 """
 
@@ -17,6 +17,8 @@ from fractions import Fraction
 
 import numpy as np
 from scipy.optimize import Bounds, LinearConstraint, milp
+
+from .tasks import POOL
 
 EPS = 1e-7
 KINDS = ("LP", "ILP", "MILP1", "MILP2")
@@ -238,33 +240,33 @@ def binding(r, x):
     return slack(r, x) < 1e-6 * max(1, abs(r["b"]))
 
 
-# ---------------------------------------------------------------------------------------------- generator
-def generate(options):
+# ---------------------------------------------------------------------------------------------- practice tasks
+def half_steps(*values):
+    """True if every value is whole or ends in ,5 – numbers a learner can work with without a calculator."""
+    return all(v is None or abs(v * 2 - round(v * 2)) < 1e-9 for v in values)
+
+
+def calculator_free(m, sol):
+    """Everything the learner works out in a practice task is whole or ,5: the axis intercepts of every line, the
+    optimum (x1, x2, F) and the slack of every constraint. No 8,333 for a line or 1,667 for an optimum."""
+    return (half_steps(*(axis_cut(r, j) for r in m["rows"] for j in range(2)))
+            and half_steps(*sol["x"], sol["z"], *(slack(r, sol["x"]) for r in m["rows"])))
+
+
+def generate(options, avoid=()):
+    """One of the fixed tasks (tasks.py) for the chosen level and variable type, picked at random – if possible none
+    of `avoid` (the last tasks of this session). Minimisation only with topics that make sense as costs."""
     rng = random.Random(options.get("seed"))
-    difficulty = options["difficulty"]
-    kind = rng.choice(("MILP1", "MILP2")) if options["kind"] == "MILP" else options["kind"]
-    topic = options.get("topic") if options.get("topic") in TOPICS else rng.choice(TOPICS)
-    for _ in range(150):
-        a, b, d, e = rng.randint(1, 3), rng.randint(3, 6), rng.randint(3, 6), rng.randint(1, 3)
-        if a * e == b * d:
-            continue
-        target = [rng.randint(3, 9) + rng.choice([0, 0.5]), rng.randint(3, 9) + rng.choice([0, 0.5])]
-        c = [rng.randint(3, 12), rng.randint(3, 12)]
-        sense = "min" if difficulty == "medium" and topic in MIN_TOPICS and rng.random() < 0.45 else "max"
-        op = ">=" if sense == "min" else "<="
-        rows = [{"a": [a, b], "b": a * target[0] + b * target[1], "op": op, "role": "r1"},
-                {"a": [d, e], "b": d * target[0] + e * target[1], "op": op, "role": "r2"}]
-        if difficulty == "medium":
-            rows.append({"a": [1, 1], "b": math.ceil(sum(target)) + rng.randint(3, 8), "op": "<=", "role": "total"})
-        m = validate({"c": c, "rows": rows, "sense": sense, "kind": kind})
-        sol = solve(m)
-        if sol["status"] != "optimal" or min(sol["x"]) <= EPS:
-            continue
-        # with integer variables the integrality has to matter: the LP optimum itself must not be allowed
-        if kind != "LP" and feasible(m, solve({**m, "kind": "LP"})["x"]):
-            continue
-        return m, {"source": "generated", "topic": topic}, sol
-    raise LearnError("err_generate")
+    topic = options.get("topic") if options.get("topic") in TOPICS else None
+    tasks = [t for t in POOL[(options["difficulty"], options["kind"])] if t["sense"] == "max" or topic in (None, *MIN_TOPICS)]
+    if not tasks:
+        raise LearnError("err_generate")
+    task = rng.choice([t for t in tasks if t["id"] not in avoid] or tasks)
+    topic = topic or rng.choice(MIN_TOPICS if task["sense"] == "min" else TOPICS)
+    roles = ("r1", "r2", "total")
+    m = validate({"c": list(task["c"]), "sense": task["sense"], "kind": task["kind"],
+                  "rows": [{"a": [a1, a2], "op": op, "b": b, "role": roles[i]} for i, (a1, a2, op, b) in enumerate(task["rows"])]})
+    return m, {"source": "generated", "topic": topic, "task": task["id"]}, solve(m)
 
 
 # ---------------------------------------------------------------------------------------------- exercise
@@ -338,7 +340,7 @@ def side_answer(r, p):
     return "in" if satisfies(r, p) else "out"
 
 
-def make_exercise(options, custom=None, info=None, points=None):
+def make_exercise(options, custom=None, info=None, points=None, avoid=()):
     """options: mode, form, difficulty, kind (LP/ILP/MILP1/MILP2), topic, seed.
     custom: a model to use instead of a generated one; info describes where the exercise comes from."""
     options = dict(options)
@@ -349,7 +351,7 @@ def make_exercise(options, custom=None, info=None, points=None):
         if info["source"] != "tutorial":
             options["form"] = "math"
     else:
-        m, info, sol = generate(options)
+        m, info, sol = generate(options, avoid)
     if sol["status"] != "optimal":
         raise LearnError({"infeasible": "err_infeasible", "unbounded": "err_unbounded"}.get(sol["status"], "err_solver"))
     options["kind"] = m["kind"]
@@ -475,6 +477,16 @@ def grade_step(ex, step, answers, all_answers=None, lang="en"):
     return {"step": sid, "points": points, "max": step["points"], "correct": count == len(checks), "checks": checks}
 
 
+def without_solutions(ex, grades, reveals, own=()):
+    """The grades of a handed-in exercise under the rule for help: hints cost nothing, but a step whose solution was
+    filled in scores 0 – the learner did not work it out. Exceptions: steps that were completely right before
+    "Solution" was pressed (`own`), and the guided example, which is not graded."""
+    if ex["info"]["source"] == "tutorial":
+        return grades
+    return [{**g, "points": 0, "correct": False, "revealed": True} if s["id"] in reveals and s["id"] not in own else g
+            for s, g in zip(ex["steps"], grades)]
+
+
 def solution_values(ex, step, all_answers=None, lang="en"):
     """The answers of a step as the learner would enter them – “Solution” fills them into the fields.
     Where grading accepts several answers, the values follow the learner (the optimum at their optimal corner,
@@ -530,6 +542,16 @@ def hints_for(ex, step, grade):
             if hid not in out:
                 out.append(hid)
     return out
+
+
+def hint_reply(ids, shown):
+    """One more hint per click – as many as there really are for the fields still wrong (one per kind of field), never
+    a made-up second one. shown: how many hints of this step the learner has seen. Returns the reply and the new count;
+    `last` says that the click brought nothing new."""
+    if not ids:
+        return {"level": 0, "total": 0, "ids": []}, shown
+    level = min(len(ids), shown + 1)
+    return {"level": level, "total": len(ids), "ids": ids[:level], "more": level < len(ids), "last": shown >= len(ids)}, max(shown, level)
 
 
 def public_steps(ex):

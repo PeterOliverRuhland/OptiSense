@@ -9,6 +9,10 @@ HTTPS mit gültigem Let's-Encrypt-Zertifikat, SSL-Labs-Note A+ · Sicherheits-He
 fail2ban aktiv und automatischer Neustart nach Kernel-Updates um 22 Uhr (beides seit 8.11.2026).
 Offen: Zwei-Faktor-Anmeldung bei Netcup.
 
+Seit 11.11.2026 im Repository, auf dem Server aktiv nach dem nächsten Update (Abschnitt 2): Container gehärtet und
+begrenzt, alle Python-Pakete mit Version und Hash festgelegt, WebSocket-Nachrichten höchstens 1 MiB, CSP erlaubt
+Verbindungen nur zur eigenen Seite (Details in Abschnitt 6).
+
 Den aktuellen Zustand zeigt jederzeit (nur lesen, ändert nichts):
 
 ```bash
@@ -50,6 +54,9 @@ docker compose build --pull
 docker compose up -d
 docker image prune -f
 ```
+
+Die Python-Pakete ändern sich dabei nicht: Sie kommen immer in genau den Versionen aus `requirements.lock`.
+Wie man sie aktualisiert, steht in Abschnitt 6 unter „Pakete“.
 
 ## 3. SSH nur mit Schlüssel
 
@@ -105,11 +112,23 @@ sudo fail2ban-client status sshd
   Manipulation geprüft. Die Dateiendung spielt deshalb keine Rolle – auch eine umbenannte Programmdatei wäre nur Text,
   der nicht als Modell erkannt wird.
 - **lp_solve** bekommt eine selbst erzeugte Datei mit Zahlen (ohne Texte der Nutzer), ohne Shell, mit 5 s Zeitlimit.
-- **Container:** Die App läuft nicht als root und ist nur über Caddy erreichbar.
-- **Browser:** HTTPS mit HSTS, Content-Security-Policy (keine fremden Skripte, keine Einbettung in fremde Seiten),
-  Texte von Nutzern werden überall maskiert.
-- **Pakete:** feste Versionen in `requirements.txt`; am 7.11.2026 mit `pip-audit` geprüft – keine bekannten Lücken.
-  Bei Updates erneut prüfen: `pip install pip-audit && pip-audit -r requirements.txt`.
+- **Container:** Die App läuft nicht als root und ist nur über Caddy erreichbar. Alle Container (App und Caddy)
+  laufen mit nur lesbarem Dateisystem (beschreibbar nur `/tmp` im Arbeitsspeicher), ohne Linux-Capabilities (Caddy
+  behält nur das Recht, Port 80/443 zu öffnen) und mit `no-new-privileges`. Grenzen je App-Container: 1 GB
+  Arbeitsspeicher, 256 Prozesse/Threads (gemessen mit 40 Studierenden: höchstens rund 200 MB und 28); Caddy 512 MB.
+  Ein überlasteter Container wird neu gestartet, statt den Server mitzuziehen. Docker-Logs: höchstens 3 × 10 MB je
+  Container. Prüfen: `sudo bash tools/server_check.sh`, Abschnitt „Container-Härtung“.
+- **WebSocket:** Eine Nachricht vom Browser darf höchstens 1 MiB groß sein (`--ws-max-size` im Dockerfile, Standard
+  wären 16 MB); größere beendet der Server mit Code 1009.
+- **Browser:** HTTPS mit HSTS, Content-Security-Policy (keine fremden Skripte, keine Einbettung in fremde Seiten,
+  Verbindungen nur zur eigenen Seite), Texte von Nutzern werden überall maskiert.
+- **Pakete:** `requirements.txt` nennt die direkt genutzten Pakete; `requirements.lock` legt daraus **alle** Pakete
+  (auch starlette, uvicorn, websockets …) mit Version und Hash fest. Das Image installiert nur die Lock-Datei, und pip
+  bricht ab, wenn ein Hash nicht passt. Am 11.11.2026 mit `pip-audit` geprüft – keine bekannten Lücken.
+  Pakete aktualisieren: Version in `requirements.txt` ändern, `requirements.lock` neu erzeugen (Befehl steht oben in
+  der Datei), Image neu bauen, Tests laufen lassen und erneut prüfen:
+  `pip install pip-audit && pip-audit -r requirements.lock --require-hashes --disable-pip`.
 
-Restrisiko: Sehr viele gleichzeitige Verbindungen könnten den Server auslasten (kein Rate-Limit in Caddy).
-Für den Einsatz in Lehrveranstaltungen ist das vertretbar; Netcup filtert grobe DDoS-Angriffe im Netz.
+Restrisiko: Sehr viele gleichzeitige Verbindungen könnten den Server auslasten (kein Rate-Limit vor Caddy). Die
+Grenzen je Container verhindern, dass dabei der ganze Server ausfällt. Für den Einsatz in Lehrveranstaltungen ist
+das vertretbar; Netcup filtert grobe DDoS-Angriffe im Netz.

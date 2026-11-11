@@ -47,10 +47,12 @@ def clean_answers(raw):
 def register(ctx):
     input, session = ctx.input, ctx.session
     state = {}
+    recent = []   # ids of the last practice tasks of this session, so the next one is a different task
 
     def reset(ex=None):
         state.clear()
-        state.update(ex=ex, hints={}, reveals=set(), first={}, result=None, answers={}, tz=0, pdf={})
+        # own: steps that were already completely right before "Solution" was pressed – they keep their points
+        state.update(ex=ex, hints={}, reveals=set(), own=set(), first={}, result=None, answers={}, tz=0, pdf={})
 
     reset()
 
@@ -73,7 +75,14 @@ def register(ctx):
                "solutions": {sid: solution.lines(ex, engine.step_by_id(ex, sid), lang) for sid in state["reveals"]}}
         if state["result"] is not None:
             out["resultSolutions"] = solution.all_lines(ex, lang)
+            out["resultCorrect"] = correct_texts(lang)
         return out
+
+    def correct_texts(lang):
+        """After handing in: the correct answer of every field as text, for the column “Correct answer”."""
+        ex, values = state["ex"], state["result"]["values"]
+        return {s["id"]: {q["key"]: report.shown(ex, q, values[s["id"]].get(q["key"]), lang) for q in s["questions"]}
+                for s in ex["steps"]}
 
     def public(lang):
         ex = state["ex"]
@@ -108,7 +117,8 @@ def register(ctx):
                 ex = engine.make_exercise(engine.normalize_options(req.get("options")), model, {"source": "own"})
                 ex["colors"] = colors
             else:
-                ex = engine.make_exercise(engine.normalize_options(req.get("options")))
+                ex = engine.make_exercise(engine.normalize_options(req.get("options")), avoid=recent[-5:])
+                recent.append(ex["info"]["task"])
             reset(ex)
             return public(lang)
         if action == "quit":
@@ -127,12 +137,10 @@ def register(ctx):
         if action == "hint":
             ex, step = current_step(req)
             grade = engine.grade_step(ex, step, answers.get(step["id"]), answers, lang)
-            ids = engine.hints_for(ex, step, grade)
-            if not ids:
-                return {"level": 0, "ids": []}
-            level = min(2, state["hints"].get(step["id"], 0) + 1)
-            state["hints"][step["id"]] = level
-            return {"level": level, "ids": ids[:1] if level == 1 else ids, "more": level == 1 and len(ids) > 1}
+            reply, seen = engine.hint_reply(engine.hints_for(ex, step, grade), state["hints"].get(step["id"], 0))
+            if seen:
+                state["hints"][step["id"]] = seen
+            return reply
         if action == "solution":
             # the answers go into the fields; what the learner had entered stays their first attempt
             ex, step = current_step(req)
@@ -141,6 +149,8 @@ def register(ctx):
                 raise LearnError("err_prev_steps")
             before = engine.grade_step(ex, step, answers.get(step["id"]), answers, lang)
             state["first"].setdefault(step["id"], {**before, "via": "solution"})
+            if before["correct"]:
+                state["own"].add(step["id"])
             state["reveals"].add(step["id"])
             values = engine.solution_values(ex, step, answers, lang)
             return {"values": values, "lines": solution.lines(ex, step, lang),
@@ -149,12 +159,20 @@ def register(ctx):
             ex = state["ex"]
             if state["result"] is None:
                 grades = [engine.grade_step(ex, s, answers.get(s["id"]), answers, lang) for s in ex["steps"]]
+                grades = engine.without_solutions(ex, grades, state["reveals"], state["own"])
+                m = ex["model"]
+                # values: the correct entries of every step, model: the correct model – for the column “Correct
+                # answer” and the graphical solution on the evaluation page (now that the task is handed in)
                 state["result"] = {"score": min(100, round(sum(g["points"] for g in grades), 1)), "grades": grades,
                                    "hints": dict(state["hints"]), "reveals": sorted(state["reveals"]),
-                                   "first": dict(state["first"])}
+                                   "first": dict(state["first"]),
+                                   "values": {s["id"]: engine.solution_values(ex, s, answers, lang) for s in ex["steps"]},
+                                   "model": {"c": m["c"], "sense": m["sense"], "kind": m["kind"],
+                                             "rows": [{"a": r["a"], "op": r["op"], "b": r["b"]} for r in m["rows"]]}}
                 # what was graded goes into the PDF; tz: the browser's offset to UTC in minutes, for the time on it
                 state.update(answers=answers, tz=req.get("tz"), pdf={})
-            return {**state["result"], "solutions": solution.all_lines(ex, lang), "pdf": pdf_url}
+            return {**state["result"], "solutions": solution.all_lines(ex, lang), "correct": correct_texts(lang),
+                    "pdf": pdf_url}
         raise LearnError("err_request")
 
     async def evaluation_pdf(request):

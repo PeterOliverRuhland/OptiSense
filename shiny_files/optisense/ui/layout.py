@@ -35,6 +35,10 @@ app_ui = ui.page_navbar(
     window_title="OptiSense",
     header=ui.head_content(
         ui.tags.meta(name="viewport", content="width=device-width, initial-scale=1"),
+        # tab icon: SVG for current browsers, .ico for the rest (also asked for as /favicon.ico), home-screen icon
+        ui.tags.link(rel="icon", href=asset("favicon.ico"), sizes="32x32"),
+        ui.tags.link(rel="icon", href=asset("favicon.svg"), type="image/svg+xml"),
+        ui.tags.link(rel="apple-touch-icon", href=asset("apple-touch-icon.png")),
         # optisense.css/.js: design tokens, navbar, shared components and the language switch
         ui.tags.link(rel="stylesheet", href=asset("optisense.css")),
         *[ui.tags.link(rel="stylesheet", href=asset(page.STYLESHEET)) for page in PAGES],

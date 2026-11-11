@@ -42,6 +42,13 @@ docker compose version 2>/dev/null
 echo "Docker startet beim Booten: $(systemctl is-enabled docker 2>&1)"
 docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'
 
+h "Container-Haertung (docker-compose.yml) – erwartet: nur lesbar=true, cap_drop=[ALL], no-new-privileges, Grenzen gesetzt"
+docker ps -q | xargs -r docker inspect --format '{{.Name}}: nur lesbar={{.HostConfig.ReadonlyRootfs}} cap_drop={{.HostConfig.CapDrop}} cap_add={{.HostConfig.CapAdd}} {{.HostConfig.SecurityOpt}} Speicher={{.HostConfig.Memory}} PIDs={{.HostConfig.PidsLimit}} Log={{.HostConfig.LogConfig.Config}} Neustarts={{.RestartCount}} OOM={{.State.OOMKilled}}'
+
+h "Arbeitsspeicher (Grenzen: 4 x 1 GB App, 512 MB Caddy)"
+free -h | head -2
+docker stats --no-stream --format 'table {{.Name}}\t{{.MemUsage}}\t{{.PIDs}}'
+
 h "Alter der Images (aelter als ~1 Monat: neu bauen, siehe docs/server-security.md)"
 docker images --format 'table {{.Repository}}:{{.Tag}}\t{{.CreatedSince}}'
 

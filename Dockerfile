@@ -37,20 +37,30 @@ WORKDIR /app
 
 COPY --from=lpsolve-builder /usr/local/bin/lp_solve /usr/local/bin/lp_solve
 
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# Alle Pakete (auch starlette, uvicorn, websockets ...) in genau der Version aus der Lock-Datei;
+# pip bricht ab, wenn der Hash einer Datei nicht passt.
+COPY requirements.lock .
+RUN pip install --no-cache-dir --require-hashes -r requirements.lock
 
 COPY . .
 
+# Bytecode schon beim Bauen erzeugen: Im Betrieb ist das Dateisystem nur lesbar (docker-compose.yml).
+RUN python -m compileall -q shiny_files
+
+# MPLCONFIGDIR: Matplotlib legt seinen Schriften-Cache in /tmp an - der einzige beschreibbare Ort im Container.
 ENV LP_SOLVE_BIN=/usr/local/bin/lp_solve \
     MPLBACKEND=Agg \
+    MPLCONFIGDIR=/tmp/matplotlib \
+    PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 # App laeuft nicht als root - sinnvoll, weil die Seite oeffentlich erreichbar ist.
-RUN useradd --create-home --uid 10001 appuser \
- && chown -R appuser:appuser /app
+# Der Code gehoert root: Die App kann ihn lesen, aber nicht veraendern.
+RUN useradd --create-home --uid 10001 appuser
 USER appuser
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "shiny run --host 0.0.0.0 --port ${PORT:-8000} shiny_files/app.py"]
+# --ws-max-size: Eine WebSocket-Nachricht (Klicks, Eingaben) darf hoechstens 1 MiB gross sein, wie bei Caddy
+# (request_body). Der Standard waeren 16 MB. Dateien kommen per HTTP, nicht ueber den WebSocket.
+CMD ["sh", "-c", "shiny run --host 0.0.0.0 --port ${PORT:-8000} --ws-max-size 1048576 shiny_files/app.py"]
