@@ -41,22 +41,29 @@ _L = {
     "opt_kind": _t("Variables", "Variablen"),
     "kind_LP": _t("continuous", "stetig"),
     "kind_ILP": _t("integer", "ganzzahlig"),
-    "kind_LP_hint": _t("LP – fractions allowed", "LP – Bruchteile erlaubt"),
-    "kind_ILP_hint": _t("ILP – whole numbers only", "ILP – nur ganze Zahlen"),
+    "kind_LP_hint": _t("LP – amounts you measure, e.g. liters: fractions allowed", "LP – Mengen, die man misst, z. B. Liter: Bruchteile erlaubt"),
+    "kind_ILP_hint": _t("ILP – things you count, e.g. tables: whole numbers only", "ILP – Dinge, die man zählt, z. B. Tische: nur ganze Zahlen"),
     "kind_MILP": _t("mixed", "gemischt"),
-    "kind_MILP_hint": _t("MILP – only one variable integer", "MILP – nur eine Variable ganzzahlig"),
+    "kind_MILP_hint": _t("MILP – one variable counted (integer), one measured", "MILP – eine Variable gezählt (ganzzahlig), eine gemessen"),
     "opt_exam": _t("Exam mode", "Prüfungsmodus"),
     "opt_exam_hint": _t("No hints or solutions – scored after you submit",
                         "Ohne Tipps und Lösungen, Bewertung am Ende"),
     "more_options": _t("More options", "Weitere Optionen"),
     "opt_topic": _t("Topic", "Thema"),
     "topic_random": _t("Random", "Zufällig"),
+    # the topics that fit the chosen variable type (engine.TOPICS): integer, continuous, mixed
     "topic_gastro": _t("Kitchen", "Küche"),
     "topic_production": _t("Workshop", "Werkstatt"),
-    "topic_farming": _t("Farming", "Landwirtschaft"),
-    "topic_events": _t("Events", "Feiern"),
-    "topic_transport": _t("Transport", "Fahrdienst"),
+    "topic_events": _t("Parties", "Feiern"),
+    "topic_transport": _t("Trucking", "Lkw-Transport"),
     "topic_advertising": _t("Advertising", "Werbung"),
+    "topic_farming": _t("Farming", "Landwirtschaft"),
+    "topic_juice": _t("Juice bar", "Saftbar"),
+    "topic_coffee": _t("Coffee roastery", "Kaffeerösterei"),
+    "topic_feed": _t("Animal feed", "Tierfutter"),
+    "topic_bakery": _t("Bakery", "Bäckerei"),
+    "topic_canteen": _t("Canteen", "Kantine"),
+    "topic_radio": _t("Billboards and radio", "Plakate und Radio"),
     "start_practice": _t("Create task", "Aufgabe erstellen"),
     "card_own_title": _t("Your own task", "Eigene Aufgabe"),
     "card_own_tag": _t("From “Model & solution”", "Aus „Modell & Lösung“"),
@@ -291,8 +298,8 @@ _L = {
     "sol_locked_go": _t("Go to “{step}”", "Zu „{step}“"),
     "hint_sense": _t("Is it about as much as possible (profit, contribution margin, reach) or as little as possible (costs)?",
                      "Geht es um möglichst viel (Gewinn, Deckungsbeitrag, Reichweite) oder um möglichst wenig (Kosten)?"),
-    "hint_vt": _t("May the quantities take fractions (liters, hectares, planning units) or only whole pieces? The task text says so in its last lines.",
-                  "Dürfen die Mengen Bruchteile annehmen (Liter, Hektar, Planungseinheiten) oder nur ganze Stücke? Das steht in den letzten Zeilen des Aufgabentexts."),
+    "hint_vt": _t("Do you count it in whole pieces (shelves, trips, cakes) or measure it (liters, hectares, kg)? Counted pieces are integer, measured amounts are continuous. The last lines of the task say it too.",
+                  "Zählst du es in ganzen Stücken (Regale, Fahrten, Torten) oder misst du es (Liter, Hektar, kg)? Gezählte Stücke sind ganzzahlig, gemessene Mengen stetig. Das steht auch in den letzten Zeilen der Aufgabe."),
     "hint_c": _t("c1 and c2 are the numbers in the sentence about the objective – the contribution (or cost) of <b>one</b> unit.",
                  "c1 und c2 sind die Zahlen aus dem Satz zur Zielfunktion – der Beitrag (oder die Kosten) <b>einer</b> Einheit."),
     "hint_row": _t("One row per sentence with a limit: on the left the usage per unit of x1 and x2, on the right the total. “At most” means ≤, “at least” ≥, “exactly” =. If a variable does not appear, its coefficient is 0.",
@@ -322,10 +329,10 @@ _L = {
     # help panels (simple HTML)
     "help_objective": _t(
         "<p>The first part of the model:</p><ol><li><b>Objective function</b> – what is optimized:<span class=\"ol-f\">F = c1·x1 + c2·x2 → max or min</span>c1 and c2 are the contributions (or costs) per unit. “As much as possible” (profit, contribution margin) means max, “as little as possible” (costs) means min.</li>"
-        "<li><b>Variable types</b> – may x1 and x2 take fractions (continuous) or only whole numbers (integer)?</li></ol>"
+        "<li><b>Variable types</b> – things you count (shelves, trips) are integer: whole numbers only. Amounts you measure (liters, hectares, kg) are continuous: fractions like 2.5 are allowed.</li></ol>"
         "<p>The constraints follow in the next step. When you click into a field, the matching sentence of the task is highlighted.</p>",
         "<p>Der erste Teil des Modells:</p><ol><li><b>Zielfunktion</b> – was optimiert wird:<span class=\"ol-f\">F = c1·x1 + c2·x2 → max oder min</span>c1 und c2 sind die Beiträge (oder Kosten) je Einheit. „Möglichst viel“ (Gewinn, Deckungsbeitrag) heißt max, „möglichst wenig“ (Kosten) heißt min.</li>"
-        "<li><b>Wertebereich</b> – dürfen x1 und x2 Bruchteile annehmen (stetig) oder nur ganze Zahlen (ganzzahlig)?</li></ol>"
+        "<li><b>Wertebereich</b> – was du zählst (Regale, Fahrten), ist ganzzahlig: nur ganze Zahlen. Was du misst (Liter, Hektar, kg), ist stetig: auch Bruchteile wie 2,5 sind erlaubt.</li></ol>"
         "<p>Die Nebenbedingungen folgen im nächsten Schritt. Klickst du in ein Feld, wird der passende Satz der Aufgabe hervorgehoben.</p>"),
     "help_constraints": _t(
         "<p>One row per limit in the task:</p><span class=\"ol-f\">a1·x1 + a2·x2 ≤ / ≥ / = b</span>"
@@ -402,14 +409,14 @@ _L = {
                    "Fleisch: 100 g je Standardburger, 300 g je Luxusburger – höchstens 105 kg pro Tag."),
     "tut_row3": _t("Vegetables: 100 g per standard burger, 150 g per luxury burger – at most 60 kg per day.",
                    "Gemüse: 100 g je Standardburger, 150 g je Luxusburger – höchstens 60 kg pro Tag."),
-    "tut_domain": _t("Solve it without integrality first: x1 and x2 are continuous (ℝ≥0).", "Rechne zunächst ohne Ganzzahligkeit: x1 und x2 sind stetig (ℝ≥0)."),
+    "tut_domain": _t("Burgers are only sold whole: x1 and x2 are whole numbers (integer).", "Burger gibt es nur am Stück: x1 und x2 sind ganze Zahlen (ganzzahlig)."),
     "tut_q": _t("Which production plan gives the maximum revenue?", "Welches Produktionsprogramm führt zum maximalen Umsatz?"),
     "tut_rn1": _t("Buns", "Brötchen"),
     "tut_rn2": _t("Meat", "Fleisch"),
     "tut_rn3": _t("Vegetables", "Gemüse"),
-    "tut_coach_objective": _t("Start with the sentence about the prices: €4.50 and €6.00 per burger are c1 and c2, and “revenue as large as possible” means max. The last line of the task says that x1 and x2 are continuous.",
-                              "Beginne mit dem Satz zu den Preisen: 4,50 € und 6,00 € je Burger sind c1 und c2, „Umsatz möglichst groß“ heißt max. Die letzte Zeile der Aufgabe sagt, dass x1 und x2 stetig sind."),
-    "tut_calc_objective": _t("F = 4.5·x1 + 6·x2 → max\nx1, x2 ≥ 0 (continuous)", "F = 4,5·x1 + 6·x2 → max\nx1, x2 ≥ 0 (stetig)"),
+    "tut_coach_objective": _t("Start with the sentence about the prices: €4.50 and €6.00 per burger are c1 and c2, and “revenue as large as possible” means max. Burgers are only sold whole, so x1 and x2 are integer.",
+                              "Beginne mit dem Satz zu den Preisen: 4,50 € und 6,00 € je Burger sind c1 und c2, „Umsatz möglichst groß“ heißt max. Burger gibt es nur am Stück, also sind x1 und x2 ganzzahlig."),
+    "tut_calc_objective": _t("F = 4.5·x1 + 6·x2 → max\nx1, x2 ≥ 0 and integer", "F = 4,5·x1 + 6·x2 → max\nx1, x2 ≥ 0 und ganzzahlig"),
     "tut_coach_constraints": _t("Every limit becomes a row: on the left the usage per burger, on the right the daily maximum. Watch the units: 100 g = 0.1 kg. “At most” means ≤ – you choose the sign to the right of x2.",
                                 "Jede Grenze wird eine Zeile: links der Verbrauch je Burger, rechts die Tagesmenge. Achte auf die Einheiten: 100 g = 0,1 kg. „Höchstens“ heißt ≤ – das Zeichen wählst du rechts neben x2."),
     "tut_calc_constraints": _t("C1 Buns:       1·x1 + 1·x2 ≤ 500\nC2 Meat:       0.1·x1 + 0.3·x2 ≤ 105\nC3 Vegetables: 0.1·x1 + 0.15·x2 ≤ 60",
@@ -424,8 +431,8 @@ _L = {
                           "P2 (400 | 200)\nNB1: 400 + 200 = 600 ≤ 500  ✗ → unzulässig\n\nP4 (100 | 350)\nNB1: 100 + 350 = 450 ≤ 500  ✓\nNB2: 0,1·100 + 0,3·350 = 115 ≤ 105  ✗ → unzulässig"),
     "tut_coach_corner": _t("Move the green line in parallel up and to the right until it just touches the region. That happens at the corner of C1 (buns) and C3 (vegetables). The corner of C2 and C3 is close by – when in doubt, compare F at both corners:",
                            "Verschiebe die grüne Gerade parallel nach rechts oben, bis sie den Bereich gerade noch berührt. Das passiert in der Ecke von NB1 (Brötchen) und NB3 (Gemüse). Die Ecke von NB2 und NB3 liegt knapp daneben – im Zweifel vergleichst du F in beiden Ecken:"),
-    "tut_calc_corner": _t("Read off the graph:\nCorner C1/C3 ≈ (300 | 200): F ≈ 4.5·300 + 6·200 = 2,550  ← better\nCorner C2/C3 ≈ (150 | 300): F ≈ 4.5·150 + 6·300 = 2,475",
-                          "Aus der Grafik abgelesen:\nEcke NB1/NB3 ≈ (300 | 200): F ≈ 4,5·300 + 6·200 = 2.550  ← besser\nEcke NB2/NB3 ≈ (150 | 300): F ≈ 4,5·150 + 6·300 = 2.475"),
+    "tut_calc_corner": _t("Read off the graph:\nCorner C1/C3 ≈ (300 | 200): F ≈ 4.5·300 + 6·200 = 2,550  ← better\nCorner C2/C3 ≈ (150 | 300): F ≈ 4.5·150 + 6·300 = 2,475\n\nThe corner has whole numbers – so it is also the best plan with whole burgers.",
+                          "Aus der Grafik abgelesen:\nEcke NB1/NB3 ≈ (300 | 200): F ≈ 4,5·300 + 6·200 = 2.550  ← besser\nEcke NB2/NB3 ≈ (150 | 300): F ≈ 4,5·150 + 6·300 = 2.475\n\nDie Ecke hat ganze Zahlen – sie ist also auch der beste Plan mit ganzen Burgern."),
     "tut_coach_optimum": _t("Now calculate the corner exactly: multiply the vegetables equation by 10 and subtract the buns equation. Then put the point into F.",
                             "Jetzt rechnest du die Ecke genau aus: Multipliziere die Gemüse-Gleichung mit 10 und ziehe die Brötchen-Gleichung ab. Den Punkt setzt du dann in F ein."),
     "tut_calc_optimum": _t("C1: x1 + x2 = 500\nC3: 0.1·x1 + 0.15·x2 = 60   | ·10\n →  x1 + 1.5·x2 = 600\nC3·10 − C1: 0.5·x2 = 100 → x2 = 200\nx1 = 500 − 200 = 300\nF = 4.5·300 + 6·200 = 2,550",
@@ -434,8 +441,8 @@ _L = {
                           "Setze (300 | 200) in jede Nebenbedingung ein. Beim Fleisch bleiben 15 kg übrig – nicht bindend. Brötchen und Gemüse sind ganz aufgebraucht – bindend. Das sind genau die zwei Geraden deiner Ecke."),
     "tut_calc_slack": _t("C1 Buns:       300 + 200 = 500 of 500 → slack 0, binding\nC2 Meat:       0.1·300 + 0.3·200 = 90 of 105 → slack 15, not binding\nC3 Vegetables: 0.1·300 + 0.15·200 = 60 of 60 → slack 0, binding",
                          "NB1 Brötchen: 300 + 200 = 500 von 500 → Schlupf 0, bindend\nNB2 Fleisch:  0,1·300 + 0,3·200 = 90 von 105 → Schlupf 15, nicht bindend\nNB3 Gemüse:   0,1·300 + 0,15·200 = 60 von 60 → Schlupf 0, bindend"),
-    "tut_coach_interpret": _t("In words: the maximum revenue is €2,550. This requires 300 standard burgers and 200 luxury burgers to be produced and sold. 15 kg of meat are left over; buns and vegetables are used up completely. And: burgers are really whole pieces – an LP solution may not simply be rounded.",
-                              "In Worten: Der maximale Umsatz beträgt 2.550 €. Dafür werden 300 Standard- und 200 Luxusburger hergestellt und verkauft. Es bleiben 15 kg Fleisch übrig, Brötchen und Gemüse werden vollständig verbraucht. Und: Burger sind eigentlich ganze Stücke – eine LP-Lösung darf man nicht einfach runden."),
+    "tut_coach_interpret": _t("In words: the maximum revenue is €2,550. This requires 300 standard burgers and 200 luxury burgers to be produced and sold. 15 kg of meat are left over; buns and vegetables are used up completely. Here the optimal corner already has whole numbers. If it had not, rounding would not be enough – you would compare the whole-number points nearby.",
+                              "In Worten: Der maximale Umsatz beträgt 2.550 €. Dafür werden 300 Standard- und 200 Luxusburger hergestellt und verkauft. Es bleiben 15 kg Fleisch übrig, Brötchen und Gemüse werden vollständig verbraucht. Hier hat die optimale Ecke schon ganze Zahlen. Wäre das nicht so, reicht Runden nicht – dann vergleichst du die ganzzahligen Punkte in der Nähe."),
     "tut_calc_interpret": _t("", ""),
     # ------------------------------------------------------------------ handing in and evaluation
     "submit_title": _t("Submit the task?", "Aufgabe abgeben?"),
@@ -495,8 +502,9 @@ _L = {
     "row_total_eq": _t("In total exactly {b} {all} ({pl1} and {pl2} together).", "Insgesamt genau {b} {all} ({pl1} und {pl2} zusammen)."),
     "row_total_ge": _t("In total at least {b} {all} ({pl1} and {pl2} together).", "Insgesamt mindestens {b} {all} ({pl1} und {pl2} zusammen)."),
     "rn_total": _t("Total", "Gesamtmenge"),
-    "dom_con": _t("x{n} ({pl}): fractions allowed.", "x{n} ({pl}): auch Bruchteile erlaubt."),
-    "dom_int": _t("x{n} ({pl}): whole numbers only.", "x{n} ({pl}): nur ganze Zahlen."),
+    # one sentence per variable, with an example: what you count is whole, what you measure may be a fraction
+    "dom_con": _t("x{n} ({dom}): fractions allowed, e.g. {ex} {unit}.", "x{n} ({dom}): auch Bruchteile erlaubt, z. B. {ex} {unit}."),
+    "dom_int": _t("x{n} ({pl}): whole numbers only, e.g. {whole} {pl} – not {half}.", "x{n} ({pl}): nur ganze Zahlen, z. B. {whole} {pl} – nicht {half}."),
     # worked solutions (server)
     "sol_range": _t("Variable types: x1 {vt1}, x2 {vt2}", "Wertebereich: x1 {vt1}, x2 {vt2}"),
     "sol_scaled": _t("A multiple of a whole row (e.g. everything times 2) also counts as correct.",
@@ -563,116 +571,273 @@ _L = {
                         "Unter „Modell & Lösung“ fehlt noch eine aktive Zielfunktion oder Nebenbedingung."),
 }
 
-# Contexts of the generated word problems. For each topic: title, setting, goal and objective sentence
-# (max, and min for topics that also make sense as cost minimisation), the nouns and two resources.
+# Contexts of the generated word problems. Every topic has one variable type, so that the words fit the numbers
+# (Robin, 2026-11-16: “a half smoothie makes no sense”): things you count are integer (shelves, trips – “3 tables,
+# not 3.5”), amounts you measure are continuous (liters, hectares, kg – “2.5 liters”), a mixed topic has one of each.
+# engine.TOPICS says which topic is which. For each topic: title, setting (settingmin where a cost problem needs its
+# own story), goal and objective sentence (max, and min for topics that also make sense as cost minimisation), the
+# nouns, two resources (a mixed topic has a third one instead of a total – pieces and kilograms cannot be added up)
+# and, for a measured amount, dom/unit for the sentence about the variable types (“mango juice in liters … 2.5 liters”).
+# Every resource is measured (h, kg, m³, ₱ …), never counted, because limits like 28.5 occur.
 # Money: German texts use euros. English texts use Philippine pesos (the app is used at a partner university
 # there) with the unit in brackets, like the units of the constraints – “(in ₱100): 6 per shelf” – so the
 # numbers of the model stay the same in both languages and the amounts stay realistic.
 _GOAL_MAX = _t("The contribution margin should be as large as possible.", "Der Deckungsbeitrag soll möglichst groß werden.")
 _GOAL_MIN = _t("The costs should be as low as possible.", "Die Kosten sollen möglichst gering sein.")
+_GOAL_REACH = _t("The reach should be as large as possible.", "Die Reichweite soll möglichst groß werden.")
 _FMAX = _t("Contribution margin", "Deckungsbeitrag")
 _FMIN = _t("Costs", "Kosten")
+_REACH = _t("Reach", "Reichweite")
+_CTX_CAMPAIGN = _t("Only the following conditions limit the campaign.", "Nur die folgenden Bedingungen begrenzen die Kampagne.")
 
 _CONTEXTS = {
+    # ---------------------------------------------------------------- integer: things you count
     "gastro": {
-        "var1": _t("portions of bowl", "Portionen Bowl"), "var2": _t("portions of pasta", "Portionen Pasta"),
-        "title": _t("Kitchen: bowls and pasta", "Küche: Bowl und Pasta"),
-        "setting": _t("A kitchen plans how many portions of bowl (x1) and pasta (x2) to prepare.",
-                      "Eine Küche plant, wie viele Portionen Bowl (x1) und Pasta (x2) sie vorbereitet."),
+        "title": _t("Kitchen: rice bowls and pasta dishes", "Küche: Reisbowls und Pastagerichte"),
+        "setting": _t("A small kitchen plans how many rice bowls (x1) and pasta dishes (x2) to cook per day.",
+                      "Eine kleine Küche plant, wie viele Reisbowls (x1) und Pastagerichte (x2) sie pro Tag kocht."),
+        "settingmin": _t("A school kitchen plans how many rice bowls (x1) and pasta dishes (x2) to cook per day for its students.",
+                         "Eine Schulküche plant, wie viele Reisbowls (x1) und Pastagerichte (x2) sie pro Tag für ihre Schülerinnen und Schüler kocht."),
+        "var1": _t("number of rice bowls", "Anzahl Reisbowls"), "var2": _t("number of pasta dishes", "Anzahl Pastagerichte"),
         "goalmax": _GOAL_MAX, "goalmin": _GOAL_MIN, "fmax": _FMAX, "fmin": _FMIN,
-        "cmax": _t("Contribution margin (in ₱10): {c1} per portion of bowl, {c2} per portion of pasta.",
-                   "Deckungsbeitrag: {c1} € je Portion Bowl, {c2} € je Portion Pasta."),
-        "cmin": _t("Costs (in ₱10): {c1} per portion of bowl, {c2} per portion of pasta.", "Kosten: {c1} € je Portion Bowl, {c2} € je Portion Pasta."),
-        "one1": _t("portion of bowl", "Portion Bowl"),
-        "one2": _t("portion of pasta", "Portion Pasta"),
-        "pl1": _t("bowls", "Bowls"), "pl2": _t("pasta", "Pasta"), "all": _t("portions", "Portionen"),
-        "r1max": _t("Vegetables", "Gemüse"), "u1max": _t("kg", "kg"),
+        "cmax": _t("Contribution margin (in ₱10): {c1} per rice bowl, {c2} per pasta dish.",
+                   "Deckungsbeitrag: {c1} € je Reisbowl, {c2} € je Pastagericht."),
+        "cmin": _t("Costs (in ₱10): {c1} per rice bowl, {c2} per pasta dish.", "Kosten: {c1} € je Reisbowl, {c2} € je Pastagericht."),
+        "one1": _t("rice bowl", "Reisbowl"), "one2": _t("pasta dish", "Pastagericht"),
+        "pl1": _t("rice bowls", "Reisbowls"), "pl2": _t("pasta dishes", "Pastagerichte"), "all": _t("dishes", "Gerichte"),
+        "r1max": _t("Vegetables", "Gemüse"), "u1max": _t("in 100 g", "in 100 g"),
         "r2max": _t("Kitchen time", "Küchenzeit"), "u2max": _t("min", "min"),
-        "r1min": _t("Protein", "Protein"), "u1min": _t("g", "g"),
+        "r1min": _t("Protein", "Protein"), "u1min": _t("in 10 g", "in 10 g"),
         "r2min": _t("Fiber", "Ballaststoffe"), "u2min": _t("g", "g"),
     },
     "production": {
-        "var1": _t("number of shelves", "Anzahl Regale"), "var2": _t("number of tables", "Anzahl Tische"),
         "title": _t("Workshop: shelves and tables", "Werkstatt: Regale und Tische"),
-        "setting": _t("A workshop plans how many shelves (x1) and tables (x2) to build.",
-                      "Eine Werkstatt plant, wie viele Regale (x1) und Tische (x2) sie baut."),
+        "setting": _t("A workshop plans how many shelves (x1) and tables (x2) to build per week.",
+                      "Eine Werkstatt plant, wie viele Regale (x1) und Tische (x2) sie pro Woche baut."),
+        "var1": _t("number of shelves", "Anzahl Regale"), "var2": _t("number of tables", "Anzahl Tische"),
         "goalmax": _GOAL_MAX, "fmax": _FMAX,
-        "cmax": _t("Contribution margin (in ₱100): {c1} per shelf, {c2} per table.", "Deckungsbeitrag: {c1} € je Regal, {c2} € je Tisch."),
+        "cmax": _t("Contribution margin (in ₱100): {c1} per shelf, {c2} per table.", "Deckungsbeitrag (in 10 €): {c1} je Regal, {c2} je Tisch."),
         "one1": _t("shelf", "Regal"), "one2": _t("table", "Tisch"),
-        "pl1": _t("shelves", "Regale"), "pl2": _t("tables", "Tische"),
-        "all": _t("pieces of furniture", "Möbelstücke"),
+        "pl1": _t("shelves", "Regale"), "pl2": _t("tables", "Tische"), "all": _t("pieces of furniture", "Möbelstücke"),
         "r1max": _t("Wood", "Holz"), "u1max": _t("m²", "m²"),
         "r2max": _t("Working time", "Arbeitszeit"), "u2max": _t("h", "h"),
     },
-    "farming": {
-        "var1": _t("hectares of potatoes", "Hektar Kartoffeln"), "var2": _t("hectares of carrots", "Hektar Karotten"),
-        "title": _t("Farm: potatoes and carrots", "Hof: Kartoffeln und Karotten"),
-        "setting": _t("A farm divides its land between potatoes (x1) and carrots (x2), each in hectares.",
-                      "Ein Hof verteilt seine Fläche auf Kartoffeln (x1) und Karotten (x2), jeweils in Hektar."),
-        "goalmax": _t("The revenue should be as large as possible.", "Der Erlös soll möglichst groß werden."),
-        "goalmin": _GOAL_MIN,
-        "fmax": _t("Revenue", "Erlös"), "fmin": _FMIN,
-        "cmax": _t("Revenue (in ₱100,000): {c1} per ha of potatoes, {c2} per ha of carrots.", "Erlös: {c1} Tsd. € je ha Kartoffeln, {c2} Tsd. € je ha Karotten."),
-        "cmin": _t("Costs (in ₱10,000): {c1} per ha of potatoes, {c2} per ha of carrots.", "Kosten: {c1} Tsd. € je ha Kartoffeln, {c2} Tsd. € je ha Karotten."),
-        "one1": _t("ha of potatoes", "ha Kartoffeln"), "one2": _t("ha of carrots", "ha Karotten"),
-        "pl1": _t("potatoes", "Kartoffeln"), "pl2": _t("carrots", "Karotten"), "all": _t("ha", "ha"),
-        "r1max": _t("Water", "Wasser"), "u1max": _t("1000 m³", "Tsd. m³"),
-        "r2max": _t("Labor", "Arbeitszeit"), "u2max": _t("days", "Tage"),
-        "r1min": _t("Wholesale delivery", "Lieferung Großmarkt"), "u1min": _t("t", "t"),
-        "r2min": _t("Canteen delivery", "Lieferung Kantinen"), "u2min": _t("t", "t"),
-    },
     "events": {
-        "var1": _t("number of basic packages", "Anzahl Basispakete"), "var2": _t("number of premium packages", "Anzahl Premiumpakete"),
-        "title": _t("Parties: basic and premium packages", "Feiern: Basis- und Premiumpakete"),
-        "setting": _t("A team puts together basic packages (x1) and premium packages (x2) for parties.",
-                      "Ein Team stellt Basispakete (x1) und Premiumpakete (x2) für Feiern zusammen."),
+        "title": _t("Parties: karaoke and photo booth packages", "Feiern: Karaoke- und Fotoboxpakete"),
+        "setting": _t("An event team rents out karaoke packages (x1) and photo booth packages (x2) for parties. It plans how many of each to rent out per month.",
+                      "Ein Eventteam vermietet Karaokepakete (x1) und Fotoboxpakete (x2) für Feiern. Es plant, wie viele es davon pro Monat vermietet."),
+        "var1": _t("number of karaoke packages", "Anzahl Karaokepakete"), "var2": _t("number of photo booth packages", "Anzahl Fotoboxpakete"),
         "goalmax": _GOAL_MAX, "fmax": _FMAX,
-        "cmax": _t("Contribution margin (in ₱1,000): {c1} per basic package, {c2} per premium package.",
-                   "Deckungsbeitrag: {c1} € je Basispaket, {c2} € je Premiumpaket."),
-        "one1": _t("basic package", "Basispaket"), "one2": _t("premium package", "Premiumpaket"),
-        "pl1": _t("basic packages", "Basispakete"), "pl2": _t("premium packages", "Premiumpakete"),
-        "all": _t("packages", "Pakete"),
+        "cmax": _t("Contribution margin (in ₱100): {c1} per karaoke package, {c2} per photo booth package.",
+                   "Deckungsbeitrag (in 10 €): {c1} je Karaokepaket, {c2} je Fotoboxpaket."),
+        "one1": _t("karaoke package", "Karaokepaket"), "one2": _t("photo booth package", "Fotoboxpaket"),
+        "pl1": _t("karaoke packages", "Karaokepakete"), "pl2": _t("photo booth packages", "Fotoboxpakete"), "all": _t("packages", "Pakete"),
         "r1max": _t("Staff", "Personal"), "u1max": _t("h", "h"),
-        "r2max": _t("Storage", "Lager"), "u2max": _t("m³", "m³"),
+        "r2max": _t("Delivery van", "Lieferwagen"), "u2max": _t("h", "h"),
     },
     "transport": {
-        "var1": _t("number of car trips", "Anzahl Kleinwagenfahrten"), "var2": _t("number of van trips", "Anzahl Transporterfahrten"),
-        "title": _t("Shuttle service: cars and vans", "Fahrdienst: Kleinwagen und Transporter"),
-        "setting": _t("A shuttle service plans how many trips to run with cars (x1) and with vans (x2).",
-                      "Ein Fahrdienst plant, wie viele Fahrten er mit Kleinwagen (x1) und mit Transportern (x2) anbietet."),
+        "title": _t("Trucking: two warehouses", "Lkw-Transport: zwei Lager"),
+        "setting": _t("A trucking company delivers goods from two warehouses. It plans how many trips to make per week from warehouse A (x1) and from warehouse B (x2).",
+                      "Ein Transportunternehmen liefert Waren aus zwei Lagern aus. Es plant, wie viele Fahrten es pro Woche ab Lager A (x1) und ab Lager B (x2) macht."),
+        "settingmin": _t("After a typhoon, a relief team brings rice and drinking water to a town by truck. It plans how many trips to make from warehouse A (x1) and from warehouse B (x2).",
+                         "Nach einem Taifun bringt ein Hilfsteam Reis und Trinkwasser per Lkw in eine Stadt. Es plant, wie viele Fahrten es ab Lager A (x1) und ab Lager B (x2) macht."),
+        "var1": _t("number of trips from warehouse A", "Anzahl Fahrten ab Lager A"), "var2": _t("number of trips from warehouse B", "Anzahl Fahrten ab Lager B"),
         "goalmax": _GOAL_MAX, "goalmin": _GOAL_MIN, "fmax": _FMAX, "fmin": _FMIN,
-        "cmax": _t("Contribution margin (in ₱100): {c1} per car trip, {c2} per van trip.", "Deckungsbeitrag: {c1} € je Kleinwagenfahrt, {c2} € je Transporterfahrt."),
-        "cmin": _t("Costs (in ₱100): {c1} per car trip, {c2} per van trip.", "Kosten: {c1} € je Kleinwagenfahrt, {c2} € je Transporterfahrt."),
-        "one1": _t("car trip", "Kleinwagenfahrt"), "one2": _t("van trip", "Transporterfahrt"),
-        "pl1": _t("car trips", "Kleinwagenfahrten"), "pl2": _t("van trips", "Transporterfahrten"),
+        "cmax": _t("Contribution margin (in ₱1,000): {c1} per trip from warehouse A, {c2} per trip from warehouse B.",
+                   "Deckungsbeitrag (in 100 €): {c1} je Fahrt ab Lager A, {c2} je Fahrt ab Lager B."),
+        "cmin": _t("Costs (in ₱1,000): {c1} per trip from warehouse A, {c2} per trip from warehouse B.",
+                   "Kosten (in 100 €): {c1} je Fahrt ab Lager A, {c2} je Fahrt ab Lager B."),
+        "one1": _t("trip from warehouse A", "Fahrt ab Lager A"), "one2": _t("trip from warehouse B", "Fahrt ab Lager B"),
+        "pl1": _t("trips from warehouse A", "Fahrten ab Lager A"), "pl2": _t("trips from warehouse B", "Fahrten ab Lager B"),
         "all": _t("trips", "Fahrten"),
         "r1max": _t("Driver time", "Fahrerzeit"), "u1max": _t("h", "h"),
-        "r2max": _t("Energy", "Energie"), "u2max": _t("10 kWh", "10 kWh"),
-        "r1min": _t("Passengers", "Personen"), "u1min": _t("people", "Pers."),
-        "r2min": _t("Luggage", "Gepäck"), "u2min": _t("m³", "m³"),
+        "r2max": _t("Fuel", "Kraftstoff"), "u2max": _t("in 10 liters", "in 10 Litern"),
+        "r1min": _t("Rice", "Reis"), "u1min": _t("t", "t"),
+        "r2min": _t("Drinking water", "Trinkwasser"), "u2min": _t("m³", "m³"),
     },
     "advertising": {
-        "var1": _t("number of online packages", "Anzahl Onlinepakete"), "var2": _t("number of poster packages", "Anzahl Plakatpakete"),
         "title": _t("Agency: online and poster ads", "Agentur: Online- und Plakatwerbung"),
-        "setting": _t("An agency plans how many online packages (x1) and poster packages (x2) to book.",
-                      "Eine Agentur plant, wie viele Onlinepakete (x1) und Plakatpakete (x2) sie bucht."),
-        "goalmax": _t("The reach should be as large as possible.", "Die Reichweite soll möglichst groß werden."),
-        "goalmin": _GOAL_MIN,
-        "fmax": _t("Reach", "Reichweite"), "fmin": _FMIN,
-        "cmax": _t("Reach: {c1} points per online package, {c2} points per poster package.",
-                   "Reichweite: {c1} Punkte je Onlinepaket, {c2} Punkte je Plakatpaket."),
+        "setting": _t("An advertising agency plans how many online packages (x1) and poster packages (x2) to book for a campaign.",
+                      "Eine Werbeagentur plant, wie viele Onlinepakete (x1) und Plakatpakete (x2) sie für eine Kampagne bucht."),
+        "var1": _t("number of online packages", "Anzahl Onlinepakete"), "var2": _t("number of poster packages", "Anzahl Plakatpakete"),
+        "goalmax": _GOAL_REACH, "goalmin": _GOAL_MIN, "fmax": _REACH, "fmin": _FMIN,
+        "ctxmax": _CTX_CAMPAIGN,
+        "cmax": _t("Reach (in 1,000 people): {c1} per online package, {c2} per poster package.",
+                   "Reichweite (in Tsd. Personen): {c1} je Onlinepaket, {c2} je Plakatpaket."),
         "cmin": _t("Costs (in ₱10,000): {c1} per online package, {c2} per poster package.", "Kosten: {c1} Tsd. € je Onlinepaket, {c2} Tsd. € je Plakatpaket."),
         "one1": _t("online package", "Onlinepaket"), "one2": _t("poster package", "Plakatpaket"),
-        "pl1": _t("online packages", "Onlinepakete"), "pl2": _t("poster packages", "Plakatpakete"),
-        "all": _t("packages", "Pakete"),
+        "pl1": _t("online packages", "Onlinepakete"), "pl2": _t("poster packages", "Plakatpakete"), "all": _t("packages", "Pakete"),
         "r1max": _t("Design work", "Gestaltung"), "u1max": _t("h", "h"),
-        "r2max": _t("Budget", "Budget"), "u2max": _t("₱10,000", "Tsd. €"),
-        "r1min": _t("Young audience", "Kontakte Jüngere"), "u1min": _t("thousand", "Tsd."),
-        "r2min": _t("Older audience", "Kontakte Ältere"), "u2min": _t("thousand", "Tsd."),
+        "r2max": _t("Budget", "Budget"), "u2max": _t("in ₱10,000", "Tsd. €"),
+        "r1min": _t("People reached in the city", "Erreichte Personen in der Stadt"), "u1min": _t("in 1,000", "in Tsd."),
+        "r2min": _t("People reached in rural areas", "Erreichte Personen auf dem Land"), "u2min": _t("in 1,000", "in Tsd."),
+    },
+    # ---------------------------------------------------------------- continuous: amounts you measure
+    "farming": {
+        "title": _t("Farm: potatoes and carrots", "Hof: Kartoffeln und Karotten"),
+        "setting": _t("A farm divides its land between potatoes (x1) and carrots (x2). Land is measured in hectares.",
+                      "Ein Hof teilt seine Fläche auf Kartoffeln (x1) und Karotten (x2) auf. Die Fläche wird in Hektar gemessen."),
+        "settingmin": _t("A farm divides its land between potatoes (x1) and carrots (x2). Land is measured in hectares. The farm has delivery contracts with a market and with canteens.",
+                         "Ein Hof teilt seine Fläche auf Kartoffeln (x1) und Karotten (x2) auf. Die Fläche wird in Hektar gemessen. Der Hof hat Lieferverträge mit einem Großmarkt und mit Kantinen."),
+        "var1": _t("hectares of potatoes", "Hektar Kartoffeln"), "var2": _t("hectares of carrots", "Hektar Karotten"),
+        "goalmax": _t("The revenue should be as large as possible.", "Der Erlös soll möglichst groß werden."),
+        "goalmin": _GOAL_MIN, "fmax": _t("Revenue", "Erlös"), "fmin": _FMIN,
+        "cmax": _t("Revenue (in ₱100,000): {c1} per hectare of potatoes, {c2} per hectare of carrots.",
+                   "Erlös: {c1} Tsd. € je Hektar Kartoffeln, {c2} Tsd. € je Hektar Karotten."),
+        "cmin": _t("Costs (in ₱10,000): {c1} per hectare of potatoes, {c2} per hectare of carrots.",
+                   "Kosten: {c1} Tsd. € je Hektar Kartoffeln, {c2} Tsd. € je Hektar Karotten."),
+        "one1": _t("hectare of potatoes", "Hektar Kartoffeln"), "one2": _t("hectare of carrots", "Hektar Karotten"),
+        "pl1": _t("potatoes", "Kartoffeln"), "pl2": _t("carrots", "Karotten"), "all": _t("hectares", "Hektar"),
+        "dom1": _t("potatoes in hectares", "Kartoffeln in Hektar"), "dom2": _t("carrots in hectares", "Karotten in Hektar"),
+        "unit1": _t("hectares", "Hektar"), "unit2": _t("hectares", "Hektar"),
+        "r1max": _t("Water", "Wasser"), "u1max": _t("in 1,000 m³", "in Tsd. m³"),
+        "r2max": _t("Tractor time", "Traktorzeit"), "u2max": _t("h", "h"),
+        "r1min": _t("Delivery to the market", "Lieferung an den Großmarkt"), "u1min": _t("t", "t"),
+        "r2min": _t("Delivery to canteens", "Lieferung an Kantinen"), "u2min": _t("t", "t"),
+    },
+    "juice": {
+        "title": _t("Juice bar: mango and pineapple juice", "Saftbar: Mango- und Ananassaft"),
+        "setting": _t("A juice bar plans how many liters of fresh mango juice (x1) and pineapple juice (x2) to make per day.",
+                      "Eine Saftbar plant, wie viele Liter frischen Mangosaft (x1) und Ananassaft (x2) sie pro Tag herstellt."),
+        "var1": _t("liters of mango juice", "Liter Mangosaft"), "var2": _t("liters of pineapple juice", "Liter Ananassaft"),
+        "goalmax": _GOAL_MAX, "fmax": _FMAX,
+        "cmax": _t("Contribution margin (in ₱10): {c1} per liter of mango juice, {c2} per liter of pineapple juice.",
+                   "Deckungsbeitrag: {c1} € je Liter Mangosaft, {c2} € je Liter Ananassaft."),
+        "one1": _t("liter of mango juice", "Liter Mangosaft"), "one2": _t("liter of pineapple juice", "Liter Ananassaft"),
+        "pl1": _t("mango juice", "Mangosaft"), "pl2": _t("pineapple juice", "Ananassaft"), "all": _t("liters", "Liter"),
+        "dom1": _t("mango juice in liters", "Mangosaft in Litern"), "dom2": _t("pineapple juice in liters", "Ananassaft in Litern"),
+        "unit1": _t("liters", "Liter"), "unit2": _t("liters", "Liter"),
+        "r1max": _t("Fruit budget", "Obstbudget"), "u1max": _t("in ₱100", "€"),
+        "r2max": _t("Blender time", "Mixerzeit"), "u2max": _t("min", "min"),
+    },
+    "coffee": {
+        "title": _t("Coffee roastery: house and espresso blend", "Kaffeerösterei: Haus- und Espressomischung"),
+        "setting": _t("A coffee roastery plans how many kilograms of house blend (x1) and espresso blend (x2) to roast per day.",
+                      "Eine Kaffeerösterei plant, wie viele Kilogramm Hausmischung (x1) und Espressomischung (x2) sie pro Tag röstet."),
+        "var1": _t("kilograms of house blend", "Kilogramm Hausmischung"), "var2": _t("kilograms of espresso blend", "Kilogramm Espressomischung"),
+        "goalmax": _GOAL_MAX, "fmax": _FMAX,
+        "cmax": _t("Contribution margin (in ₱100): {c1} per kg of house blend, {c2} per kg of espresso blend.",
+                   "Deckungsbeitrag: {c1} € je kg Hausmischung, {c2} € je kg Espressomischung."),
+        "one1": _t("kg of house blend", "kg Hausmischung"), "one2": _t("kg of espresso blend", "kg Espressomischung"),
+        "pl1": _t("house blend", "Hausmischung"), "pl2": _t("espresso blend", "Espressomischung"), "all": _t("kg", "kg"),
+        "dom1": _t("house blend in kg", "Hausmischung in kg"), "dom2": _t("espresso blend in kg", "Espressomischung in kg"),
+        "unit1": _t("kg", "kg"), "unit2": _t("kg", "kg"),
+        "r1max": _t("Roaster time", "Röstzeit"), "u1max": _t("min", "min"),
+        "r2max": _t("Packing time", "Verpackungszeit"), "u2max": _t("min", "min"),
+    },
+    "feed": {
+        "title": _t("Animal feed: mix A and mix B", "Tierfutter: Mischung A und B"),
+        "setting": _t("A feed mill plans how many tons of feed mix A (x1) and feed mix B (x2) to produce per week.",
+                      "Eine Futtermühle plant, wie viele Tonnen Futtermischung A (x1) und Futtermischung B (x2) sie pro Woche herstellt."),
+        "settingmin": _t("A pig farmer buys two feed mixes, A (x1) and B (x2), for one month. Both are measured in tons.",
+                         "Ein Schweinezüchter kauft für einen Monat zwei Futtermischungen, A (x1) und B (x2). Beide werden in Tonnen gemessen."),
+        "var1": _t("tons of feed mix A", "Tonnen Futtermischung A"), "var2": _t("tons of feed mix B", "Tonnen Futtermischung B"),
+        "goalmax": _GOAL_MAX, "goalmin": _GOAL_MIN, "fmax": _FMAX, "fmin": _FMIN,
+        "cmax": _t("Contribution margin (in ₱1,000): {c1} per ton of mix A, {c2} per ton of mix B.",
+                   "Deckungsbeitrag (in 10 €): {c1} je Tonne Mischung A, {c2} je Tonne Mischung B."),
+        "cmin": _t("Costs (in ₱10,000): {c1} per ton of mix A, {c2} per ton of mix B.",
+                   "Kosten (in 100 €): {c1} je Tonne Mischung A, {c2} je Tonne Mischung B."),
+        "one1": _t("ton of mix A", "Tonne Mischung A"), "one2": _t("ton of mix B", "Tonne Mischung B"),
+        "pl1": _t("mix A", "Mischung A"), "pl2": _t("mix B", "Mischung B"), "all": _t("tons", "Tonnen"),
+        "dom1": _t("feed mix A in tons", "Futtermischung A in Tonnen"), "dom2": _t("feed mix B in tons", "Futtermischung B in Tonnen"),
+        "unit1": _t("tons", "Tonnen"), "unit2": _t("tons", "Tonnen"),
+        "r1max": _t("Machine time", "Maschinenzeit"), "u1max": _t("h", "h"),
+        "r2max": _t("Packing time", "Abfüllzeit"), "u2max": _t("h", "h"),
+        "r1min": _t("Protein", "Protein"), "u1min": _t("in 100 kg", "in 100 kg"),
+        "r2min": _t("Fiber", "Rohfaser"), "u2min": _t("in 10 kg", "in 10 kg"),
     },
 }
+
+# ---------------------------------------------------------------- mixed: one product you count, one you measure
+# {pl1}/{pl2}, {one1}/{one2} and {q1}/{q2} are filled in with the products in the order of x1 and x2 (see _mixed).
+_MIXED = {
+    "bakery": {
+        "count": {"var": _t("number of cakes", "Anzahl Torten"), "one": _t("cake", "Torte"), "pl": _t("cakes", "Torten"),
+                  "q": _t("how many cakes", "wie viele Torten")},
+        "amount": {"var": _t("kilograms of cookies", "Kilogramm Kekse"), "one": _t("kg of cookies", "kg Kekse"), "pl": _t("cookies", "Kekse"),
+                   "q": _t("how many kilograms of cookies", "wie viele Kilogramm Kekse"),
+                   "dom": _t("cookies in kg", "Kekse in kg"), "unit": _t("kg", "kg")},
+        "title": _t("Bakery: {pl1} and {pl2}", "Bäckerei: {pl1} und {pl2}"),
+        "setting": _t("A bakery plans {q1} (x1) and {q2} (x2) to bake per day.", "Eine Bäckerei plant, {q1} (x1) und {q2} (x2) sie pro Tag backt."),
+        "goalmax": _GOAL_MAX, "fmax": _FMAX,
+        "cmax": _t("Contribution margin (in ₱100): {c1} per {one1}, {c2} per {one2}.", "Deckungsbeitrag: {c1} € je {one1}, {c2} € je {one2}."),
+        "r1max": _t("Butter", "Butter"), "u1max": _t("in 100 g", "in 100 g"),
+        "r2max": _t("Sugar", "Zucker"), "u2max": _t("in 100 g", "in 100 g"),
+        "r3max": _t("Oven time", "Ofenzeit"), "u3max": _t("h", "h"),
+    },
+    "canteen": {
+        "count": {"var": _t("number of lunch boxes", "Anzahl Lunchboxen"), "one": _t("lunch box", "Lunchbox"), "pl": _t("lunch boxes", "Lunchboxen"),
+                  "q": _t("how many lunch boxes", "wie viele Lunchboxen")},
+        "amount": {"var": _t("liters of soup", "Liter Suppe"), "one": _t("liter of soup", "Liter Suppe"), "pl": _t("soup", "Suppe"),
+                   "q": _t("how many liters of soup", "wie viele Liter Suppe"),
+                   "dom": _t("soup in liters", "Suppe in Litern"), "unit": _t("liters", "Liter")},
+        "title": _t("Canteen: {pl1} and {pl2}", "Kantine: {pl1} und {pl2}"),
+        "setting": _t("A canteen plans {q1} (x1) and {q2} (x2) to prepare per day.", "Eine Kantine plant, {q1} (x1) und {q2} (x2) sie pro Tag zubereitet."),
+        "settingmin": _t("A school canteen plans {q1} (x1) and {q2} (x2) to prepare per day for its students.",
+                         "Eine Schulkantine plant, {q1} (x1) und {q2} (x2) sie pro Tag für ihre Schülerinnen und Schüler zubereitet."),
+        "goalmax": _GOAL_MAX, "goalmin": _GOAL_MIN, "fmax": _FMAX, "fmin": _FMIN,
+        "cmax": _t("Contribution margin (in ₱10): {c1} per {one1}, {c2} per {one2}.", "Deckungsbeitrag: {c1} € je {one1}, {c2} € je {one2}."),
+        "cmin": _t("Costs (in ₱10): {c1} per {one1}, {c2} per {one2}.", "Kosten: {c1} € je {one1}, {c2} € je {one2}."),
+        "r1max": _t("Vegetables", "Gemüse"), "u1max": _t("in 100 g", "in 100 g"),
+        "r2max": _t("Kitchen time", "Küchenzeit"), "u2max": _t("min", "min"),
+        "r3max": _t("Delivery capacity", "Lieferkapazität"), "u3max": _t("kg", "kg"),
+        "r1min": _t("Protein", "Protein"), "u1min": _t("in 10 g", "in 10 g"),
+        "r2min": _t("Fiber", "Ballaststoffe"), "u2min": _t("g", "g"),
+        "r3min": _t("Delivery capacity", "Lieferkapazität"), "u3min": _t("kg", "kg"),
+    },
+    "radio": {
+        "count": {"var": _t("number of billboards", "Anzahl Plakatwände"), "one": _t("billboard", "Plakatwand"), "pl": _t("billboards", "Plakatwände"),
+                  "q": _t("how many billboards", "wie viele Plakatwände")},
+        "amount": {"var": _t("minutes of radio ads", "Minuten Radiowerbung"), "one": _t("minute of radio ads", "Minute Radiowerbung"),
+                   "pl": _t("radio ads", "Radiowerbung"), "q": _t("how many minutes of radio ads", "wie viele Minuten Radiowerbung"),
+                   "dom": _t("radio ads in minutes", "Radiowerbung in Minuten"), "unit": _t("minutes", "Minuten")},
+        "title": _t("Advertising: {pl1} and {pl2}", "Werbung: {pl1} und {pl2}"),
+        "setting": _t("An advertising agency plans {q1} (x1) and {q2} (x2) to book for a one-month campaign.",
+                      "Eine Werbeagentur plant, {q1} (x1) und {q2} (x2) sie für eine Kampagne von einem Monat bucht."),
+        "goalmax": _GOAL_REACH, "goalmin": _GOAL_MIN, "fmax": _REACH, "fmin": _FMIN,
+        "ctxmax": _CTX_CAMPAIGN,
+        "cmax": _t("Reach (in 1,000 people): {c1} per {one1}, {c2} per {one2}.", "Reichweite (in Tsd. Personen): {c1} je {one1}, {c2} je {one2}."),
+        "cmin": _t("Costs (in ₱10,000): {c1} per {one1}, {c2} per {one2}.", "Kosten: {c1} Tsd. € je {one1}, {c2} Tsd. € je {one2}."),
+        "r1max": _t("Design work", "Gestaltung"), "u1max": _t("h", "h"),
+        "r2max": _t("Budget", "Budget"), "u2max": _t("in ₱10,000", "Tsd. €"),
+        "r3max": _t("Planning time", "Planungszeit"), "u3max": _t("h", "h"),
+        "r1min": _t("People reached in the city", "Erreichte Personen in der Stadt"), "u1min": _t("in 1,000", "in Tsd."),
+        "r2min": _t("People reached in rural areas", "Erreichte Personen auf dem Land"), "u2min": _t("in 1,000", "in Tsd."),
+        "r3min": _t("Planning time", "Planungszeit"), "u3min": _t("h", "h"),
+    },
+}
+
+
+def _fill(text, first, second):
+    """A sentence of a mixed topic with its products in the order of x1 and x2 ({c1}, {c2} stay for the numbers)."""
+    out = {}
+    for lang, s in text.items():
+        for n, product in ((1, first), (2, second)):
+            for field in ("pl", "one", "q"):
+                s = s.replace(f"{{{field}{n}}}", product[field][lang])
+        out[lang] = s
+    return out
+
+
+def _mixed(spec):
+    """A mixed topic told twice: with its counted product as x1 (suffix _ca, for tasks in which x1 is the integer
+    variable) and as x2 (_ac) – the integer variable is always the one you count."""
+    out = {}
+    for order, first, second in (("ca", spec["count"], spec["amount"]), ("ac", spec["amount"], spec["count"])):
+        ctx = {k: v for k, v in spec.items() if k not in ("count", "amount")}   # goals and resources stay the same
+        for key in ("title", "setting", "settingmin", "cmax", "cmin"):
+            if key in spec:
+                ctx[key] = _fill(spec[key], first, second)
+        for n, product in ((1, first), (2, second)):
+            ctx.update({f"{field}{n}": product[field] for field in ("var", "one", "pl", "dom", "unit") if field in product})
+        out[order] = ctx
+    return out
+
 
 LEARN = {"tab_learn": _t("Learn & practice", "Lernen & Üben")}
 LEARN.update({f"learn_{k}": v for k, v in _L.items()})
 for _topic, _fields in _CONTEXTS.items():
     LEARN.update({f"learn_ctx_{_topic}_{k}": v for k, v in _fields.items()})
+for _topic, _spec in _MIXED.items():
+    for _order, _fields in _mixed(_spec).items():
+        LEARN.update({f"learn_ctx_{_topic}_{_order}_{k}": v for k, v in _fields.items()})

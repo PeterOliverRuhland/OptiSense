@@ -70,6 +70,12 @@
     return parts.length ? parts.join(" ") : "0";
   }
   var OP = { "<=": "≤", ">=": "≥", "=": "=" };
+  // practice topics per variable type, as engine.TOPICS (checked in tests/test_learning.py)
+  var TOPICS = {
+    LP: ["farming", "juice", "coffee", "feed"],
+    ILP: ["gastro", "production", "events", "transport", "advertising"],
+    MILP: ["bakery", "canteen", "radio"]
+  };
   var GREEN = "#1f7a1f", RED = "#cc0000", INK = "#1d1f21", GREY = "#808080";
   var BLUE = "#0000ff";   // the symbol of F in model lists: the blue square of “Model & solution” (config.OPTIMIZED)
 
@@ -230,10 +236,12 @@
   // ------------------------------------------------------------------ start page
   function homeHTML() {
     var o = S.opts, oo = S.ownOpts;
-    var diff = seg("o-difficulty", [["easy", L("diff_easy")], ["medium", L("diff_medium")]], o.difficulty, 'data-opt="difficulty" aria-label="' + esc(L("opt_difficulty")) + '"');
+    var diff = seg("o-difficulty", [["easy", L("diff_easy")], ["medium", L("diff_medium")]], o.difficulty, 'data-opt="difficulty" aria-label="' + esc(L("opt_difficulty")) + '"', "is-fit");
     var form = seg("o-form", [["text", L("form_text")], ["math", L("form_math")]], o.form, 'data-opt="form" aria-label="' + esc(L("opt_form")) + '"');
-    var kind = seg("o-kind", [["LP", L("kind_LP")], ["ILP", L("kind_ILP")], ["MILP", L("kind_MILP")]], o.kind, 'data-opt="kind" aria-label="' + esc(L("opt_kind")) + '"');
-    var topics = ["random", "gastro", "production", "farming", "events", "transport", "advertising"];
+    var kind = seg("o-kind", [["LP", L("kind_LP")], ["ILP", L("kind_ILP")], ["MILP", L("kind_MILP")]], o.kind, 'data-opt="kind" aria-label="' + esc(L("opt_kind")) + '"', "is-fit");
+    // only topics whose words fit the variable type (as engine.TOPICS): counted things are integer, measured amounts continuous
+    var topics = ["random"].concat(TOPICS[o.kind] || []);
+    if (topics.indexOf(o.topic) < 0) o.topic = "random";
 
     var practice =
       '<div class="ol-field"><div class="ol-field-label">' + esc(L("opt_difficulty")) + "</div>" + diff + '<p class="ol-field-hint">' + esc(L("diff_" + o.difficulty + "_hint")) + "</p></div>" +

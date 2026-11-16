@@ -24,8 +24,18 @@ EPS = 1e-7
 KINDS = ("LP", "ILP", "MILP1", "MILP2")
 INTEGRALITY = {"LP": (0, 0), "ILP": (1, 1), "MILP1": (1, 0), "MILP2": (0, 1)}
 OPS = ("<=", ">=", "=")
-TOPICS = ("gastro", "production", "farming", "events", "transport", "advertising")
-MIN_TOPICS = ("gastro", "farming", "transport", "advertising")   # contexts that also make sense as cost minimisation
+# The story around the numbers (texts in texts.py). Every topic has one variable type, so that the words fit the
+# numbers: things you count are integer (3 tables, never 3.5), amounts you measure are continuous (2.5 liters);
+# a mixed topic has one of each, and its counted product is whichever variable is integer in the task.
+# Every topic works for maximisation; True: it also makes sense as cost minimisation.
+TOPICS = {
+    "gastro": ("int", True), "production": ("int", False), "events": ("int", False), "transport": ("int", True),
+    "advertising": ("int", True),
+    "farming": ("con", True), "juice": ("con", False), "coffee": ("con", False), "feed": ("con", True),
+    "bakery": ("mix", False), "canteen": ("mix", True), "radio": ("mix", True),
+}
+MIN_TOPICS = tuple(t for t, (_, costs) in TOPICS.items() if costs)
+TOPIC_TYPE = {"LP": "con", "ILP": "int", "MILP": "mix", "MILP1": "mix", "MILP2": "mix"}
 WEIGHTS = {"objective": 10, "constraints": 15, "lines": 15, "region": 10, "corner": 15, "optimum": 25,
            "slack": 15, "interpret": 5}
 # generated tasks: continuous, integer or mixed (MILP: x1 or x2 integer, chosen at random)
@@ -253,16 +263,23 @@ def calculator_free(m, sol):
             and half_steps(*sol["x"], sol["z"], *(slack(r, sol["x"]) for r in m["rows"])))
 
 
+def topics_for(kind):
+    """The topics whose words fit the variable type of `kind` (LP, ILP, MILP, MILP1 or MILP2)."""
+    return [t for t, (vt, _) in TOPICS.items() if vt == TOPIC_TYPE[kind]]
+
+
 def generate(options, avoid=()):
     """One of the fixed tasks (tasks.py) for the chosen level and variable type, picked at random – if possible none
-    of `avoid` (the last tasks of this session). Minimisation only with topics that make sense as costs."""
+    of `avoid` (the last tasks of this session) – told with a topic that fits the variable type. Minimisation only
+    with topics that make sense as costs."""
     rng = random.Random(options.get("seed"))
-    topic = options.get("topic") if options.get("topic") in TOPICS else None
+    fitting = topics_for(options["kind"])
+    topic = options.get("topic") if options.get("topic") in fitting else None
     tasks = [t for t in POOL[(options["difficulty"], options["kind"])] if t["sense"] == "max" or topic in (None, *MIN_TOPICS)]
     if not tasks:
         raise LearnError("err_generate")
     task = rng.choice([t for t in tasks if t["id"] not in avoid] or tasks)
-    topic = topic or rng.choice(MIN_TOPICS if task["sense"] == "min" else TOPICS)
+    topic = topic or rng.choice([t for t in fitting if task["sense"] == "max" or t in MIN_TOPICS])
     roles = ("r1", "r2", "total")
     m = validate({"c": list(task["c"]), "sense": task["sense"], "kind": task["kind"],
                   "rows": [{"a": [a1, a2], "op": op, "b": b, "role": roles[i]} for i, (a1, a2, op, b) in enumerate(task["rows"])]})
@@ -274,7 +291,7 @@ def normalize_options(raw):
     """The learner's choices from the start page, reduced to known values."""
     raw = raw if isinstance(raw, dict) else {}
     opts = {k: raw.get(k) if raw.get(k) in allowed else allowed[0] for k, allowed in OPTIONS.items()}
-    opts["topic"] = raw.get("topic") if raw.get("topic") in TOPICS else "random"
+    opts["topic"] = raw.get("topic") if raw.get("topic") in topics_for(opts["kind"]) else "random"   # must fit the variable type
     return opts
 
 
@@ -379,8 +396,10 @@ def make_exercise(options, custom=None, info=None, points=None, avoid=()):
     qs = [question(f"side{i}", side_answer(r, p), ("in", "out", "line")) for i, (r, p) in enumerate(zip(m["rows"], test_points))]
     qs += [question(f"p{n}", "yes" if feasible(m, p) else "no", ("yes", "no")) for n, p in enumerate(region_points)]
     add("region", qs)
-    if m["kind"] == "LP":
-        # first find the optimal corner with the objective line, then calculate it; integer optima lie on lattice points
+    if m["kind"] == "LP" or info["source"] == "tutorial":
+        # first find the optimal corner with the objective line, then calculate it; integer optima lie on lattice points.
+        # The guided example is integer, but its optimal corner (300 | 200) is already whole – it keeps the method
+        # of the lecture.
         idx = [str(i) for i in range(len(boundaries(m)))]
         add("corner", [question("boundary1", None, idx), question("boundary2", None, idx)])
     add("optimum", [question("x", sol["x"][0]), question("y", sol["x"][1]), question("z", sol["z"])])

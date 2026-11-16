@@ -135,8 +135,9 @@ def main():
              "",
              "Made by tools/make_task_pool.py (see there for what makes a task good) and checked in tests/test_learning.py.",
              "Every value the learner works out is whole or ends in ,5. A row is (a1, a2, op, b): a1·x1 + a2·x2 op b;",
-             "the rows are the two resources and, on level 2, the total x1 + x2 ≤ b. The topic (kitchen, workshop …) only",
-             'tells the story around the numbers and is chosen separately. Ids stay fixed: they name a task in the logs."""',
+             "the rows are the two resources and, on level 2, the total x1 + x2 ≤ b. The topic (juice bar, workshop …) tells",
+             "the story around the numbers; it fits the variable type (engine.TOPICS) and is chosen separately. Ids stay fixed:",
+             'they name a task in the logs."""',
              "",
              "POOL = {"]
     for difficulty, kind in itertools.product(("easy", "medium"), ("LP", "ILP", "MILP")):
