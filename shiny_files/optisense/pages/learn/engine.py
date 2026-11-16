@@ -398,7 +398,7 @@ def make_exercise(options, custom=None, info=None, points=None, avoid=()):
     add("region", qs)
     if m["kind"] == "LP" or info["source"] == "tutorial":
         # first find the optimal corner with the objective line, then calculate it; integer optima lie on lattice points.
-        # The guided example is integer, but its optimal corner (300 | 200) is already whole – it keeps the method
+        # The guided task is integer, but its optimal corner (300 | 200) is already whole – it keeps the method
         # of the lecture.
         idx = [str(i) for i in range(len(boundaries(m)))]
         add("corner", [question("boundary1", None, idx), question("boundary2", None, idx)])
@@ -499,7 +499,7 @@ def grade_step(ex, step, answers, all_answers=None, lang="en"):
 def without_solutions(ex, grades, reveals, own=()):
     """The grades of a handed-in exercise under the rule for help: hints cost nothing, but a step whose solution was
     filled in scores 0 – the learner did not work it out. Exceptions: steps that were completely right before
-    "Solution" was pressed (`own`), and the guided example, which is not graded."""
+    "Solution" was pressed (`own`), and the guided task, which is not graded."""
     if ex["info"]["source"] == "tutorial":
         return grades
     return [{**g, "points": 0, "correct": False, "revealed": True} if s["id"] in reveals and s["id"] not in own else g

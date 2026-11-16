@@ -98,6 +98,8 @@
   function nRows() { return S.ex ? S.ex.colors.length : 0; }
   function exam() { return S.ex && S.ex.options.mode === "exam"; }
   function tutorial() { return S.ex && S.ex.source === "tutorial"; }
+  // badge above the steps and on the evaluation: guided task, practice task or your own task – or the exam mode
+  function modeKey() { return tutorial() ? "mode_tutorial" : exam() ? "mode_exam" : S.ex.source === "own" ? "mode_own" : "mode_practice"; }
   function textTask() { return S.ex && S.ex.options.form === "text"; }
   // while the model is set up the graph would stay empty: it appears with the lines
   function showsGraph() { return !isModel(cur().id); }
@@ -332,7 +334,7 @@
   }
 
   function stepperHTML() {
-    var mode = tutorial() ? "mode_tutorial" : exam() ? "mode_exam" : "mode_practice";
+    var mode = modeKey();
     var items = steps().map(function (s, i) {
       var st = status(i), here = i === S.step;
       var dot = st === "ok" ? "✓" : st === "warn" ? "!" : String(i + 1);
@@ -418,7 +420,7 @@
       var wrong = fbs.some(function (f) { return f && !f.stale && !f.correct; });
       if (wrong || fbs.some(function (f) { return !f || f.stale; })) body += '<div class="ol-banner is-info">' + esc(L(wrong ? "model_notice_wrong" : "model_notice")) + "</div>";
     }
-    // phones, guided example: the explanation of the example stands in for the general lead, right above the fields
+    // phones, guided task: the explanation of the task stands in for the general lead, right above the fields
     body += tutorial() && phone() && !intro ? coachInlineHTML(s) : '<p class="ol-lead">' + esc(lead(s)) + "</p>";
     body += ({ task: taskStep, objective: objectiveStep, constraints: constraintsStep, lines: linesStep, region: regionStep, corner: cornerStep, optimum: optimumStep, slack: slackStep, interpret: interpretStep })[s.id](s);
     body += feedbackHTML(s) + hintHTML(s) + solutionHTML(s);
@@ -1250,7 +1252,7 @@
         '<span class="ol-review-pts">' + esc(L("points_of", { got: fmt(g.points), max: fmt(g.max) })) + "</span></summary>" +
         '<div class="ol-review-body">' + first + table + '<h4>' + esc(L("sol_title")) + '</h4><ul class="ol-sol">' + sol + "</ul></div></details>";
     }).join("");
-    return '<div class="ol-page ol-result"><section class="os-card ol-result-head"><div class="ol-result-text"><span class="os-tag ol-mode is-' + (tut ? "mode_tutorial" : exam() ? "mode_exam" : "mode_practice") + '">' + esc(L(tut ? "mode_tutorial" : exam() ? "mode_exam" : "mode_practice")) + "</span>" +
+    return '<div class="ol-page ol-result"><section class="os-card ol-result-head"><div class="ol-result-text"><span class="os-tag ol-mode is-' + modeKey() + '">' + esc(L(modeKey())) + "</span>" +
       "<h1>" + esc(verdict) + "</h1><p>" + esc(S.ex.story.title) + "</p><p class=\"ol-muted\">" + esc(note) + "</p></div>" + kpis + "</section>" +
       '<div class="ol-result-body">' + (r.values && r.model ? '<section class="os-card ol-panel ol-result-graph"><header class="ol-panel-head"><h2>' + esc(L("res_graph")) + "</h2></header>" +
         '<div class="ol-plot-wrap"><div class="ol-plot" id="ol-res-plot"></div></div></section>' : "") +

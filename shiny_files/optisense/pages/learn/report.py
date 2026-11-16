@@ -403,7 +403,8 @@ def build(ex, result, answers, lang, tz_minutes):
     doc.put(tr("res_title").upper(), LEFT, doc.y, 7.5, bold=True, color=MUTED)
     doc.y += 13
     doc.write(st["title"], width=head_w, size=15, bold=True, after=2)
-    facts = [tr("mode_tutorial" if tutorial else "mode_exam" if exam else "mode_practice"), t(lang, f"type_{m['kind'].rstrip('12')}")]
+    mode = "mode_tutorial" if tutorial else "mode_exam" if exam else "mode_own" if info["source"] == "own" else "mode_practice"
+    facts = [tr(mode), t(lang, f"type_{m['kind'].rstrip('12')}")]
     if info["source"] == "generated":
         facts += [tr(f"form_{options['form']}"), tr("diff_" + options["difficulty"])]
     if info.get("task"):

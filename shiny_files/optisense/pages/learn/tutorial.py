@@ -1,4 +1,4 @@
-"""The guided example: the burger problem from the lecture, every step explained and pre-calculated.
+"""The guided task: the burger problem from the lecture, every step explained and pre-calculated.
 
 max F = 4.5·x1 + 6·x2 with x1 + x2 ≤ 500 (buns), 0.1·x1 + 0.3·x2 ≤ 105 (meat, kg),
 0.1·x1 + 0.15·x2 ≤ 60 (vegetables, kg) → optimum (300 | 200), F = 2,550. Burgers are whole pieces, so x1 and

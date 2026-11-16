@@ -178,7 +178,7 @@ button[aria-busy="true"] { cursor: progress; opacity: 0.75; }
 .ol-st.is-current .ol-st-label { color: var(--ink); font-weight: 600; }
 .ol-st.is-finish .ol-st-dot { color: var(--primary); font-size: 0.875rem; }
 .ol-mode { flex: none; font-weight: 600; }
-.ol-mode.is-mode_practice { background: var(--surface-content); }
+.ol-mode.is-mode_practice, .ol-mode.is-mode_own { background: var(--surface-content); }
 .ol-mode.is-mode_exam { background: var(--ol-warn-bg); border-color: var(--ol-warn-border); color: var(--ol-warn-ink); }
 .ol-mode.is-mode_tutorial { background: var(--ol-good-bg); border-color: var(--ol-good-border); color: #144d14; }
 .ol-stepper .os-header-action { flex: none; margin-left: 0; }

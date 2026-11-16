@@ -14,16 +14,17 @@ _L = {
     "home_title": _t("Learn & practice", "Lernen & Üben"),
     "home_lead": _t("Solve optimization problems yourself, step by step – with feedback on every step, hints and an evaluation at the end.",
                     "Löse Optimierungsprobleme Schritt für Schritt selbst – mit Rückmeldung zu jedem Schritt, Tipps und einer Auswertung am Ende."),
-    "card_tutorial_title": _t("Guided example", "Geführtes Beispiel"),
+    # the three kinds of task, named alike in both languages (Robin, 2026-11-16): guided task, practice task, your own task
+    "card_tutorial_title": _t("Guided task", "Geführte Aufgabe"),
     "card_tutorial_tag": _t("New here? Start here.", "Neu hier? Starte hier."),
-    "card_tutorial_text": _t("A small example in which every step is explained and worked out. This is how you get to know the procedure.",
-                             "Ein kleines Beispiel, bei dem jeder Schritt erklärt und vorgerechnet wird. So lernst du den Ablauf kennen."),
+    "card_tutorial_text": _t("A small task in which every step is explained and worked out. This is how you get to know the procedure.",
+                             "Eine kleine Aufgabe, bei der jeder Schritt erklärt und vorgerechnet wird. So lernst du den Ablauf kennen."),
     "tut_learn1": _t("set up a model from a text", "ein Modell aus einem Text aufstellen"),
     "tut_learn2": _t("solve it graphically and by calculation", "grafisch und rechnerisch lösen"),
     "tut_learn3": _t("understand slack and binding constraints",
                      "Schlupf und bindende Nebenbedingungen verstehen"),
     "card_tutorial_meta": _t("about 15 minutes · not graded", "ca. 15 Minuten · ohne Bewertung"),
-    "start_tutorial": _t("Start example", "Beispiel starten"),
+    "start_tutorial": _t("Start guided task", "Geführte Aufgabe starten"),
     "card_practice_title": _t("Practice task", "Übungsaufgabe"),
     "card_practice_tag": _t("Picked from 15 tasks", "Zufällig aus 15 Aufgaben"),
     "card_practice_text": _t("Choose what your task should look like.",
@@ -88,9 +89,11 @@ _L = {
     "reload_note": _t("Progress is not saved: reloading the page discards an open task.",
                       "Der Fortschritt wird nicht gespeichert: Beim Neuladen der Seite geht eine offene Aufgabe verloren."),
     # ------------------------------------------------------------------ workspace frame
-    "mode_practice": _t("Practice", "Übung"),
+    # badge above the steps (and in the evaluation): the kind of task as on the start page – or the exam mode
+    "mode_practice": _t("Practice task", "Übungsaufgabe"),
     "mode_exam": _t("Exam", "Prüfung"),
-    "mode_tutorial": _t("Example", "Beispiel"),
+    "mode_tutorial": _t("Guided task", "Geführte Aufgabe"),
+    "mode_own": _t("Your own task", "Eigene Aufgabe"),
     "path": _t("Steps", "Lernweg"),
     "quit": _t("Quit", "Beenden"),
     "quit_title": _t("Quit this task?", "Aufgabe beenden?"),
@@ -131,7 +134,7 @@ _L = {
     "hint": _t("Hint", "Tipp"),
     "solution": _t("Solution", "Lösung"),
     "to_submit": _t("Submit", "Zur Abgabe"),
-    "finish_tutorial": _t("Finish example", "Beispiel abschließen"),
+    "finish_tutorial": _t("Finish task", "Aufgabe abschließen"),
     "finish_short": _t("Finish", "Abschließen"),
     "finish_tutorial_text": _t("Afterwards you see an overview with all worked solutions.",
                                "Danach siehst du eine Übersicht mit allen Lösungswegen."),
@@ -146,7 +149,7 @@ _L = {
     "intro_help": _t("“?” next to the step title explains what to do.", "„?“ neben dem Schritt erklärt, was zu tun ist."),
     "intro_check": _t("“Check” shows what is right – “Hint” helps with what is still wrong.",
                       "„Prüfen“ zeigt, was stimmt – „Tipp“ hilft bei dem, was noch fehlt."),
-    # the guided example is not graded: there the solution costs nothing
+    # the guided task is not graded: there the solution costs nothing
     "intro_solution_tut": _t("“Solution” fills in the correct values of the step.", "„Lösung“ trägt die richtigen Werte des Schritts ein."),
     "intro_solution": _t("“Solution” fills in the correct values of the step – the step then scores 0 points. Hints cost nothing.",
                         "„Lösung“ trägt die richtigen Werte des Schritts ein – der Schritt zählt dann 0 Punkte. Tipps kosten nichts."),
@@ -382,18 +385,18 @@ _L = {
         "<p><b>Slack</b> means: how much of a limit is left over at the optimum?</p>"
         "<ol><li>Put your optimal point into the left-hand side of the constraint – that is the usage.</li><li>Compare it with the right-hand side b: slack = b − usage. For ≥ calculate usage − b (how far it lies above the minimum).</li></ol>"
         "<p><b>Binding</b> means: slack 0, the limit is used up completely. In the graph, the line of a binding constraint runs right through the optimal point. With “=” the slack is always 0.</p>"
-        "<p><b>Example burgers</b> at the optimum (300 | 200): meat 0.1·300 + 0.3·200 = 90 kg of 105 kg → 15 kg left over, not binding. Buns 300 + 200 = 500 of 500 → nothing left, binding.</p>",
+        "<p><b>Burgers (guided task)</b> at the optimum (300 | 200): meat 0.1·300 + 0.3·200 = 90 kg of 105 kg → 15 kg left over, not binding. Buns 300 + 200 = 500 of 500 → nothing left, binding.</p>",
         "<p><b>Schlupf</b> heißt: Wie viel von einer Grenze bleibt im Optimum übrig?</p>"
         "<ol><li>Setze deinen optimalen Punkt links in die Nebenbedingung ein – das ist der Verbrauch.</li><li>Vergleiche mit der rechten Seite b: Schlupf = b − Verbrauch. Bei ≥ rechnest du Verbrauch − b (so viel liegt über dem Minimum).</li></ol>"
         "<p><b>Bindend</b> heißt: Schlupf 0, die Grenze ist ganz ausgeschöpft. In der Grafik geht die Gerade einer bindenden Nebenbedingung genau durch den optimalen Punkt. Bei „=“ ist der Schlupf immer 0.</p>"
-        "<p><b>Beispiel Burger</b> im Optimum (300 | 200): Fleisch 0,1·300 + 0,3·200 = 90 kg von 105 kg → 15 kg übrig, nicht bindend. Brötchen 300 + 200 = 500 von 500 → nichts übrig, bindend.</p>"),
+        "<p><b>Burger (geführte Aufgabe)</b> im Optimum (300 | 200): Fleisch 0,1·300 + 0,3·200 = 90 kg von 105 kg → 15 kg übrig, nicht bindend. Brötchen 300 + 200 = 500 von 500 → nichts übrig, bindend.</p>"),
     "help_interpret": _t(
         "<p>Distinguish the optimal quantities (x1 | x2) from the optimal objective value F: the quantities say what to do, F says what it brings (or costs).</p>"
         "<p>For integer problems rounding is not enough – rounded points may violate constraints or be worse than the true optimum.</p>",
         "<p>Unterscheide die optimalen Mengen (x1 | x2) vom optimalen Zielwert F: Die Mengen sagen, was zu tun ist; F sagt, was es bringt (oder kostet).</p>"
         "<p>Bei ganzzahligen Problemen reicht Runden nicht – gerundete Punkte können Bedingungen verletzen oder schlechter sein als das echte Optimum.</p>"),
-    # ------------------------------------------------------------------ guided example (juice bar)
-    "coach_title": _t("In the example", "Im Beispiel"),
+    # ------------------------------------------------------------------ guided task (burgers)
+    "coach_title": _t("In this task", "In dieser Aufgabe"),
     "coach_calc": _t("Show the calculation", "Rechnung ansehen"),
     "tut_title": _t("Burger diner: standard and luxury burgers", "Burger-Diner: Standard- und Luxusburger"),
     "tut_intro": _t("Michael runs a small burger diner in the city center of Aalen that is regularly sold out in the evening. He could sell more – but his suppliers only deliver limited quantities per day. He sets up his daily production plan so that the revenue is as large as possible.",
@@ -451,7 +454,7 @@ _L = {
     "submit_missing": _t("{n} entries are still empty – they earn no points.", "{n} Angaben sind noch leer – dafür gibt es keine Punkte."),
     "submit_btn": _t("Submit", "Abgeben"),
     "res_title": _t("Evaluation", "Auswertung"),
-    "res_tut_title": _t("Example completed!", "Beispiel abgeschlossen!"),
+    "res_tut_title": _t("Guided task completed!", "Geführte Aufgabe abgeschlossen!"),
     "res_great": _t("Everything solved – great work!", "Alles gelöst – stark!"),
     "res_good": _t("Well done! A few more points are possible.", "Gut gemacht! Ein paar Punkte sind noch drin."),
     "res_try": _t("Have another look at the steps marked ○.", "Schau dir die Schritte mit ○ noch einmal an."),
