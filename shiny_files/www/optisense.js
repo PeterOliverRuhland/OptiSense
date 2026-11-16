@@ -4,11 +4,14 @@
   "use strict";
   var LANGS = Object.keys(window.OS_I18N || { en: 1 });
   var current = "en";
+  // only a language the user picked in the switch is remembered; the app starts in English otherwise, whatever
+  // the browser's language. The old key also held languages taken over from the browser, so it is dropped.
+  var KEY = "optisense-language";
+  try { window.localStorage.removeItem("optisense-lang"); } catch (e) {}
 
   function storedLang() {
-    try { var v = window.localStorage.getItem("optisense-lang"); if (LANGS.indexOf(v) >= 0) return v; } catch (e) {}
-    var nav = (navigator.language || "en").toLowerCase();
-    return nav.indexOf("de") === 0 ? "de" : "en";
+    try { var v = window.localStorage.getItem(KEY); if (LANGS.indexOf(v) >= 0) return v; } catch (e) {}
+    return "en";
   }
 
   function translate(root) {
@@ -27,14 +30,16 @@
     if (LANGS.indexOf(lang) < 0) lang = "en";
     current = lang;
     document.documentElement.setAttribute("lang", lang);
-    try { window.localStorage.setItem("optisense-lang", lang); } catch (e) {}
     translate(document);
   }
 
-  // Shiny's own language select drives everything
+  // Shiny's own language select drives everything; a change made by the user (not by this script) is remembered
+  var restoring = false;
   document.addEventListener("change", function (ev) {
     var t = ev.target;
-    if (t && t.id === "lang") setLang(t.value);
+    if (!t || t.id !== "lang") return;
+    setLang(t.value);
+    if (!restoring) try { window.localStorage.setItem(KEY, current); } catch (e) {}
   });
 
   // the legal notice (Impressum): a small dialog with the link to Aalen University's legal notice and our contact,
@@ -80,7 +85,11 @@
   $(document).on("shiny:connected", function () {
     var lang = storedLang();
     var sel = document.getElementById("lang");
-    if (sel && sel.value !== lang) { sel.value = lang; $(sel).trigger("change"); }
+    if (sel && sel.value !== lang) {
+      sel.value = lang;
+      restoring = true;
+      try { $(sel).trigger("change"); } finally { restoring = false; }
+    }
     setLang(lang);
   });
 })();
