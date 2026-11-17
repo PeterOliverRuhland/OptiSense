@@ -1,4 +1,4 @@
-"""Import & export of .lp files, the textbook example and resetting everything."""
+"""Import & export of .lp files, the burger example and resetting everything."""
 
 from htmltools import TagList, tags
 from shiny import reactive, render, ui
@@ -7,7 +7,8 @@ import math
 import os
 
 from optisense import core
-from optisense.config import EXAMPLE_NAMES, MAX_CONSTRAINTS, MAX_IMPORT_BYTES, MAX_NAME_LENGTH, MAX_VALUE
+from optisense.config import MAX_CONSTRAINTS, MAX_IMPORT_BYTES, MAX_NAME_LENGTH, MAX_VALUE
+from .. import example
 from .html_utils import safe_filename
 
 
@@ -115,24 +116,29 @@ def register(ctx):
         ))
 
     def load_example():
-        names = EXAMPLE_NAMES[ctx.lang()]
-        ctx.load_problem({"name": "F", "c1": 10, "c2": 20, "sense": "max"},
-                         [{"name": names[0], "a1": 6, "a2": 9, "op": "≤", "b": 720},
-                          {"name": names[1], "a1": 0, "a2": 1, "op": "≤", "b": 60}],
-                         {"x1": "con", "x2": "con"})
+        ctx.load_problem(*example.problem(ctx.lang()))
         ctx.notify("n_example")
         ui.update_navs("page", selected="work")
-
-    def example_request():
-        if ctx.objectives() or ctx.constraints():
-            confirm("example", "load_example", "example_replace", "load_example")
-        else:
-            load_example()
 
     @reactive.effect
     @reactive.event(input.btn_example)
     def _example():
-        example_request()
+        """First the story of the example in a few lines (the formulas follow in step 1), then load it. That a model
+        of one's own gets replaced is said in the same dialog."""
+        pending_confirm.set("example")
+        limits = [tags.li(tags.b(f"{tr(key)}:"), " ", tr(f"{key}_use")) for key in ("example_buns", "example_meat", "example_veg")]
+        replaces = ctx.objectives() or ctx.constraints()
+        ui.modal_show(ui.modal(
+            tags.p(tr("example_story")),
+            tags.p(tr("example_limits"), class_="os-example-lead"),
+            tags.ul(*limits, class_="os-example-list"),
+            tags.p(tr("example_whole")),
+            tags.p(tr("example_replace"), class_="os-example-replace") if replaces else None,
+            title=tr("example_title"),
+            footer=TagList(ui.modal_button(tr("cancel"), class_="os-btn"),
+                           ui.input_action_button("btn_confirm", tr("load_example"), class_="btn-primary")),
+            easy_close=True,
+        ))
 
     @reactive.effect
     @reactive.event(input.btn_reset)

@@ -18,11 +18,13 @@ LANGS = ("en", "de")
 
 def shoot(browser, url, lang):
     page = browser.new_page(viewport={"width": 1440, "height": 900}, device_scale_factor=2)
-    page.add_init_script(f"localStorage.setItem('optisense-lang', '{lang}')")
+    page.add_init_script(f"localStorage.setItem('optisense-language', '{lang}')")
     page.goto(url)
     page.wait_for_selector("#btn_example", state="visible")
     page.wait_for_timeout(1500)
     page.click("#btn_example")
+    page.click("#btn_confirm")   # the dialog with the story of the example
+    page.wait_for_selector(".modal", state="detached")
     page.wait_for_selector("#btn_opt:not([disabled])")
     page.click("#btn_opt")
     page.wait_for_selector("#btn_opt.is-active")

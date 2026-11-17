@@ -34,21 +34,39 @@ def _base_axes(ax, xmax, ymax, k=1.0):
     ax.plot(0, 1, "^", color=INK, transform=ax.get_xaxis_transform(), clip_on=False, ms=6 * k)
 
 
-def _label_line(ax, seg, text, color, xmax, ymax, k=1.0):
-    """Write `text` next to the end of a line segment, kept inside the axes."""
-    (xa, ya), (xb, yb) = seg
-    # prefer the end that is further right; for vertical lines the upper end
-    end = (xb, yb) if (xb, yb) >= (xa, ya) else (xa, ya)
-    if abs(xa - xb) < 1e-9:
-        end = (xa, max(ya, yb))
+def _label_at(ax, end, text, color, xmax, ymax, k):
     x, y = end
     ha = "right" if x > 0.8 * xmax else "left"
-    va = "bottom"
     x = min(max(x, 0.01 * xmax), 0.99 * xmax)
     y = min(max(y, 0.0), 0.97 * ymax)
-    ax.annotate(text, (x, y), xytext=(-4 if ha == "right" else 4, 4), textcoords="offset points",
-                ha=ha, va=va, color=color, fontsize=9 * k, fontweight="bold",
-                bbox={"boxstyle": "round,pad=0.15", "fc": "white", "ec": "none", "alpha": 0.75})
+    return ax.annotate(text, (x, y), xytext=(-4 if ha == "right" else 4, 4), textcoords="offset points",
+                       ha=ha, va="bottom", color=color, fontsize=9 * k, fontweight="bold",
+                       bbox={"boxstyle": "round,pad=0.15", "fc": "white", "ec": "none", "alpha": 0.75})
+
+
+def _label_line(ax, seg, text, color, xmax, ymax, k=1.0, taken=None):
+    """Write `text` next to an end of a line segment, kept inside the axes.
+
+    The end further right comes first (for vertical lines the upper end). `taken` holds the boxes of the labels
+    written before: if the label would cover one of them – e.g. two lines that meet the x1 axis close together –
+    it goes to the other end of its line."""
+    (xa, ya), (xb, yb) = seg
+    first = (xb, yb) if (xb, yb) >= (xa, ya) else (xa, ya)
+    if abs(xa - xb) < 1e-9:
+        first = (xa, max(ya, yb))
+    other = (xa, ya) if first == (xb, yb) else (xb, yb)
+    renderer = ax.figure.canvas.get_renderer()
+    for end in (first, other):
+        label = _label_at(ax, end, text, color, xmax, ymax, k)
+        box = label.get_window_extent(renderer).padded(3 * k)
+        if taken is None or not any(box.overlaps(b) for b in taken):
+            break
+        label.remove()
+    else:   # both ends are taken: the usual end
+        label = _label_at(ax, first, text, color, xmax, ymax, k)
+        box = label.get_window_extent(renderer).padded(3 * k)
+    if taken is not None:
+        taken.append(box)
 
 
 def draw(objective, constraints, var_types, solution, lang, figsize=None, scale=1.0, compact=False):
@@ -101,13 +119,14 @@ def draw(objective, constraints, var_types, solution, lang, figsize=None, scale=
         handles.append(mlines.Line2D([], [], color=FEASIBLE, lw=2.2 * k, alpha=0.6, label=t(lang, "plot_points")))
 
     # constraints
+    taken = []   # boxes of the line labels, so no label covers another
     for con in constraints:
         color, style = constraint_style(con["color_index"])
         seg = core.line_in_box(con["a1"], con["a2"], con["b"], xmax, ymax)
         if seg:
             (xa, ya), (xb, yb) = seg
             ax.plot([xa, xb], [ya, yb], color=color, ls=style, lw=2.2 * k, zorder=3)
-            _label_line(ax, seg, con["name"], color, xmax, ymax, k)
+            _label_line(ax, seg, con["name"], color, xmax, ymax, k, taken)
         handles.append(mlines.Line2D([], [], color=color, ls=style, lw=2.2 * k, label=con["name"]))
 
     # dummy objective line and, after solving, the optimized line

@@ -2,7 +2,8 @@
 
 Generated tasks use a context (kitchen, juice bar …) with its own nouns; the sentences are
 templates in texts.py. The topic fits the variable type (engine.TOPICS): what is counted is integer,
-what is measured continuous. Numbers are formatted like everywhere else in OptiSense.
+what is measured continuous. Numbers are formatted like everywhere else in OptiSense. The guided task
+(shawarma) and the lecture's burger problem have a story of their own, written out in texts.py.
 """
 
 from optisense.config import DEFAULT_NAMES
@@ -19,6 +20,17 @@ def row_labels(ex, lang):
     if ex["info"]["source"] == "own":
         return [r.get("name") or DEFAULT_NAMES["constraint"][lang].format(n=i + 1) for i, r in enumerate(rows)]
     return [DEFAULT_NAMES["constraint"][lang].format(n=i + 1) for i in range(len(rows))]
+
+
+def own_story(ex):
+    """Key prefix of a task with a story of its own – the guided task (shawarma), a pool task with a story (burger,
+    shawarma) given as a word problem – or None."""
+    info = ex["info"]
+    if info["source"] == "tutorial":
+        return "learn_shawarma"
+    if info["source"] == "generated" and info.get("story") and ex["options"].get("form") == "text":
+        return f"learn_{info['story']}"
+    return None
 
 
 def context(ex):
@@ -42,8 +54,8 @@ def row_names(ex, lang):
     """What a constraint stands for (resource or total) – only for generated text tasks and the tutorial."""
     info = ex["info"]
     rows = ex["model"]["rows"]
-    if info["source"] == "tutorial":
-        return [t(lang, f"learn_tut_rn{i + 1}") for i in range(len(rows))]
+    if own_story(ex):
+        return [t(lang, f"{own_story(ex)}_rn{i + 1}") for i in range(len(rows))]
     if info["source"] != "generated" or ex["options"].get("form") != "text":
         return [None] * len(rows)
     sense, ctx = ex["model"]["sense"], context(ex)
@@ -60,12 +72,13 @@ def story(ex, lang):
     lang = norm_lang(lang)
     info, m = ex["info"], ex["model"]
     n = lambda v: fmt_num(v, lang)  # noqa: E731
-    if info["source"] == "tutorial":
-        return {"title": t(lang, "learn_tut_title"), "intro": t(lang, "learn_tut_intro"),
-                "sought": [t(lang, "learn_tut_var1"), t(lang, "learn_tut_var2")],
-                "objective": t(lang, "learn_tut_obj"), "fname": t(lang, "learn_tut_fname"),
-                "rows": [t(lang, f"learn_tut_row{i + 1}") for i in range(3)],
-                "domain": [t(lang, "learn_tut_domain")], "question": t(lang, "learn_tut_q")}
+    key = own_story(ex)
+    if key:
+        return {"title": t(lang, f"{key}_title"), "intro": t(lang, f"{key}_intro"),
+                "sought": [t(lang, f"{key}_var1"), t(lang, f"{key}_var2")],
+                "objective": t(lang, f"{key}_obj"), "fname": t(lang, f"{key}_fname"),
+                "rows": [t(lang, f"{key}_row{i + 1}") for i in range(len(m["rows"]))],
+                "domain": [t(lang, f"{key}_domain")], "question": t(lang, f"{key}_q")}
     if info["source"] == "own":
         return {"title": t(lang, "learn_own_title"), "question": t(lang, "learn_story_q_math")}
     if ex["options"].get("form") != "text":

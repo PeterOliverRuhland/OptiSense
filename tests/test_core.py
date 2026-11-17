@@ -3,8 +3,10 @@
 Run from the repository root:  python -m unittest discover -s tests
 The sensitivity test needs lp_solve (set LP_SOLVE_BIN or have it on PATH); it is skipped otherwise.
 """
+import html
 import math
 import os
+import re
 import sys
 import unittest
 
@@ -12,6 +14,9 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "shiny_files"))
 
 from optisense import core as lp_core  # noqa: E402
 from optisense import i18n  # noqa: E402
+from optisense.pages.work import example  # noqa: E402
+from optisense.pages.work.example import EXAMPLE  # noqa: E402
+from optisense.pages.learn.tasks import POOL  # noqa: E402
 
 OBJ = {"name": "F", "c1": 10, "c2": 20, "sense": "max"}
 CONS = [
@@ -75,6 +80,67 @@ class GeometryTests(unittest.TestCase):
     def test_line_in_box(self):
         self.assertEqual(lp_core.line_in_box(1, 1, 100, 150, 120), ((0.0, 100.0), (100.0, 0.0)))
         self.assertIsNone(lp_core.line_in_box(1, 1, 500, 150, 120))
+
+
+class ExampleTests(unittest.TestCase):
+    """The burger example that “Example” in step 1 loads and the guide explains (pages/work/example.py)."""
+
+    @staticmethod
+    def problem(lang):
+        return example.problem(lang)[:2]
+
+    def test_burger_example_is_the_lecture_problem_and_its_practice_task(self):
+        obj, cons = self.problem("en")
+        s = lp_core.solve(obj, cons, EXAMPLE["var_types"])
+        self.assertEqual((s["x1"], s["x2"], s["value"]), (300, 200, 2550))
+        self.assertEqual(EXAMPLE["var_types"], {"x1": "int", "x2": "int"})   # no half burgers
+        burger = next(t for t in POOL[("medium", "ILP")] if t.get("story") == "burger")   # the practice task “Burger”
+        self.assertEqual((obj["c1"], obj["c2"]), burger["c"])
+        self.assertEqual([(c["a1"], c["a2"], c["b"]) for c in cons], [(a1, a2, b) for a1, a2, _, b in burger["rows"]])
+
+    def test_example_texts_exist_in_both_languages(self):
+        names = [EXAMPLE["objective"]["name"]] + [c["name"] for c in EXAMPLE["constraints"]]
+        story = ["example_title", "example_story", "example_limits", "example_whole"] + [n + "_use" for n in names[1:]]
+        story += [EXAMPLE["objective"]["note"], EXAMPLE["types_note"]] + [c["note"] for c in EXAMPLE["constraints"]]
+        for key in names + story:
+            en, de = i18n.t("en", key), i18n.t("de", key)
+            self.assertNotEqual(en, key)
+            self.assertNotEqual(en, de, key)
+
+    def test_guide_shows_the_file_the_export_writes(self):
+        for lang in ("en", "de"):
+            obj, cons = self.problem(lang)
+            text = lp_core.to_lp_file(obj, cons, EXAMPLE["var_types"]).strip()
+            code = re.search(r"<code>(.*?)</code>", i18n.guide(lang, "import"), re.S).group(1)
+            self.assertEqual(html.unescape(code.replace("<br>", "\n")), text, lang)
+
+    def test_story_lines_only_while_the_rows_are_the_examples(self):
+        obj, cons, vt = example.problem("en")
+        self.assertEqual(example.note("obj", obj), "example_note_revenue")
+        self.assertEqual([example.note("con", c) for c in cons], ["example_note_buns", "example_note_meat", "example_note_veg"])
+        self.assertEqual(example.types_note([obj], vt), "example_note_types")
+        # saved again unchanged (the edit dialog sends floats) – the story stays
+        self.assertEqual(example.note("con", dict(cons[0], a1=1.0, b=500.0)), "example_note_buns")
+        # a changed number, operator or direction: the line would be wrong, so it goes
+        self.assertIsNone(example.note("con", dict(cons[0], b=600.0)))
+        self.assertIsNone(example.note("con", dict(cons[1], op="≥")))
+        self.assertIsNone(example.note("obj", dict(obj, sense="min")))
+        self.assertIsNone(example.types_note([dict(obj, c1=5.0)], vt))
+        self.assertIsNone(example.types_note([obj], {"x1": "con", "x2": "int"}))
+        # the learner's own rows and imported files have no story
+        own = {"name": "C1", "a1": 1, "a2": 1, "op": "≤", "b": 500}
+        self.assertIsNone(example.note("con", own))
+        self.assertIsNone(example.note("con", dict(own, note=None)))
+        self.assertIsNone(example.types_note([{"c1": 4.5, "c2": 6, "sense": "max"}], vt))
+
+    def test_lp_file_writes_umlauts_out(self):
+        obj, cons = self.problem("de")
+        text = lp_core.to_lp_file(obj, cons, EXAMPLE["var_types"])
+        self.assertIn("Broetchen:", text)
+        self.assertIn("Gemuese:", text)
+        _, back, vt = lp_core.parse_lp_file(text)
+        self.assertEqual([c["name"] for c in back], ["Broetchen", "Fleisch", "Gemuese"])
+        self.assertEqual(vt, EXAMPLE["var_types"])
 
 
 class LPFileTests(unittest.TestCase):

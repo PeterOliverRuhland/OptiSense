@@ -46,12 +46,13 @@ def exercises():
     """Generated tasks of every kind, the guided example and own tasks (also mixed-integer)."""
     out = [tutorial.create()]
     for form, kind, difficulty, seed in itertools.product(("text", "math"), ("LP", "ILP", "MILP"), ("easy", "medium"), range(6)):
-        topics = engine.topics_for(kind)
-        opts = engine.normalize_options({"form": form, "kind": kind, "difficulty": difficulty, "topic": topics[seed % len(topics)]})
+        opts = engine.normalize_options({"form": form, "kind": kind, "difficulty": difficulty})
         opts["seed"] = seed
         out.append(engine.make_exercise(opts))
     for kind in ("LP", "ILP", "MILP1", "MILP2"):
         out.append(engine.make_exercise({}, example(kind), {"source": "own"}))
+    for form, task in itertools.product(("text", "math"), ("burger", "shawarma")):   # stories of their own
+        out.append(engine.make_exercise(engine.normalize_options({"form": form, "kind": "ILP", "difficulty": "medium", "task": task})))
     return out
 
 
@@ -67,25 +68,46 @@ class GeneratorTests(unittest.TestCase):
             self.assertTrue(engine.feasible(m, ex["solution"]["x"]))
             self.assertEqual(sum(s["points"] for s in ex["steps"]), 100)
             self.assertEqual(len(m["rows"]), 2 if difficulty == "easy" else 3)
-            if m["kind"] == "ILP":   # independent check by enumeration
+            if m["kind"] == "ILP" and ex["info"].get("story"):   # burger, shawarma: the LP corner is already whole
+                self.assertEqual(engine.solve({**m, "kind": "LP"})["x"], ex["solution"]["x"])
+            elif m["kind"] == "ILP":   # independent check by enumeration
                 values = [np.dot(m["c"], [i, j]) for i in range(60) for j in range(60) if engine.feasible(m, [i, j])]
                 best = max(values) if m["sense"] == "max" else min(values)
                 self.assertAlmostEqual(ex["solution"]["z"], best)
 
-    def test_minimisation_only_at_the_second_level_and_in_matching_topics(self):
-        senses = {}
-        for difficulty, (kind, topic), seed in itertools.product(("easy", "medium"), (("ILP", "production"), ("LP", "farming")), range(30)):
-            opts = engine.normalize_options({"difficulty": difficulty, "kind": kind, "topic": topic})
-            opts["seed"] = seed
-            senses.setdefault((difficulty, topic), set()).add(engine.make_exercise(opts)["model"]["sense"])
-        self.assertEqual(senses[("easy", "farming")], {"max"})
-        self.assertEqual(senses[("medium", "production")], {"max"})
-        self.assertEqual(senses[("medium", "farming")], {"max", "min"})
+    def test_fifteen_named_tasks_five_per_variable_type(self):
+        # Robin, 2026-11-17: one field “Task” lists 15 tasks by name, integer first – 5 integer (Burger and Shawarma among
+        # them), 5 continuous, 5 mixed; only those of the chosen variable type can be picked. Every task keeps its topic.
+        listed = engine.task_list()
+        self.assertEqual([t["kind"] for t in listed], ["ILP"] * 5 + ["LP"] * 5 + ["MILP"] * 5)
+        self.assertEqual(len({t["name"] for t in listed}), 15)
+        for t in listed:
+            self.assertIn(f"learn_task_{t['name']}" if t["name"] in ("burger", "shawarma") else f"learn_topic_{t['name']}", i18n.TEXT)
+            self.assertEqual(set(t["levels"]), {"easy", "medium"}, t["name"])   # every task on both levels
+        for (difficulty, kind), tasks in engine.POOL.items():
+            for task in tasks:
+                if task.get("story"):
+                    self.assertNotIn("topic", task)
+                    continue
+                self.assertIn(task["topic"], engine.topics_for(kind), task["id"])   # counted → integer, measured → continuous
+                if task["sense"] == "min":
+                    self.assertIn(task["topic"], engine.MIN_TOPICS, task["id"])   # only topics that make sense as costs
+                for seed in range(3):
+                    ex = engine.make_exercise({**engine.normalize_options({"kind": kind, "difficulty": difficulty, "task": task["topic"]}), "seed": seed})
+                    self.assertEqual((ex["info"]["task"], ex["info"]["topic"]), (task["id"], task["topic"]))
+        senses = {d: {t["sense"] for (dd, _), ts in engine.POOL.items() if dd == d for t in ts} for d in ("easy", "medium")}
+        self.assertEqual(senses, {"easy": {"max"}, "medium": {"max", "min"}})   # minimisation only on level 2
+        # the start page gets this list (pages/learn/ui.py) and starts with integer
+        with open(os.path.join(ROOT, "www", "learn.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn('kind: "ILP", mode: "practice"', js)
+        self.assertRegex(js, r'seg\("o-kind", \[\["ILP"')
 
     def test_options_are_reduced_to_known_values(self):
         # unknown and removed choices (advanced level, simplex) fall back to the defaults; mixed is chosen as “MILP”
-        opts = engine.normalize_options({"mode": "cheat", "kind": "MILP1", "difficulty": "hard", "topic": "space", "simplex": 1})
-        self.assertEqual((opts["mode"], opts["kind"], opts["difficulty"], opts["topic"]), ("practice", "LP", "easy", "random"))
+        opts = engine.normalize_options({"mode": "cheat", "kind": "MILP1", "difficulty": "hard", "topic": "space", "task": "x", "simplex": 1})
+        self.assertEqual((opts["mode"], opts["kind"], opts["difficulty"], opts["task"]), ("practice", "ILP", "easy", "random"))   # integer first
+        self.assertNotIn("topic", opts)   # the topic comes with the task
         self.assertNotIn("simplex", opts)
         self.assertNotIn("method", engine.normalize_options({"method": "calc"}))   # the graph and the calculation always belong together
         self.assertEqual(engine.normalize_options({"kind": "MILP"})["kind"], "MILP")
@@ -99,14 +121,17 @@ class GeneratorTests(unittest.TestCase):
             m = ex["model"]
             kinds.add(m["kind"])
             relaxed = engine.solve({**m, "kind": "LP"})
+            if ex["info"].get("story"):   # burger and shawarma: the optimal corner is whole, the corner step stays
+                self.assertTrue(engine.feasible(m, relaxed["x"]), ex["info"])
+                continue
             self.assertFalse(engine.feasible(m, relaxed["x"]), (kind, seed))   # just solving the LP would be wrong
             self.assertNotIn("corner", [s["id"] for s in ex["steps"]])
         self.assertTrue({"MILP1", "MILP2"} <= kinds)   # either variable can be the integer one
 
-    def test_fixed_pool_has_15_good_tasks_per_level_and_variable_type(self):
+    def test_fixed_pool_has_good_tasks_for_every_level_and_variable_type(self):
         ids = set()
         for (difficulty, kind), tasks in engine.POOL.items():
-            self.assertEqual(len(tasks), 15, (difficulty, kind))
+            self.assertEqual(len(tasks), 5, (difficulty, kind))   # 5 per level and variable type
             if kind == "MILP":
                 self.assertEqual({t["kind"] for t in tasks}, {"MILP1", "MILP2"})   # either variable can be the integer one
             for task in tasks:
@@ -114,16 +139,13 @@ class GeneratorTests(unittest.TestCase):
                 self.assertEqual(len(task["rows"]), 2 if difficulty == "easy" else 3, task["id"])
                 if difficulty == "easy":
                     self.assertEqual(task["sense"], "max", task["id"])
-                topic = [t for t in engine.topics_for(kind) if task["sense"] == "max" or t in engine.MIN_TOPICS][0]
-                opts = engine.normalize_options({"kind": kind, "difficulty": difficulty, "topic": topic})
-                for seed in range(60):   # draw until this task comes up
-                    ex = engine.make_exercise({**opts, "seed": seed})
-                    if ex["info"]["task"] == task["id"]:
-                        break
+                ex = engine.make_exercise(engine.normalize_options({"kind": kind, "difficulty": difficulty, "task": engine.task_name(task)}))
                 self.assertEqual(ex["info"]["task"], task["id"])
                 m, sol = ex["model"], ex["solution"]
                 # every number the learner works out is whole or ,5: axis intercepts, x1, x2, F, slack (no 8,333 or 1,667)
                 for step in ex["steps"]:
+                    if task.get("story") and step["id"] in ("objective", "constraints"):
+                        continue   # read from the story: 100 g are 0.1 kg; what is worked out is checked as for all
                     for q in step["questions"]:
                         v = q["expected"]
                         if isinstance(v, (int, float)) and not isinstance(v, bool):
@@ -132,12 +154,15 @@ class GeneratorTests(unittest.TestCase):
                 # every constraint bounds the region, and with integer variables the LP optimum is not allowed
                 used = {i for c in engine.corners(m) for i in c[:2]}
                 self.assertTrue(set(range(len(m["rows"]))) <= used, task["id"])
-                if kind != "LP":
+                if task.get("story"):   # burger, shawarma: whole optimal corner, told with their own story
+                    self.assertEqual(engine.solve({**m, "kind": "LP"})["x"], sol["x"], task["id"])
+                    self.assertIn("corner", [s["id"] for s in ex["steps"]])
+                elif kind != "LP":
                     self.assertFalse(engine.feasible(m, engine.solve({**m, "kind": "LP"})["x"]), task["id"])
                 else:
                     self.assertEqual(len(engine.optimal_corners(m)), 1, task["id"])   # one optimal corner
                 self.assertGreater(min(sol["x"]), 0, task["id"])
-        self.assertEqual(len(ids), 90)
+        self.assertEqual(len(ids), 30)
 
     def test_hints_are_counted_as_they_really_are(self):
         opts = engine.normalize_options({"form": "text", "difficulty": "medium", "kind": "LP", "seed": 2})
@@ -183,10 +208,8 @@ class GeneratorTests(unittest.TestCase):
         words = {"en": ("whole numbers only", "fractions allowed", "number of"), "de": ("nur ganze Zahlen", "Bruchteile erlaubt", "Anzahl")}
         measured = ("liters", "hectares", "kilograms", "tons", "minutes")
         combinations = 0
-        for task in (t for tasks in engine.POOL.values() for t in tasks):
-            fitting = [t for t in engine.topics_for(task["kind"]) if task["sense"] == "max" or t in engine.MIN_TOPICS]
-            self.assertGreaterEqual(len(fitting), 2, task["id"])
-            for topic in fitting:
+        for task in (t for tasks in engine.POOL.values() for t in tasks if not t.get("story")):   # burger, shawarma: own story
+            for topic in [task["topic"]]:
                 rows = [{"a": [a1, a2], "op": op, "b": b, "role": ("r1", "r2", "total")[i]} for i, (a1, a2, op, b) in enumerate(task["rows"])]
                 m = engine.validate({"c": list(task["c"]), "sense": task["sense"], "kind": task["kind"], "rows": rows})
                 ex = {"model": m, "info": {"source": "generated", "topic": topic, "task": task["id"]}, "options": {"form": "text"}}
@@ -204,39 +227,47 @@ class GeneratorTests(unittest.TestCase):
                     if engine.TOPICS[topic][0] == "mix" and len(task["rows"]) == 3:
                         # pieces and kilograms cannot be added up: the third row is a resource, not a total
                         self.assertNotIn(i18n.t(lang, "learn_rn_total"), story.row_names(ex, lang))
-        self.assertGreater(combinations, 300)
+        self.assertEqual(combinations, sum(1 for tasks in engine.POOL.values() for t in tasks if not t.get("story")))
 
-    def test_topics_are_offered_for_their_variable_type_only(self):
-        self.assertEqual(engine.normalize_options({"kind": "LP", "topic": "production"})["topic"], "random")
-        self.assertEqual(engine.normalize_options({"kind": "ILP", "topic": "production"})["topic"], "production")
-        self.assertEqual(engine.normalize_options({"kind": "MILP", "topic": "bakery"})["topic"], "bakery")
-        for kind in ("LP", "ILP", "MILP"):
-            for seed in range(20):
-                ex = engine.make_exercise({**engine.normalize_options({"kind": kind, "difficulty": "medium"}), "seed": seed})
-                self.assertIn(ex["info"]["topic"], engine.topics_for(kind))
-        # the start page offers the same topics (www/learn.js)
-        with open(os.path.join(ROOT, "www", "learn.js"), encoding="utf-8") as f:
-            js = f.read()
-        table = re.search(r"var TOPICS = \{(.*?)\};", js, re.S).group(1)
-        for kind in ("LP", "ILP", "MILP"):
-            listed = re.search(kind + r': \[(.*?)\]', table).group(1)
-            self.assertEqual(re.findall(r'"(\w+)"', listed), engine.topics_for(kind), kind)
-            for topic in engine.topics_for(kind):
+    def test_every_topic_tells_every_story_it_is_used_for(self):
+        # all 45 topics (topics.py, 2026-11-17): each in every variant – maximisation, costs if it has them, and for a
+        # mixed topic both orders – with two resources and the total (or third resource), in both languages
+        used = {t["topic"] for tasks in engine.POOL.values() for t in tasks if t.get("topic")}
+        self.assertTrue(used <= set(engine.TOPICS) and len(used) == 13)   # the rest are stories in reserve
+        measured = ("liters", "hectares", "kilograms", "tons", "minutes")
+        for topic, (vt, costs) in engine.TOPICS.items():
+            kinds = {"int": ["ILP"], "con": ["LP"], "mix": ["MILP1", "MILP2"]}[vt]
+            for kind, sense in itertools.product(kinds, ["max"] + (["min"] if costs else [])):
+                op = "<=" if sense == "max" else ">="
+                rows = [{"a": [2, 3], "op": op, "b": 28.5, "role": "r1"}, {"a": [4, 1], "op": op, "b": 30, "role": "r2"},
+                        {"a": [1, 1], "op": "<=", "b": 12, "role": "total"}]
+                m = engine.validate({"c": [5, 7], "sense": sense, "kind": kind, "rows": rows})
+                ex = {"model": m, "info": {"source": "generated", "topic": topic, "task": "x"}, "options": {"form": "text"}}
+                for lang in ("en", "de"):
+                    st = story.story(ex, lang)
+                    text = json.dumps([st, story.row_names(ex, lang)], ensure_ascii=False)
+                    self.assertNotIn("learn_", text, (topic, kind, sense, lang))
+                    self.assertIsNone(re.search(r"\{[a-z0-9_]+\}", text), (topic, kind, sense, lang, text))
+                    self.assertIn("€" if lang == "de" else "₱", text) if topic not in ("advertising", "radio") or sense == "min" else None
+                    for j, integer in enumerate(engine.integrality(m)):
+                        if lang == "en" and not integer:
+                            self.assertTrue(any(u in st["sought"][j] for u in measured), (topic, st["sought"][j]))
                 self.assertIn(f"learn_topic_{topic}", i18n.TEXT)
 
-    def test_practice_tasks_fit_the_topic_and_do_not_repeat(self):
-        for seed in range(40):
-            # workshop production cannot be about costs: only maximisation tasks there
-            ex = engine.make_exercise(engine.normalize_options({"difficulty": "medium", "kind": "ILP", "topic": "production", "seed": seed}))
-            self.assertEqual(ex["model"]["sense"], "max")
-            self.assertEqual(ex["info"]["topic"], "production")
-            ex = engine.make_exercise({**engine.normalize_options({"difficulty": "medium"}), "seed": seed})
-            if ex["model"]["sense"] == "min":
-                self.assertIn(ex["info"]["topic"], engine.MIN_TOPICS)
+    def test_the_start_page_lists_the_tasks_and_has_no_topic_field(self):
+        # the task list comes from the server (pages/learn/ui.py); learn.js only names and sorts it
+        from optisense.pages.learn import ui as learn_ui
+        self.assertIn("window.OS_LEARN_TASKS = ", str(learn_ui.panel.content))
+        with open(os.path.join(ROOT, "www", "learn.js"), encoding="utf-8") as f:
+            js = f.read()
+        self.assertIn('data-opt="task"', js)
+        self.assertNotIn('data-opt="topic"', js)
+
+    def test_practice_tasks_do_not_repeat(self):
         recent = []
         for seed in range(30):
-            ex = engine.make_exercise({**engine.normalize_options({"kind": "ILP"}), "seed": seed}, avoid=recent[-5:])
-            self.assertNotIn(ex["info"]["task"], recent[-5:])
+            ex = engine.make_exercise({**engine.normalize_options({"kind": "LP"}), "seed": seed}, avoid=recent[-4:])
+            self.assertNotIn(ex["info"]["task"], recent[-4:])
             recent.append(ex["info"]["task"])
 
 
@@ -270,13 +301,52 @@ class GradingTests(unittest.TestCase):
         total = sum(engine.grade_step(ex, s, answers.get(s["id"]), answers)["points"] for s in ex["steps"])
         self.assertAlmostEqual(total, 100)
 
-    def test_tutorial_is_the_burger_problem_of_the_lecture(self):
+    def test_tutorial_is_the_shawarma_stand(self):
+        # Robin, 2026-11-17: a task the students do not know yet, as hard as the burgers – every value without a calculator
         ex = tutorial.create()
-        self.assertEqual(ex["solution"]["x"], [300, 200])
-        self.assertAlmostEqual(ex["solution"]["z"], 2550)
+        self.assertEqual(ex["solution"]["x"], [200, 100])
+        self.assertAlmostEqual(ex["solution"]["z"], 26000)
+        self.assertTrue(engine.calculator_free(ex["model"], ex["solution"]))
+        self.assertEqual(story.story(ex, "en")["title"], "Shawarma stand: regular and special shawarma")
+        self.assertEqual(story.row_names(ex, "de"), ["Fladenbrot", "Fleisch", "Gemüse"])
 
-    def test_tutorial_burgers_are_whole_and_keep_the_corner_step(self):
-        # nobody sells half a burger: x1 and x2 are integer; the optimal corner is whole, so the method of the
+    def test_burger_and_shawarma_are_practice_tasks(self):
+        # Robin, 2026-11-17: the lecture's burger problem (the former guided task) and the guided task's shawarma stand
+        # are two of the 15 integer tasks on level 2, each with its own story; a task can also be picked by its id
+        opts = {"kind": "ILP", "difficulty": "medium"}
+        burger = engine.make_exercise(engine.normalize_options({**opts, "task": "burger"}))
+        shawarma = engine.make_exercise(engine.normalize_options({**opts, "task": "shawarma"}))
+        self.assertEqual((burger["solution"]["x"], burger["solution"]["z"]), ([300, 200], 2550))
+        same = lambda m: (m["c"], m["sense"], m["kind"], [(r["a"], r["op"], r["b"]) for r in m["rows"]])  # noqa: E731
+        self.assertEqual(same(shawarma["model"]), same(tutorial.create()["model"]))
+        self.assertEqual(story.story(burger, "en")["title"], "Burger diner: standard and luxury burgers")   # not a kitchen
+        # dollars, not the euros of the slides (Robin, 2026-11-17: students in the Philippines know the dollar)
+        self.assertIn("$4.50", story.story(burger, "en")["objective"])
+        self.assertIn("4,50 $", story.story(burger, "de")["objective"])
+        self.assertEqual(story.story(shawarma, "de"), story.story(tutorial.create(), "de"))
+        self.assertEqual(story.row_names(burger, "de"), ["Brötchen", "Fleisch", "Gemüse"])
+        for ex in (burger, shawarma):
+            self.assertIsNone(ex["info"]["topic"])
+            ids = [s["id"] for s in ex["steps"]]
+            self.assertEqual(ids[ids.index("region"):ids.index("optimum") + 1], ["region", "corner", "optimum"])
+        math_task = engine.make_exercise(engine.normalize_options({**opts, "task": "burger", "form": "math"}))
+        self.assertEqual(story.story(math_task, "en")["title"], i18n.t("en", "learn_math_title"))
+        # a task id of another level or variable type, or none, means chance – and chance can give them too
+        self.assertEqual(engine.normalize_options({"kind": "LP", "difficulty": "medium", "task": "burger"})["task"], "random")
+        # on level 1 with bread and meat only (Robin, 2026-11-17): no vegetables, still a whole optimal corner
+        easy = {name: engine.make_exercise(engine.normalize_options({"kind": "ILP", "difficulty": "easy", "task": name}))
+                for name in ("burger", "shawarma")}
+        self.assertEqual((easy["burger"]["solution"]["x"], easy["burger"]["solution"]["z"]), ([225, 275], 2662.5))
+        self.assertEqual((easy["shawarma"]["solution"]["x"], easy["shawarma"]["solution"]["z"]), ([200, 100], 26000))
+        self.assertEqual(story.row_names(easy["burger"], "de"), ["Brötchen", "Fleisch"])
+        self.assertEqual(story.row_names(easy["shawarma"], "en"), ["Pita bread", "Meat"])
+        self.assertIn("corner", [s["id"] for s in easy["burger"]["steps"]])
+        self.assertEqual(engine.normalize_options({**opts, "task": "<b>"})["task"], "random")
+        stories = {engine.make_exercise({**engine.normalize_options(opts), "seed": s})["info"].get("story") for s in range(200)}
+        self.assertEqual(stories, {None, "burger", "shawarma"})
+
+    def test_tutorial_shawarmas_are_whole_and_keep_the_corner_step(self):
+        # nobody sells half a shawarma: x1 and x2 are integer; the optimal corner is whole, so the method of the
         # lecture (objective line → corner → calculate it) stays
         ex = tutorial.create()
         self.assertEqual(ex["model"]["kind"], "ILP")
@@ -298,9 +368,9 @@ class GradingTests(unittest.TestCase):
 
     def test_a_scaled_constraint_counts_as_correct(self):
         ex = tutorial.create()
-        answers = dict(tutorial.ANSWERS["constraints"], a1_0="100", a1_1="300", b1="105000")   # meat in grams
+        answers = dict(tutorial.ANSWERS["constraints"], a1_0="100", a1_1="200", b1="40000")   # meat in grams
         self.assertTrue(engine.grade_step(ex, step(ex, "constraints"), answers)["correct"])
-        answers.update(a2_0="-1", a2_1="-1.5", b2="-600", op2=">=")
+        answers.update(a2_0="-1", a2_1="-0.5", b2="-270", op2=">=")
         self.assertTrue(engine.grade_step(ex, step(ex, "constraints"), answers)["correct"])
 
     def test_axis_intersections_with_parallel_lines(self):
@@ -333,9 +403,9 @@ class GradingTests(unittest.TestCase):
     def test_hints_name_the_wrong_questions(self):
         ex = tutorial.create()
         s = step(ex, "optimum")
-        g = engine.grade_step(ex, s, {"x": "300", "y": "200", "z": "2549"})
+        g = engine.grade_step(ex, s, {"x": "200", "y": "100", "z": "25000"})
         self.assertEqual(engine.hints_for(ex, s, g), ["z"])
-        g = engine.grade_step(ex, s, {"x": "200", "y": "300", "z": "2550"})
+        g = engine.grade_step(ex, s, {"x": "100", "y": "200", "z": "26000"})
         self.assertEqual(engine.hints_for(ex, s, g), ["opt_corner"])   # LP: calculated from the corner
 
     def test_the_filled_in_solution_earns_every_point(self):
@@ -358,14 +428,14 @@ class GradingTests(unittest.TestCase):
     def test_the_solution_of_the_corner_is_the_optimal_corner(self):
         ex = tutorial.create()
         values = engine.solution_values(ex, step(ex, "corner"))
-        self.assertEqual((values["boundary1"], values["boundary2"]), ("0", "2"))   # buns and vegetables
+        self.assertEqual((values["boundary1"], values["boundary2"]), ("0", "1"))   # pita bread and meat
         values = engine.solution_values(ex, step(ex, "optimum"), {"corner": values})
-        self.assertTrue(np.allclose([values["x"], values["y"], values["z"]], [300, 200, 2550]))
+        self.assertTrue(np.allclose([values["x"], values["y"], values["z"]], [200, 100, 26000]))
 
     def test_the_corner_must_be_optimal(self):
         ex = tutorial.create()
         s = step(ex, "corner")
-        for pair, ok in ((("0", "2"), True), (("2", "0"), True), (("1", "2"), False), (("0", "1"), False),
+        for pair, ok in ((("0", "1"), True), (("1", "0"), True), (("0", "2"), False), (("1", "2"), False),
                          (("2", "2"), False), (("3", "4"), False), (("", "2"), False), (("9", "1"), False)):
             g = engine.grade_step(ex, s, {"boundary1": pair[0], "boundary2": pair[1]})
             self.assertEqual(g["correct"], ok, pair)
@@ -386,8 +456,8 @@ class GradingTests(unittest.TestCase):
         keys = [q["key"] for q in step(ex, "slack")["questions"]]
         self.assertEqual(keys, ["slack0", "bind0", "slack1", "bind1", "slack2", "bind2"])
         answers = {"optimum": tutorial.ANSWERS["optimum"]}
-        g = engine.grade_step(ex, step(ex, "slack"), dict(tutorial.ANSWERS["slack"], bind1="yes"), answers)
-        self.assertEqual(engine.hints_for(ex, step(ex, "slack"), g), ["bind"])   # meat has 15 kg left: not binding
+        g = engine.grade_step(ex, step(ex, "slack"), dict(tutorial.ANSWERS["slack"], bind2="yes"), answers)
+        self.assertEqual(engine.hints_for(ex, step(ex, "slack"), g), ["bind"])   # vegetables have 2 kg left: not binding
         self.assertNotIn("sensitivity", engine.normalize_options({"sensitivity": True}))
 
     def test_word_problems_name_the_objective(self):
@@ -399,10 +469,12 @@ class GradingTests(unittest.TestCase):
                 self.assertNotIn("fname", st)
         self.assertEqual(story.story(tutorial.create(), "de")["fname"], "Umsatz")
 
-    def test_only_lp_tasks_and_the_guided_example_have_a_corner_step(self):
+    def test_only_lp_tasks_and_the_whole_corner_tasks_have_a_corner_step(self):
+        # the guided task and the lecture's burger problem are integer, but their optimal corner is whole
         for ex in exercises():
             ids = [s["id"] for s in ex["steps"]]
-            self.assertEqual("corner" in ids, ex["model"]["kind"] == "LP" or ex["info"]["source"] == "tutorial", (ex["info"], ids))
+            whole_corner = ex["info"]["source"] == "tutorial" or bool(ex["info"].get("story"))
+            self.assertEqual("corner" in ids, ex["model"]["kind"] == "LP" or whole_corner, (ex["info"], ids))
             self.assertLess(ids.index("region"), ids.index("optimum"))
             if "corner" in ids:
                 self.assertEqual(ids.index("corner") + 1, ids.index("optimum"))
@@ -446,15 +518,15 @@ class ReportTests(unittest.TestCase):
         ex = tutorial.create()
         answers = copy.deepcopy(tutorial.ANSWERS)
         answers["constraints"]["b1"] = "100"
-        answers["slack"]["bind1"] = "yes"
+        answers["slack"]["bind2"] = "yes"
         grades = self.result(ex, answers, "de")["grades"]
         rows = {s["id"]: report.review_rows(ex, s, answers, g["checks"], "de") for s, g in zip(ex["steps"], grades)}
         # one line per constraint
-        self.assertEqual(rows["constraints"][1], ("NB2 Fleisch", "0.1·x1 + 0.3·x2 ≤ 100", "0,1·x1 + 0,3·x2 ≤ 105", False))
+        self.assertEqual(rows["constraints"][1], ("NB2 Fleisch", "0.1·x1 + 0.2·x2 ≤ 100", "0,1·x1 + 0,2·x2 ≤ 40", False))
         self.assertTrue(rows["constraints"][0][3])
-        self.assertIn(("NB2: bindend?", "ja", "nein", False), rows["slack"])
-        self.assertIn(("Gerade 1", "NB1 Brötchen", "NB1 Brötchen", True), rows["corner"])
-        self.assertIn(("Zielwert F", "2550", "2.550", True), rows["optimum"])
+        self.assertIn(("NB3: bindend?", "ja", "nein", False), rows["slack"])
+        self.assertIn(("Gerade 1", "NB1 Fladenbrot", "NB1 Fladenbrot", True), rows["corner"])
+        self.assertIn(("Zielwert F", "26000", "26.000", True), rows["optimum"])
         # every field has a label in words, in every language
         for lang, ex2 in itertools.product(i18n.LANGS, exercises()[:8]):
             for s in ex2["steps"]:
@@ -501,18 +573,22 @@ class TextTests(unittest.TestCase):
         self.assertIn("learn_hint_opt_corner", i18n.TEXT)
 
     def test_generated_word_problems_use_pesos_in_english_and_euros_in_german(self):
-        for topic, sense_difficulty, seed in itertools.product(engine.TOPICS, ("easy", "medium"), range(6)):
-            kind = {"con": "LP", "int": "ILP", "mix": "MILP"}[engine.TOPICS[topic][0]]
-            opts = engine.normalize_options({"form": "text", "kind": kind, "difficulty": sense_difficulty, "topic": topic})
-            opts["seed"] = seed
-            ex = engine.make_exercise(opts)
-            en, de = (json.dumps(story.story(ex, lang), ensure_ascii=False) for lang in ("en", "de"))
-            self.assertNotIn("€", en)
-            self.assertNotIn("₱", de)
-            self.assertEqual(ex["info"]["topic"], topic)
-            if ex["model"]["sense"] == "min" or topic not in ("advertising", "radio"):   # reach is counted in people
-                self.assertIn("₱", story.story(ex, "en")["objective"])
-                self.assertIn("€", story.story(ex, "de")["objective"])
+        for (difficulty, kind), tasks in engine.POOL.items():
+            for task in tasks:
+                opts = engine.normalize_options({"form": "text", "kind": kind, "difficulty": difficulty, "task": engine.task_name(task)})
+                ex = engine.make_exercise(opts)
+                en, de = (json.dumps(story.story(ex, lang), ensure_ascii=False) for lang in ("en", "de"))
+                if task.get("story") == "burger":   # dollars in both languages
+                    self.assertTrue("$" in en and "$" in de and "€" not in en + de and "₱" not in en + de)
+                    continue
+                if task.get("story") == "shawarma":   # pesos in both: the stand is in the Philippines
+                    self.assertTrue("₱" in en and "₱" in de and "€" not in en + de)
+                    continue
+                self.assertNotIn("€", en)
+                self.assertNotIn("₱", de)
+                if ex["model"]["sense"] == "min" or task["topic"] not in ("advertising", "radio"):   # reach is counted in people
+                    self.assertIn("₱", story.story(ex, "en")["objective"])
+                    self.assertIn("€", story.story(ex, "de")["objective"])
 
     def test_task_texts_and_solutions_in_all_languages(self):
         for ex, lang in itertools.product(exercises(), i18n.LANGS):

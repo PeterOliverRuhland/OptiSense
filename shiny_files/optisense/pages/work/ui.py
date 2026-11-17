@@ -42,6 +42,7 @@ sidebar = ui.sidebar(
     ),
     step_card(
         2, "step2", "range",
+        ui.output_ui("types_story"),
         ui.div(
             ui.span("x1", class_="os-var"),
             ui.input_radio_buttons("vt_x1", None, {"con": tr("continuous_short"), "int": tr("integer_short")}, inline=True),

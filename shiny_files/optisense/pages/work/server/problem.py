@@ -7,7 +7,7 @@ import math
 
 from optisense.config import DEFAULT_NAMES, MAX_CONSTRAINTS, MAX_NAME_LENGTH, MAX_OBJECTIVES, MAX_VALUE
 
-from .. import plotting
+from .. import example, plotting
 from .html_utils import con_swatch, con_text, esc, formula, swatch
 
 
@@ -28,6 +28,7 @@ def register(ctx):
 
     def row(kind, item, mark, text):
         label = tr("edit_item", name=item["name"])
+        story = example.note(kind, item)   # the example's story line below its formula, only while it fits the numbers
         return tags.div(
             mark,
             tags.span(text, class_="os-formula"),
@@ -37,7 +38,8 @@ def register(ctx):
                 tags.span(),
                 class_="os-switch", title=tr("toggle_active"),
             ),
-            class_="os-row" + ("" if item["active"] else " is-off"),
+            tags.span(tr(story), class_="os-story") if story else None,   # a line of its own below: first the maths, then the text
+            class_="os-row" + ("" if item["active"] else " is-off") + (" has-story" if story else ""),
             role="button", tabindex="0", title=label,
             **{"aria-label": label, "data-kind": kind, "data-id": str(item["id"])},
         )

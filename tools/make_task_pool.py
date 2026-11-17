@@ -10,7 +10,10 @@ variable type (6 × 15 = 90). This script found them once – from random candid
 Level 2 mixes maximisation and minimisation; mixed tasks have x1 or x2 integer.
 
 Run from the repository root:  python tools/make_task_pool.py   (then run the tests and review the tasks)
-Running it again replaces tasks.py – only do that on purpose, the pool is meant to stay fixed.
+Running it again replaces tasks.py – only do that on purpose, the pool is meant to stay fixed. Since 2026-11-17 the
+pool in tasks.py is cut down by hand to 15 named tasks (5 per variable type, each with a fixed topic, on both levels)
+plus ILP-2-BURGER and ILP-2-SHAWARMA with a story of their own – a new run would have to be cut down the same way
+(the guided task takes its numbers from ILP-2-SHAWARMA).
 """
 
 import itertools

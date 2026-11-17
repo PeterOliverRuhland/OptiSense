@@ -70,19 +70,13 @@
     return parts.length ? parts.join(" ") : "0";
   }
   var OP = { "<=": "≤", ">=": "≥", "=": "=" };
-  // practice topics per variable type, as engine.TOPICS (checked in tests/test_learning.py)
-  var TOPICS = {
-    LP: ["farming", "juice", "coffee", "feed"],
-    ILP: ["gastro", "production", "events", "transport", "advertising"],
-    MILP: ["bakery", "canteen", "radio"]
-  };
   var GREEN = "#1f7a1f", RED = "#cc0000", INK = "#1d1f21", GREY = "#808080";
   var BLUE = "#0000ff";   // the symbol of F in model lists: the blue square of “Model & solution” (config.OPTIMIZED)
 
   // ------------------------------------------------------------------ state
   var S = {
     view: "home",
-    opts: { difficulty: "easy", form: "text", kind: "LP", mode: "practice", topic: "random" },
+    opts: { difficulty: "easy", form: "text", kind: "ILP", mode: "practice", task: "random" },
     ownOpts: { mode: "practice" },
     more: false, own: null,
     ex: null, step: 0, answers: {}, feedback: {}, hints: {}, solutions: {}, solWay: {}, result: null,
@@ -237,14 +231,35 @@
   }
 
   // ------------------------------------------------------------------ start page
+  // the 15 practice tasks (engine.task_list): {name, kind, levels: {easy, medium}}; Burger and Shawarma have a story of
+  // their own and only level 2
+  var STORIES = ["burger", "shawarma"], KINDS = ["ILP", "LP", "MILP"];
+  function taskLabel(t) { return L(STORIES.indexOf(t.name) >= 0 ? "task_" + t.name : "topic_" + t.name); }
+  function practiceTasks() {
+    var rank = function (t) { var i = STORIES.indexOf(t.name); return i >= 0 ? i : STORIES.length; };
+    return (window.OS_LEARN_TASKS || []).slice().sort(function (a, b) {
+      return KINDS.indexOf(a.kind) - KINDS.indexOf(b.kind) || rank(a) - rank(b) || taskLabel(a).localeCompare(taskLabel(b), lang());
+    });
+  }
+
   function homeHTML() {
     var o = S.opts, oo = S.ownOpts;
     var diff = seg("o-difficulty", [["easy", L("diff_easy")], ["medium", L("diff_medium")]], o.difficulty, 'data-opt="difficulty" aria-label="' + esc(L("opt_difficulty")) + '"', "is-fit");
     var form = seg("o-form", [["text", L("form_text")], ["math", L("form_math")]], o.form, 'data-opt="form" aria-label="' + esc(L("opt_form")) + '"');
-    var kind = seg("o-kind", [["LP", L("kind_LP")], ["ILP", L("kind_ILP")], ["MILP", L("kind_MILP")]], o.kind, 'data-opt="kind" aria-label="' + esc(L("opt_kind")) + '"', "is-fit");
-    // only topics whose words fit the variable type (as engine.TOPICS): counted things are integer, measured amounts continuous
-    var topics = ["random"].concat(TOPICS[o.kind] || []);
-    if (topics.indexOf(o.topic) < 0) o.topic = "random";
+    var kind = seg("o-kind", [["ILP", L("kind_ILP")], ["LP", L("kind_LP")], ["MILP", L("kind_MILP")]], o.kind, 'data-opt="kind" aria-label="' + esc(L("opt_kind")) + '"', "is-fit");
+    // all 15 tasks, integer first, in one list: only those of the chosen variable type can be picked, the others are
+    // grey (Robin, 2026-11-17). Every task exists on both levels.
+    var tasks = practiceTasks();
+    var picked = tasks.filter(function (t) { return t.name === o.task && t.kind === o.kind && t.levels[o.difficulty]; })[0];
+    if (!picked) o.task = "random";
+    // every task says its variable type – also the ones that can be picked, so it is plain why (Robin, 2026-11-17)
+    var option = function (t) {
+      var other = t.kind !== o.kind;
+      return '<option value="' + esc(t.name) + '"' + (t === picked ? " selected" : "") + (other ? " disabled" : "") + ">" +
+        esc(taskLabel(t) + " · " + L("kind_" + t.kind)) + "</option>";
+    };
+    // a hint only for Burger and Shawarma (where they come from); “Random” speaks for itself (Robin, 2026-11-17)
+    var taskHint = picked && STORIES.indexOf(picked.name) >= 0 ? L("task_" + picked.name + "_hint") : "";
 
     var practice =
       '<div class="ol-field"><div class="ol-field-label">' + esc(L("opt_difficulty")) + "</div>" + diff + '<p class="ol-field-hint">' + esc(L("diff_" + o.difficulty + "_hint")) + "</p></div>" +
@@ -252,8 +267,10 @@
       '<div class="ol-field"><div class="ol-field-label">' + esc(L("opt_kind")) + "</div>" + kind + '<p class="ol-field-hint">' + esc(L("kind_" + o.kind + "_hint")) + "</p></div>" +
       switchRow("o-exam", L("opt_exam"), L("opt_exam_hint"), o.mode === "exam", false, 'data-opt="mode"') +
       '<details class="ol-more"' + (S.more ? " open" : "") + ' data-more="practice"><summary>' + esc(L("more_options")) + "</summary>" +
-      '<div class="ol-field"><label class="ol-field-label" for="o-topic">' + esc(L("opt_topic")) + '</label><select id="o-topic" class="form-select ol-select" data-opt="topic">' +
-      topics.map(function (tp) { return '<option value="' + tp + '"' + (o.topic === tp ? " selected" : "") + ">" + esc(L("topic_" + tp)) + "</option>"; }).join("") + "</select></div>" +
+      '<p class="ol-more-note">' + esc(L("task_only_" + o.kind)) + "</p>" +
+      '<div class="ol-field"><label class="ol-field-label" for="o-task">' + esc(L("opt_task")) + '</label><select id="o-task" class="form-select ol-select" data-opt="task">' +
+      '<option value="random"' + (!picked ? " selected" : "") + ">" + esc(L("task_random")) + "</option>" + tasks.map(option).join("") +
+      "</select>" + (taskHint ? '<p class="ol-field-hint">' + esc(taskHint) + "</p>" : "") + "</div>" +
       "</details>";
 
     var own = S.own;

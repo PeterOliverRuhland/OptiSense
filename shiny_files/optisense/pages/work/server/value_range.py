@@ -3,6 +3,8 @@
 from htmltools import tags
 from shiny import reactive, render
 
+from .. import example
+
 
 def register(ctx):
     input = ctx.input
@@ -16,6 +18,12 @@ def register(ctx):
         if new != old:
             ctx.var_types.set(new)
             ctx.problem_changed()
+
+    @render.ui
+    def types_story():
+        """The example only: what x1 and x2 are and why they are integer, above the two rows."""
+        key = example.types_note(ctx.objectives(), ctx.var_types())
+        return tags.p(ctx.tr(key), class_="os-story") if key else None
 
     @render.ui
     def problem_type():

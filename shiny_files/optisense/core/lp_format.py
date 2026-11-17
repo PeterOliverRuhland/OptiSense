@@ -20,8 +20,12 @@ def to_lp_file(objective, constraints, var_types):
     return "\n".join(lines) + "\n"
 
 
+# German letters are written out, so the example's "Brötchen" becomes "Broetchen" and not "Br_tchen"
+_UMLAUTS = str.maketrans({"ä": "ae", "ö": "oe", "ü": "ue", "Ä": "Ae", "Ö": "Oe", "Ü": "Ue", "ß": "ss"})
+
+
 def _lp_label(name, i):
-    label = re.sub(r"[^A-Za-z0-9_]", "_", name or "")
+    label = re.sub(r"[^A-Za-z0-9_]", "_", (name or "").translate(_UMLAUTS))
     if not label or not label[0].isalpha():
         label = f"R{i}"
     return label

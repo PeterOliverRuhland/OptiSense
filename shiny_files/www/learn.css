@@ -57,6 +57,8 @@
 
 .ol-field-label { display: block; font-size: 0.8125rem; font-weight: 600; margin: 0 0 0.3rem; }
 .ol-field-hint { font-size: 0.8125rem; color: var(--ink-muted); margin: 0.3rem 0 0; line-height: 1.4; }
+/* “More options”: which tasks can be picked with the chosen variable type (the others are grey in the list) */
+.ol-more-note { font-size: 0.8125rem; color: var(--ink-muted); margin: 0.5rem 0 0.625rem; line-height: 1.4; }
 .ol-select { min-height: 2.375rem; font-size: 0.875rem; border-radius: var(--radius-control); }
 
 .ol-in { width: 3.5rem; min-height: 2.5rem; padding: 0.25rem 0.375rem; font-size: 1rem; text-align: center; color: var(--ink); background: #fff;

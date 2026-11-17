@@ -11,25 +11,23 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, "shiny_files"))
 
 from optisense import core  # noqa: E402
-from optisense.config import EXAMPLE_NAMES  # noqa: E402
+from optisense.config import DEFAULT_NAMES  # noqa: E402
 from optisense.i18n import LANGS  # noqa: E402
-from optisense.pages.work import plotting  # noqa: E402
+from optisense.pages.work import example as burger, plotting  # noqa: E402
 
 OUT = os.path.join(ROOT, "shiny_files", "www", "guide")
-OBJECTIVE = {"name": "F", "c1": 10, "c2": 20, "sense": "max"}
-CONTINUOUS = {"x1": "con", "x2": "con"}
 INTEGER = {"x1": "int", "x2": "int"}
 
 
-def constraints(lang):
-    names = EXAMPLE_NAMES[lang]
-    return [{"name": names[0], "a1": 6, "a2": 9, "op": "≤", "b": 720, "color_index": 0},
-            {"name": names[1], "a1": 0, "a2": 1, "op": "≤", "b": 60, "color_index": 1}]
+def example(lang):
+    """The burger example as “Example” in step 1 loads it (pages/work/example.py)."""
+    objective, cons, var_types = burger.problem(lang)
+    return objective, [dict(con, color_index=i) for i, con in enumerate(cons)], var_types
 
 
 def small_ilp(lang):
     """A small ILP where rounding the LP solution (3.5 | 2.25) fails; its optimum (2 | 3) is not a corner."""
-    names = EXAMPLE_NAMES[lang]
+    names = [DEFAULT_NAMES["constraint"][lang].format(n=n) for n in (1, 2)]
     objective = {"name": "F", "c1": 2, "c2": 3, "sense": "max"}
     cons = [{"name": names[0], "a1": 1, "a2": 2, "op": "≤", "b": 8, "color_index": 0},
             {"name": names[1], "a1": 3, "a2": 2, "op": "≤", "b": 15, "color_index": 1}]
@@ -44,9 +42,9 @@ def save(fig, lang, name):
 
 def main():
     for lang in LANGS:
-        cons = constraints(lang)
-        save(plotting.draw(OBJECTIVE, cons, CONTINUOUS, None, lang), lang, "model.png")
-        save(plotting.draw(OBJECTIVE, cons, CONTINUOUS, core.solve(OBJECTIVE, cons, CONTINUOUS), lang), lang, "solved.png")
+        objective, cons, var_types = example(lang)
+        save(plotting.draw(objective, cons, var_types, None, lang), lang, "model.png")
+        save(plotting.draw(objective, cons, var_types, core.solve(objective, cons, var_types), lang), lang, "solved.png")
         objective, cons = small_ilp(lang)
         solution = core.solve(objective, cons, INTEGER)
         save(plotting.draw(objective, cons, INTEGER, solution, lang), lang, "integer.png")

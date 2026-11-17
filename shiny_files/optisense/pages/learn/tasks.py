@@ -1,112 +1,65 @@
-"""The fixed practice tasks: 15 per level and variable type, picked at random when a task is created.
+"""The fixed practice tasks: 15 named tasks, 5 per variable type – integer, continuous, mixed (Robin, 2026-11-17).
 
-Made by tools/make_task_pool.py (see there for what makes a task good) and checked in tests/test_learning.py.
-Every value the learner works out is whole or ends in ,5. A row is (a1, a2, op, b): a1·x1 + a2·x2 op b;
-the rows are the two resources and, on level 2, the total x1 + x2 ≤ b. The topic (juice bar, workshop …) tells
-the story around the numbers; it fits the variable type (engine.TOPICS) and is chosen separately. Ids stay fixed:
-they name a task in the logs."""
+Every task has its topic for good (Workshop, Rice mill, Bakery …), which tells the story around the numbers, and the
+topic fits the variable type: what you count is integer, what you measure (tons, hectares, kg, liters in bulk)
+continuous, a mixed topic has one of each (engine.TOPICS). Every task comes on both levels – 2 constraints, or 3
+with some cost problems (only with topics that make sense as costs). Burger and Shawarma have a story of their own:
+on level 2 with the 3 constraints of the lecture, on level 1 with bread and meat only. The start page lists the 15
+names; the learner picks one or leaves it to chance. Made by tools/make_task_pool.py (see there for what makes a task good) and checked in
+tests/test_learning.py: every value the learner works out is whole or ends in ,5. A row is (a1, a2, op, b):
+a1·x1 + a2·x2 op b; the rows are the two resources and, on level 2, the total x1 + x2 ≤ b. Ids stay fixed: they name
+a task in the logs.
+"""
 
 POOL = {
     ("easy", "LP"): [
-        {"id": "LP-1-01", "sense": "max", "kind": "LP", "c": (6, 4), "rows": [(1, 4, "<=", 32), (6, 3, "<=", 45)]},
-        {"id": "LP-1-02", "sense": "max", "kind": "LP", "c": (5, 12), "rows": [(1, 3, "<=", 28.5), (3, 3, "<=", 43.5)]},
-        {"id": "LP-1-03", "sense": "max", "kind": "LP", "c": (7, 5), "rows": [(3, 3, "<=", 28.5), (3, 1, "<=", 16.5)]},
-        {"id": "LP-1-04", "sense": "max", "kind": "LP", "c": (4, 7), "rows": [(3, 6, "<=", 60), (3, 1, "<=", 22.5)]},
-        {"id": "LP-1-05", "sense": "max", "kind": "LP", "c": (7, 4), "rows": [(3, 3, "<=", 24), (4, 2, "<=", 24)]},
-        {"id": "LP-1-06", "sense": "max", "kind": "LP", "c": (7, 6), "rows": [(2, 4, "<=", 22), (4, 3, "<=", 24)]},
-        {"id": "LP-1-07", "sense": "max", "kind": "LP", "c": (9, 7), "rows": [(2, 4, "<=", 46), (5, 2, "<=", 55)]},
-        {"id": "LP-1-08", "sense": "max", "kind": "LP", "c": (8, 5), "rows": [(3, 6, "<=", 36), (4, 2, "<=", 30)]},
-        {"id": "LP-1-09", "sense": "max", "kind": "LP", "c": (4, 4), "rows": [(2, 6, "<=", 54), (3, 1, "<=", 21)]},
-        {"id": "LP-1-10", "sense": "max", "kind": "LP", "c": (6, 3), "rows": [(3, 6, "<=", 36), (6, 1, "<=", 39)]},
-        {"id": "LP-1-11", "sense": "max", "kind": "LP", "c": (7, 11), "rows": [(2, 4, "<=", 50), (6, 3, "<=", 69)]},
-        {"id": "LP-1-12", "sense": "max", "kind": "LP", "c": (6, 8), "rows": [(1, 5, "<=", 30), (5, 2, "<=", 35)]},
-        {"id": "LP-1-13", "sense": "max", "kind": "LP", "c": (9, 5), "rows": [(3, 3, "<=", 40.5), (6, 3, "<=", 63)]},
-        {"id": "LP-1-14", "sense": "max", "kind": "LP", "c": (10, 12), "rows": [(2, 5, "<=", 30), (4, 2, "<=", 36)]},
-        {"id": "LP-1-15", "sense": "max", "kind": "LP", "c": (3, 3), "rows": [(2, 4, "<=", 40), (6, 2, "<=", 60)]},
+        {"id": "LP-1-01", "topic": "farming", "sense": "max", "kind": "LP", "c": (6, 4), "rows": [(1, 4, "<=", 32), (6, 3, "<=", 45)]},
+        {"id": "LP-1-04", "topic": "feed", "sense": "max", "kind": "LP", "c": (4, 7), "rows": [(3, 6, "<=", 60), (3, 1, "<=", 22.5)]},
+        {"id": "LP-1-07", "topic": "rice", "sense": "max", "kind": "LP", "c": (9, 7), "rows": [(2, 4, "<=", 46), (5, 2, "<=", 55)]},
+        {"id": "LP-1-10", "topic": "soil", "sense": "max", "kind": "LP", "c": (6, 3), "rows": [(3, 6, "<=", 36), (6, 1, "<=", 39)]},
+        {"id": "LP-1-13", "topic": "coffee", "sense": "max", "kind": "LP", "c": (9, 5), "rows": [(3, 3, "<=", 40.5), (6, 3, "<=", 63)]},
     ],
     ("easy", "ILP"): [
-        {"id": "ILP-1-01", "sense": "max", "kind": "ILP", "c": (7, 8), "rows": [(2, 6, "<=", 39), (4, 1, "<=", 34)]},
-        {"id": "ILP-1-02", "sense": "max", "kind": "ILP", "c": (9, 7), "rows": [(3, 3, "<=", 36), (5, 1, "<=", 30)]},
-        {"id": "ILP-1-03", "sense": "max", "kind": "ILP", "c": (3, 9), "rows": [(3, 6, "<=", 45), (6, 3, "<=", 45)]},
-        {"id": "ILP-1-04", "sense": "max", "kind": "ILP", "c": (3, 8), "rows": [(3, 6, "<=", 57), (3, 3, "<=", 40.5)]},
-        {"id": "ILP-1-05", "sense": "max", "kind": "ILP", "c": (7, 11), "rows": [(1, 3, "<=", 24), (3, 3, "<=", 39)]},
-        {"id": "ILP-1-06", "sense": "max", "kind": "ILP", "c": (4, 6), "rows": [(3, 4, "<=", 30), (3, 2, "<=", 21)]},
-        {"id": "ILP-1-07", "sense": "max", "kind": "ILP", "c": (6, 9), "rows": [(1, 4, "<=", 20), (3, 3, "<=", 28.5)]},
-        {"id": "ILP-1-08", "sense": "max", "kind": "ILP", "c": (4, 10), "rows": [(2, 6, "<=", 27), (4, 2, "<=", 24)]},
-        {"id": "ILP-1-09", "sense": "max", "kind": "ILP", "c": (7, 3), "rows": [(1, 3, "<=", 13.5), (6, 1, "<=", 30)]},
-        {"id": "ILP-1-10", "sense": "max", "kind": "ILP", "c": (10, 8), "rows": [(2, 3, "<=", 39), (4, 2, "<=", 46)]},
-        {"id": "ILP-1-11", "sense": "max", "kind": "ILP", "c": (5, 4), "rows": [(3, 3, "<=", 49.5), (6, 3, "<=", 75)]},
-        {"id": "ILP-1-12", "sense": "max", "kind": "ILP", "c": (8, 6), "rows": [(1, 3, "<=", 31.5), (6, 2, "<=", 45)]},
-        {"id": "ILP-1-13", "sense": "max", "kind": "ILP", "c": (8, 11), "rows": [(2, 4, "<=", 36), (3, 3, "<=", 31.5)]},
-        {"id": "ILP-1-14", "sense": "max", "kind": "ILP", "c": (9, 3), "rows": [(1, 3, "<=", 12), (6, 3, "<=", 27)]},
-        {"id": "ILP-1-15", "sense": "max", "kind": "ILP", "c": (10, 12), "rows": [(2, 6, "<=", 51), (4, 3, "<=", 48)]},
+        {"id": "ILP-1-01", "topic": "production", "sense": "max", "kind": "ILP", "c": (7, 8), "rows": [(2, 6, "<=", 39), (4, 1, "<=", 34)]},
+        {"id": "ILP-1-06", "topic": "print", "sense": "max", "kind": "ILP", "c": (4, 6), "rows": [(3, 4, "<=", 30), (3, 2, "<=", 21)]},
+        {"id": "ILP-1-11", "topic": "transport", "sense": "max", "kind": "ILP", "c": (5, 4), "rows": [(3, 3, "<=", 49.5), (6, 3, "<=", 75)]},
+        # Burger and Shawarma with bread and meat only – you cannot eat them without bread (Robin, 2026-11-17)
+        {"id": "ILP-1-BURGER", "story": "burger", "sense": "max", "kind": "ILP", "c": (4.5, 6), "rows": [(1, 1, "<=", 500), (0.1, 0.3, "<=", 105)]},
+        {"id": "ILP-1-SHAWARMA", "story": "shawarma", "sense": "max", "kind": "ILP", "c": (80, 100), "rows": [(1, 1, "<=", 300), (0.1, 0.2, "<=", 40)]},
     ],
     ("easy", "MILP"): [
-        {"id": "MILP-1-01", "sense": "max", "kind": "MILP1", "c": (10, 4), "rows": [(3, 3, "<=", 34.5), (6, 3, "<=", 57)]},
-        {"id": "MILP-1-02", "sense": "max", "kind": "MILP1", "c": (10, 3), "rows": [(3, 3, "<=", 46.5), (4, 1, "<=", 38)]},
-        {"id": "MILP-1-03", "sense": "max", "kind": "MILP1", "c": (5, 4), "rows": [(1, 5, "<=", 22.5), (4, 2, "<=", 36)]},
-        {"id": "MILP-1-04", "sense": "max", "kind": "MILP1", "c": (5, 3), "rows": [(3, 3, "<=", 28.5), (5, 1, "<=", 27.5)]},
-        {"id": "MILP-1-05", "sense": "max", "kind": "MILP1", "c": (9, 7), "rows": [(3, 6, "<=", 72), (3, 3, "<=", 43.5)]},
-        {"id": "MILP-1-06", "sense": "max", "kind": "MILP1", "c": (12, 9), "rows": [(1, 3, "<=", 28.5), (6, 3, "<=", 51)]},
-        {"id": "MILP-1-07", "sense": "max", "kind": "MILP1", "c": (7, 5), "rows": [(2, 3, "<=", 24), (6, 3, "<=", 54)]},
-        {"id": "MILP-1-08", "sense": "max", "kind": "MILP1", "c": (6, 5), "rows": [(2, 6, "<=", 57), (3, 3, "<=", 46.5)]},
-        {"id": "MILP-1-09", "sense": "max", "kind": "MILP2", "c": (6, 7), "rows": [(3, 3, "<=", 25.5), (6, 1, "<=", 36)]},
-        {"id": "MILP-1-10", "sense": "max", "kind": "MILP2", "c": (9, 8), "rows": [(3, 3, "<=", 25.5), (3, 1, "<=", 16.5)]},
-        {"id": "MILP-1-11", "sense": "max", "kind": "MILP2", "c": (4, 9), "rows": [(1, 5, "<=", 22.5), (3, 3, "<=", 25.5)]},
-        {"id": "MILP-1-12", "sense": "max", "kind": "MILP2", "c": (7, 9), "rows": [(3, 3, "<=", 40.5), (6, 2, "<=", 51)]},
-        {"id": "MILP-1-13", "sense": "max", "kind": "MILP2", "c": (4, 7), "rows": [(1, 3, "<=", 18), (3, 3, "<=", 33)]},
-        {"id": "MILP-1-14", "sense": "max", "kind": "MILP2", "c": (5, 12), "rows": [(3, 6, "<=", 39), (5, 3, "<=", 30)]},
-        {"id": "MILP-1-15", "sense": "max", "kind": "MILP2", "c": (3, 12), "rows": [(2, 4, "<=", 30), (6, 3, "<=", 36)]},
+        {"id": "MILP-1-01", "topic": "bakery", "sense": "max", "kind": "MILP1", "c": (10, 4), "rows": [(3, 3, "<=", 34.5), (6, 3, "<=", 57)]},
+        {"id": "MILP-1-04", "topic": "farmshop", "sense": "max", "kind": "MILP1", "c": (5, 3), "rows": [(3, 3, "<=", 28.5), (5, 1, "<=", 27.5)]},
+        {"id": "MILP-1-07", "topic": "fish", "sense": "max", "kind": "MILP1", "c": (7, 5), "rows": [(2, 3, "<=", 24), (6, 3, "<=", 54)]},
+        {"id": "MILP-1-09", "topic": "canteen", "sense": "max", "kind": "MILP2", "c": (6, 7), "rows": [(3, 3, "<=", 25.5), (6, 1, "<=", 36)]},
+        {"id": "MILP-1-12", "topic": "dairy", "sense": "max", "kind": "MILP2", "c": (7, 9), "rows": [(3, 3, "<=", 40.5), (6, 2, "<=", 51)]},
     ],
     ("medium", "LP"): [
-        {"id": "LP-2-01", "sense": "max", "kind": "LP", "c": (4, 6), "rows": [(3, 6, "<=", 69), (6, 2, "<=", 63), (1, 1, "<=", 15)]},
-        {"id": "LP-2-02", "sense": "max", "kind": "LP", "c": (12, 8), "rows": [(1, 6, "<=", 39), (6, 2, "<=", 30), (1, 1, "<=", 7)]},
-        {"id": "LP-2-03", "sense": "max", "kind": "LP", "c": (8, 7), "rows": [(2, 6, "<=", 51), (4, 2, "<=", 32), (1, 1, "<=", 10)]},
-        {"id": "LP-2-04", "sense": "max", "kind": "LP", "c": (7, 11), "rows": [(3, 6, "<=", 57), (5, 2, "<=", 35), (1, 1, "<=", 10)]},
-        {"id": "LP-2-05", "sense": "max", "kind": "LP", "c": (7, 12), "rows": [(1, 3, "<=", 27), (6, 2, "<=", 66), (1, 1, "<=", 12)]},
-        {"id": "LP-2-06", "sense": "max", "kind": "LP", "c": (7, 3), "rows": [(2, 6, "<=", 42), (6, 2, "<=", 30), (1, 1, "<=", 7)]},
-        {"id": "LP-2-07", "sense": "max", "kind": "LP", "c": (5, 4), "rows": [(3, 6, "<=", 60), (3, 1, "<=", 30), (1, 1, "<=", 13)]},
-        {"id": "LP-2-08", "sense": "max", "kind": "LP", "c": (5, 9), "rows": [(2, 4, "<=", 26), (6, 3, "<=", 42), (1, 1, "<=", 8)]},
-        {"id": "LP-2-09", "sense": "max", "kind": "LP", "c": (10, 9), "rows": [(1, 3, "<=", 30), (4, 2, "<=", 30), (1, 1, "<=", 10)]},
-        {"id": "LP-2-10", "sense": "min", "kind": "LP", "c": (5, 6), "rows": [(1, 5, ">=", 30), (6, 3, ">=", 45), (1, 1, "<=", 15)]},
-        {"id": "LP-2-11", "sense": "min", "kind": "LP", "c": (11, 4), "rows": [(2, 3, ">=", 36), (3, 1, ">=", 33), (1, 1, "<=", 19)]},
-        {"id": "LP-2-12", "sense": "min", "kind": "LP", "c": (3, 3), "rows": [(3, 5, ">=", 45), (3, 1, ">=", 27), (1, 1, "<=", 16)]},
-        {"id": "LP-2-13", "sense": "min", "kind": "LP", "c": (8, 4), "rows": [(1, 3, ">=", 25.5), (5, 2, ">=", 30), (1, 1, "<=", 17)]},
-        {"id": "LP-2-14", "sense": "min", "kind": "LP", "c": (11, 6), "rows": [(3, 3, ">=", 40.5), (3, 2, ">=", 33), (1, 1, "<=", 16)]},
-        {"id": "LP-2-15", "sense": "min", "kind": "LP", "c": (4, 11), "rows": [(1, 3, ">=", 13.5), (6, 3, ">=", 36), (1, 1, "<=", 12)]},
+        {"id": "LP-2-01", "topic": "farming", "sense": "max", "kind": "LP", "c": (4, 6), "rows": [(3, 6, "<=", 69), (6, 2, "<=", 63), (1, 1, "<=", 15)]},
+        {"id": "LP-2-04", "topic": "rice", "sense": "max", "kind": "LP", "c": (7, 11), "rows": [(3, 6, "<=", 57), (5, 2, "<=", 35), (1, 1, "<=", 10)]},
+        {"id": "LP-2-07", "topic": "coffee", "sense": "max", "kind": "LP", "c": (5, 4), "rows": [(3, 6, "<=", 60), (3, 1, "<=", 30), (1, 1, "<=", 13)]},
+        {"id": "LP-2-10", "topic": "feed", "sense": "min", "kind": "LP", "c": (5, 6), "rows": [(1, 5, ">=", 30), (6, 3, ">=", 45), (1, 1, "<=", 15)]},
+        {"id": "LP-2-13", "topic": "soil", "sense": "min", "kind": "LP", "c": (8, 4), "rows": [(1, 3, ">=", 25.5), (5, 2, ">=", 30), (1, 1, "<=", 17)]},
     ],
     ("medium", "ILP"): [
-        {"id": "ILP-2-01", "sense": "max", "kind": "ILP", "c": (7, 5), "rows": [(3, 6, "<=", 33), (4, 1, "<=", 16), (1, 1, "<=", 6)]},
-        {"id": "ILP-2-02", "sense": "max", "kind": "ILP", "c": (6, 10), "rows": [(2, 6, "<=", 42), (4, 3, "<=", 48), (1, 1, "<=", 12)]},
-        {"id": "ILP-2-03", "sense": "max", "kind": "ILP", "c": (12, 4), "rows": [(1, 6, "<=", 36), (6, 2, "<=", 63), (1, 1, "<=", 11)]},
-        {"id": "ILP-2-04", "sense": "max", "kind": "ILP", "c": (5, 3), "rows": [(2, 4, "<=", 30), (6, 2, "<=", 45), (1, 1, "<=", 10)]},
-        {"id": "ILP-2-05", "sense": "max", "kind": "ILP", "c": (9, 12), "rows": [(1, 3, "<=", 31.5), (3, 1, "<=", 34.5), (1, 1, "<=", 16)]},
-        {"id": "ILP-2-06", "sense": "max", "kind": "ILP", "c": (8, 11), "rows": [(2, 6, "<=", 69), (6, 3, "<=", 72), (1, 1, "<=", 16)]},
-        {"id": "ILP-2-07", "sense": "max", "kind": "ILP", "c": (8, 6), "rows": [(3, 6, "<=", 75), (3, 1, "<=", 30), (1, 1, "<=", 13)]},
-        {"id": "ILP-2-08", "sense": "max", "kind": "ILP", "c": (4, 9), "rows": [(1, 3, "<=", 30), (6, 3, "<=", 75), (1, 1, "<=", 15)]},
-        {"id": "ILP-2-09", "sense": "max", "kind": "ILP", "c": (11, 3), "rows": [(2, 3, "<=", 27), (6, 2, "<=", 39), (1, 1, "<=", 10)]},
-        {"id": "ILP-2-10", "sense": "min", "kind": "ILP", "c": (10, 9), "rows": [(1, 3, ">=", 25.5), (4, 1, ">=", 36), (1, 1, "<=", 16)]},
-        {"id": "ILP-2-11", "sense": "min", "kind": "ILP", "c": (6, 8), "rows": [(1, 4, ">=", 32), (3, 3, ">=", 37.5), (1, 1, "<=", 15)]},
-        {"id": "ILP-2-12", "sense": "min", "kind": "ILP", "c": (5, 10), "rows": [(2, 6, ">=", 51), (6, 2, ">=", 57), (1, 1, "<=", 15)]},
-        {"id": "ILP-2-13", "sense": "min", "kind": "ILP", "c": (7, 10), "rows": [(3, 6, ">=", 63), (3, 3, ">=", 40.5), (1, 1, "<=", 16)]},
-        {"id": "ILP-2-14", "sense": "min", "kind": "ILP", "c": (3, 4), "rows": [(1, 6, ">=", 30), (3, 1, ">=", 13.5), (1, 1, "<=", 13)]},
-        {"id": "ILP-2-15", "sense": "min", "kind": "ILP", "c": (4, 5), "rows": [(3, 6, ">=", 60), (3, 2, ">=", 30), (1, 1, "<=", 14)]},
+        {"id": "ILP-2-01", "topic": "production", "sense": "max", "kind": "ILP", "c": (7, 5), "rows": [(3, 6, "<=", 33), (4, 1, "<=", 16), (1, 1, "<=", 6)]},
+        {"id": "ILP-2-05", "topic": "print", "sense": "max", "kind": "ILP", "c": (9, 12), "rows": [(1, 3, "<=", 31.5), (3, 1, "<=", 34.5), (1, 1, "<=", 16)]},
+        {"id": "ILP-2-10", "topic": "transport", "sense": "min", "kind": "ILP", "c": (10, 9), "rows": [(1, 3, ">=", 25.5), (4, 1, ">=", 36), (1, 1, "<=", 16)]},
+        # two tasks with a story of their own (texts learn_<story>_*), never told with another topic: the burger problem
+        # of the lecture (Prof. Koot, Aalen University; also the example of “Model & solution”) and the shawarma stand
+        # of the guided task, here graded. Their rows follow the story, the bread first. Their optimal corners are
+        # already whole, so – unlike the other integer tasks – they keep the corner step (also on level 1).
+        {"id": "ILP-2-BURGER", "story": "burger", "sense": "max", "kind": "ILP", "c": (4.5, 6),
+         "rows": [(1, 1, "<=", 500), (0.1, 0.3, "<=", 105), (0.1, 0.15, "<=", 60)]},
+        {"id": "ILP-2-SHAWARMA", "story": "shawarma", "sense": "max", "kind": "ILP", "c": (80, 100),
+         "rows": [(1, 1, "<=", 300), (0.1, 0.2, "<=", 40), (0.1, 0.05, "<=", 27)]},
     ],
     ("medium", "MILP"): [
-        {"id": "MILP-2-01", "sense": "max", "kind": "MILP1", "c": (10, 3), "rows": [(3, 5, "<=", 52.5), (3, 1, "<=", 22.5), (1, 1, "<=", 12)]},
-        {"id": "MILP-2-02", "sense": "max", "kind": "MILP1", "c": (11, 5), "rows": [(2, 4, "<=", 30), (6, 2, "<=", 45), (1, 1, "<=", 10)]},
-        {"id": "MILP-2-03", "sense": "max", "kind": "MILP2", "c": (6, 11), "rows": [(1, 6, "<=", 33), (6, 3, "<=", 33), (1, 1, "<=", 7)]},
-        {"id": "MILP-2-04", "sense": "max", "kind": "MILP2", "c": (10, 11), "rows": [(3, 5, "<=", 60), (6, 3, "<=", 57), (1, 1, "<=", 13)]},
-        {"id": "MILP-2-05", "sense": "max", "kind": "MILP2", "c": (7, 9), "rows": [(2, 6, "<=", 33), (4, 2, "<=", 36), (1, 1, "<=", 9)]},
-        {"id": "MILP-2-06", "sense": "max", "kind": "MILP2", "c": (4, 8), "rows": [(1, 4, "<=", 40), (4, 1, "<=", 40), (1, 1, "<=", 15)]},
-        {"id": "MILP-2-07", "sense": "max", "kind": "MILP2", "c": (5, 3), "rows": [(2, 4, "<=", 42), (3, 1, "<=", 25.5), (1, 1, "<=", 11)]},
-        {"id": "MILP-2-08", "sense": "max", "kind": "MILP2", "c": (10, 12), "rows": [(3, 5, "<=", 45), (6, 2, "<=", 42), (1, 1, "<=", 10)]},
-        {"id": "MILP-2-09", "sense": "max", "kind": "MILP2", "c": (4, 10), "rows": [(2, 4, "<=", 38), (3, 2, "<=", 33), (1, 1, "<=", 11)]},
-        {"id": "MILP-2-10", "sense": "min", "kind": "MILP1", "c": (8, 12), "rows": [(3, 3, ">=", 43.5), (4, 1, ">=", 40), (1, 1, "<=", 22)]},
-        {"id": "MILP-2-11", "sense": "min", "kind": "MILP1", "c": (11, 3), "rows": [(3, 6, ">=", 72), (6, 2, ">=", 54), (1, 1, "<=", 16)]},
-        {"id": "MILP-2-12", "sense": "min", "kind": "MILP1", "c": (11, 12), "rows": [(3, 3, ">=", 31.5), (6, 2, ">=", 45), (1, 1, "<=", 12)]},
-        {"id": "MILP-2-13", "sense": "min", "kind": "MILP1", "c": (6, 8), "rows": [(3, 3, ">=", 40.5), (6, 3, ">=", 63), (1, 1, "<=", 22)]},
-        {"id": "MILP-2-14", "sense": "min", "kind": "MILP1", "c": (9, 3), "rows": [(1, 3, ">=", 19.5), (5, 3, ">=", 37.5), (1, 1, "<=", 11)]},
-        {"id": "MILP-2-15", "sense": "min", "kind": "MILP2", "c": (12, 7), "rows": [(3, 5, ">=", 67.5), (3, 3, ">=", 49.5), (1, 1, "<=", 22)]},
+        {"id": "MILP-2-01", "topic": "bakery", "sense": "max", "kind": "MILP1", "c": (10, 3), "rows": [(3, 5, "<=", 52.5), (3, 1, "<=", 22.5), (1, 1, "<=", 12)]},
+        {"id": "MILP-2-04", "topic": "farmshop", "sense": "max", "kind": "MILP2", "c": (10, 11), "rows": [(3, 5, "<=", 60), (6, 3, "<=", 57), (1, 1, "<=", 13)]},
+        {"id": "MILP-2-07", "topic": "dairy", "sense": "max", "kind": "MILP2", "c": (5, 3), "rows": [(2, 4, "<=", 42), (3, 1, "<=", 25.5), (1, 1, "<=", 11)]},
+        {"id": "MILP-2-10", "topic": "canteen", "sense": "min", "kind": "MILP1", "c": (8, 12), "rows": [(3, 3, ">=", 43.5), (4, 1, ">=", 40), (1, 1, "<=", 22)]},
+        {"id": "MILP-2-15", "topic": "fish", "sense": "min", "kind": "MILP2", "c": (12, 7), "rows": [(3, 5, ">=", 67.5), (3, 3, ">=", 49.5), (1, 1, "<=", 22)]},
     ],
 }
+

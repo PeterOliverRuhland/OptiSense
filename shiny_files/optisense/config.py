@@ -1,13 +1,10 @@
-"""App-wide settings: limits, example problem names and design-system colours (used by several pages)."""
+"""App-wide settings: limits and design-system colours (used by several pages)."""
 
 # Default names for new functions, per language
 DEFAULT_NAMES = {
     "objective": {"en": "F", "de": "F"},
     "constraint": {"en": "C{n}", "de": "NB{n}"},
 }
-
-# Constraint names of the textbook example, per language
-EXAMPLE_NAMES = {"en": ["C1", "C2"], "de": ["NB1", "NB2"]}
 
 MAX_OBJECTIVES = 2
 MAX_CONSTRAINTS = 5

@@ -4,6 +4,8 @@ Used by the browser (www/learn.js) and the server (story.py, solution.py, server
 Some longer texts contain simple HTML (help panels, hints).
 """
 
+from .topics import CONTEXTS as _MORE_CONTEXTS, LABELS as _MORE_LABELS, MIXED as _MORE_MIXED
+
 
 def _t(en, de):
     return {"en": en, "de": de}
@@ -26,7 +28,7 @@ _L = {
     "card_tutorial_meta": _t("about 15 minutes · not graded", "ca. 15 Minuten · ohne Bewertung"),
     "start_tutorial": _t("Start guided task", "Geführte Aufgabe starten"),
     "card_practice_title": _t("Practice task", "Übungsaufgabe"),
-    "card_practice_tag": _t("Picked from 15 tasks", "Zufällig aus 15 Aufgaben"),
+    "card_practice_tag": _t("15 tasks to choose from", "15 Aufgaben zur Auswahl"),
     "card_practice_text": _t("Choose what your task should look like.",
                              "Wähle, wie deine Aufgabe aussehen soll."),
     "opt_difficulty": _t("Difficulty", "Schwierigkeit"),
@@ -50,9 +52,23 @@ _L = {
     "opt_exam_hint": _t("No hints or solutions – scored after you submit",
                         "Ohne Tipps und Lösungen, Bewertung am Ende"),
     "more_options": _t("More options", "Weitere Optionen"),
-    "opt_topic": _t("Topic", "Thema"),
-    "topic_random": _t("Random", "Zufällig"),
-    # the topics that fit the chosen variable type (engine.TOPICS): integer, continuous, mixed
+    # one task of the level and variable type by name (engine.task_list), or chance – so it is plain which tasks there are
+    "opt_task": _t("Task", "Aufgabe"),
+    "task_random": _t("Random", "Zufällig"),
+    "task_burger": _t("Burger", "Burger"),
+    "task_shawarma": _t("Shawarma", "Shawarma"),
+    # above the list: only the tasks of the chosen variable type can be picked (5 each: integer, continuous, mixed)
+    "task_only_ILP": _t("Variables “integer”: you can pick the integer tasks – the others are grey.",
+                        "Variablen „ganzzahlig“: wählbar sind die ganzzahligen Aufgaben – die anderen sind grau."),
+    "task_only_LP": _t("Variables “continuous”: you can pick the continuous tasks – the others are grey.",
+                       "Variablen „stetig“: wählbar sind die stetigen Aufgaben – die anderen sind grau."),
+    "task_only_MILP": _t("Variables “mixed”: you can pick the mixed tasks – the others are grey.",
+                         "Variablen „gemischt“: wählbar sind die gemischten Aufgaben – die anderen sind grau."),
+    "task_burger_hint": _t("The burger problem from the lecture – on Basic with buns and meat only.",
+                           "Das Burger-Problem aus der Vorlesung – bei Einstieg nur mit Brötchen und Fleisch."),
+    "task_shawarma_hint": _t("The task of the guided task, now on your own and with points – on Basic with pita bread and meat only.",
+                             "Die Aufgabe der geführten Aufgabe, jetzt allein und mit Punkten – bei Einstieg nur mit Fladenbrot und Fleisch."),
+    # the topics (engine.TOPICS: integer, continuous, mixed) – the names of the practice tasks, “Farming 2” if more than one
     "topic_gastro": _t("Kitchen", "Küche"),
     "topic_production": _t("Workshop", "Werkstatt"),
     "topic_events": _t("Parties", "Feiern"),
@@ -385,68 +401,94 @@ _L = {
         "<p><b>Slack</b> means: how much of a limit is left over at the optimum?</p>"
         "<ol><li>Put your optimal point into the left-hand side of the constraint – that is the usage.</li><li>Compare it with the right-hand side b: slack = b − usage. For ≥ calculate usage − b (how far it lies above the minimum).</li></ol>"
         "<p><b>Binding</b> means: slack 0, the limit is used up completely. In the graph, the line of a binding constraint runs right through the optimal point. With “=” the slack is always 0.</p>"
-        "<p><b>Burgers (guided task)</b> at the optimum (300 | 200): meat 0.1·300 + 0.3·200 = 90 kg of 105 kg → 15 kg left over, not binding. Buns 300 + 200 = 500 of 500 → nothing left, binding.</p>",
+        "<p><b>Shawarma (guided task)</b> at the optimum (200 | 100): vegetables 0.1·200 + 0.05·100 = 25 kg of 27 kg → 2 kg left over, not binding. Pita bread 200 + 100 = 300 of 300 → nothing left, binding.</p>",
         "<p><b>Schlupf</b> heißt: Wie viel von einer Grenze bleibt im Optimum übrig?</p>"
         "<ol><li>Setze deinen optimalen Punkt links in die Nebenbedingung ein – das ist der Verbrauch.</li><li>Vergleiche mit der rechten Seite b: Schlupf = b − Verbrauch. Bei ≥ rechnest du Verbrauch − b (so viel liegt über dem Minimum).</li></ol>"
         "<p><b>Bindend</b> heißt: Schlupf 0, die Grenze ist ganz ausgeschöpft. In der Grafik geht die Gerade einer bindenden Nebenbedingung genau durch den optimalen Punkt. Bei „=“ ist der Schlupf immer 0.</p>"
-        "<p><b>Burger (geführte Aufgabe)</b> im Optimum (300 | 200): Fleisch 0,1·300 + 0,3·200 = 90 kg von 105 kg → 15 kg übrig, nicht bindend. Brötchen 300 + 200 = 500 von 500 → nichts übrig, bindend.</p>"),
+        "<p><b>Shawarma (geführte Aufgabe)</b> im Optimum (200 | 100): Gemüse 0,1·200 + 0,05·100 = 25 kg von 27 kg → 2 kg übrig, nicht bindend. Fladenbrot 200 + 100 = 300 von 300 → nichts übrig, bindend.</p>"),
     "help_interpret": _t(
         "<p>Distinguish the optimal quantities (x1 | x2) from the optimal objective value F: the quantities say what to do, F says what it brings (or costs).</p>"
         "<p>For integer problems rounding is not enough – rounded points may violate constraints or be worse than the true optimum.</p>",
         "<p>Unterscheide die optimalen Mengen (x1 | x2) vom optimalen Zielwert F: Die Mengen sagen, was zu tun ist; F sagt, was es bringt (oder kostet).</p>"
         "<p>Bei ganzzahligen Problemen reicht Runden nicht – gerundete Punkte können Bedingungen verletzen oder schlechter sein als das echte Optimum.</p>"),
-    # ------------------------------------------------------------------ guided task (burgers)
+    # ------------------------------------------------------------------ guided task (shawarma, since 2026-11-17)
+    # Robin: a task the students do not know yet, as hard as the burgers of the lecture (now a practice task, burger_*):
+    # three ≤ constraints with 100 g / 50 g in kg, integer, the optimal corner already whole; pita bread and meat bind,
+    # vegetables are left over. Prices in pesos in both languages – the stand is in the Philippines. The story
+    # (shawarma_*) is also the practice task “Shawarma”; tut_coach_* and tut_calc_* explain the guided steps.
     "coach_title": _t("In this task", "In dieser Aufgabe"),
     "coach_calc": _t("Show the calculation", "Rechnung ansehen"),
-    "tut_title": _t("Burger diner: standard and luxury burgers", "Burger-Diner: Standard- und Luxusburger"),
-    "tut_intro": _t("Michael runs a small burger diner in the city center of Aalen that is regularly sold out in the evening. He could sell more – but his suppliers only deliver limited quantities per day. He sets up his daily production plan so that the revenue is as large as possible.",
-                    "Michael betreibt in der Aalener Innenstadt ein kleines Burger-Diner, das abends regelmäßig ausverkauft ist. Mehr verkaufen könnte er schon – aber seine Lieferanten liefern nur begrenzte Mengen pro Tag. Er plant sein tägliches Produktionsprogramm so, dass der Umsatz möglichst groß wird."),
-    "tut_var1": _t("number of standard burgers per day", "Anzahl Standardburger pro Tag"),
-    "tut_var2": _t("number of luxury burgers per day", "Anzahl Luxusburger pro Tag"),
-    "tut_obj": _t("Prices: €4.50 per standard burger, €6.00 per luxury burger.", "Preise: 4,50 € je Standardburger, 6,00 € je Luxusburger."),
-    "tut_fname": _t("Revenue",
-                    "Umsatz"),
-    "tut_row1": _t("Buns: the supplier delivers at most 500 buns per day – every burger needs one.",
-                   "Brötchen: Der Lieferant liefert höchstens 500 Brötchen pro Tag – jeder Burger braucht eines."),
-    "tut_row2": _t("Meat: 100 g per standard burger, 300 g per luxury burger – at most 105 kg per day.",
-                   "Fleisch: 100 g je Standardburger, 300 g je Luxusburger – höchstens 105 kg pro Tag."),
-    "tut_row3": _t("Vegetables: 100 g per standard burger, 150 g per luxury burger – at most 60 kg per day.",
-                   "Gemüse: 100 g je Standardburger, 150 g je Luxusburger – höchstens 60 kg pro Tag."),
-    "tut_domain": _t("Burgers are only sold whole: x1 and x2 are whole numbers (integer).", "Burger gibt es nur am Stück: x1 und x2 sind ganze Zahlen (ganzzahlig)."),
-    "tut_q": _t("Which production plan gives the maximum revenue?", "Welches Produktionsprogramm führt zum maximalen Umsatz?"),
-    "tut_rn1": _t("Buns", "Brötchen"),
-    "tut_rn2": _t("Meat", "Fleisch"),
-    "tut_rn3": _t("Vegetables", "Gemüse"),
-    "tut_coach_objective": _t("Start with the sentence about the prices: €4.50 and €6.00 per burger are c1 and c2, and “revenue as large as possible” means max. Burgers are only sold whole, so x1 and x2 are integer.",
-                              "Beginne mit dem Satz zu den Preisen: 4,50 € und 6,00 € je Burger sind c1 und c2, „Umsatz möglichst groß“ heißt max. Burger gibt es nur am Stück, also sind x1 und x2 ganzzahlig."),
-    "tut_calc_objective": _t("F = 4.5·x1 + 6·x2 → max\nx1, x2 ≥ 0 and integer", "F = 4,5·x1 + 6·x2 → max\nx1, x2 ≥ 0 und ganzzahlig"),
-    "tut_coach_constraints": _t("Every limit becomes a row: on the left the usage per burger, on the right the daily maximum. Watch the units: 100 g = 0.1 kg. “At most” means ≤ – you choose the sign to the right of x2.",
-                                "Jede Grenze wird eine Zeile: links der Verbrauch je Burger, rechts die Tagesmenge. Achte auf die Einheiten: 100 g = 0,1 kg. „Höchstens“ heißt ≤ – das Zeichen wählst du rechts neben x2."),
-    "tut_calc_constraints": _t("C1 Buns:       1·x1 + 1·x2 ≤ 500\nC2 Meat:       0.1·x1 + 0.3·x2 ≤ 105\nC3 Vegetables: 0.1·x1 + 0.15·x2 ≤ 60",
-                               "NB1 Brötchen: 1·x1 + 1·x2 ≤ 500\nNB2 Fleisch:  0,1·x1 + 0,3·x2 ≤ 105\nNB3 Gemüse:   0,1·x1 + 0,15·x2 ≤ 60"),
+    "shawarma_title": _t("Shawarma stand: regular and special shawarma", "Shawarma-Stand: normaler und Spezial-Shawarma"),
+    "shawarma_intro": _t("Ana runs a shawarma stand near a university in the Philippines. In the evening her shawarmas are regularly sold out. She could sell more – but her suppliers only deliver limited amounts per day. She plans how many shawarmas of each kind to make per day so that her revenue is as large as possible.",
+                    "Ana betreibt einen Shawarma-Stand an einer Universität auf den Philippinen. Abends sind ihre Shawarmas regelmäßig ausverkauft. Mehr verkaufen könnte sie schon – aber ihre Lieferanten liefern nur begrenzte Mengen pro Tag. Sie plant, wie viele Shawarmas jeder Sorte sie pro Tag macht, damit ihr Umsatz möglichst groß wird."),
+    "shawarma_var1": _t("number of regular shawarmas per day", "Anzahl normaler Shawarmas pro Tag"),
+    "shawarma_var2": _t("number of special shawarmas per day", "Anzahl Spezial-Shawarmas pro Tag"),
+    "shawarma_obj": _t("Prices: ₱80 per regular shawarma, ₱100 per special shawarma.", "Preise: 80\u00a0₱ je normalem Shawarma, 100\u00a0₱ je Spezial-Shawarma."),
+    "shawarma_fname": _t("Revenue", "Umsatz"),
+    "shawarma_row1": _t("Pita bread: the bakery delivers at most 300 pieces per day – every shawarma needs one.",
+                   "Fladenbrot: Die Bäckerei liefert höchstens 300 Stück pro Tag – jeder Shawarma braucht eines."),
+    "shawarma_row2": _t("Meat: 100 g per regular shawarma, 200 g per special shawarma – at most 40 kg per day.",
+                   "Fleisch: 100 g je normalem Shawarma, 200 g je Spezial-Shawarma – höchstens 40 kg pro Tag."),
+    "shawarma_row3": _t("Vegetables: 100 g per regular shawarma, 50 g per special shawarma (it has more meat instead) – at most 27 kg per day.",
+                   "Gemüse: 100 g je normalem Shawarma, 50 g je Spezial-Shawarma (der dafür mehr Fleisch hat) – höchstens 27 kg pro Tag."),
+    "shawarma_domain": _t("Shawarmas are only sold whole: x1 and x2 are whole numbers (integer).", "Shawarmas gibt es nur am Stück: x1 und x2 sind ganze Zahlen (ganzzahlig)."),
+    "shawarma_q": _t("How many shawarmas of each kind give the maximum revenue?", "Wie viele Shawarmas jeder Sorte führen zum maximalen Umsatz?"),
+    "shawarma_rn1": _t("Pita bread", "Fladenbrot"),
+    "shawarma_rn2": _t("Meat", "Fleisch"),
+    "shawarma_rn3": _t("Vegetables", "Gemüse"),
+    "tut_coach_objective": _t("Start with the sentence about the prices: ₱80 and ₱100 per shawarma are c1 and c2, and “revenue as large as possible” means max. Shawarmas are only sold whole, so x1 and x2 are integer.",
+                              "Beginne mit dem Satz zu den Preisen: 80\u00a0₱ und 100\u00a0₱ je Shawarma sind c1 und c2, „Umsatz möglichst groß“ heißt max. Shawarmas gibt es nur am Stück, also sind x1 und x2 ganzzahlig."),
+    "tut_calc_objective": _t("F = 80·x1 + 100·x2 → max\nx1, x2 ≥ 0 and integer", "F = 80·x1 + 100·x2 → max\nx1, x2 ≥ 0 und ganzzahlig"),
+    "tut_coach_constraints": _t("Every limit becomes a row: on the left the usage per shawarma, on the right the daily maximum. Watch the units: 100 g = 0.1 kg, 50 g = 0.05 kg. “At most” means ≤ – you choose the sign to the right of x2.",
+                                "Jede Grenze wird eine Zeile: links der Verbrauch je Shawarma, rechts die Tagesmenge. Achte auf die Einheiten: 100 g = 0,1 kg, 50 g = 0,05 kg. „Höchstens“ heißt ≤ – das Zeichen wählst du rechts neben x2."),
+    "tut_calc_constraints": _t("C1 Pita bread: 1·x1 + 1·x2 ≤ 300\nC2 Meat:       0.1·x1 + 0.2·x2 ≤ 40\nC3 Vegetables: 0.1·x1 + 0.05·x2 ≤ 27",
+                               "NB1 Fladenbrot: 1·x1 + 1·x2 ≤ 300\nNB2 Fleisch:    0,1·x1 + 0,2·x2 ≤ 40\nNB3 Gemüse:     0,1·x1 + 0,05·x2 ≤ 27"),
     "tut_coach_lines": _t("For an axis intersection, set the other variable to 0: x2 = 0 gives the intersection with the x1-axis, x1 = 0 the one with the x2-axis. If a variable is missing, the line is parallel to that axis – then enter –.",
                           "Für einen Achsenschnittpunkt setzt du die andere Variable auf 0: x2 = 0 liefert den Schnittpunkt mit der x1-Achse, x1 = 0 den mit der x2-Achse. Fehlt eine Variable, ist die Gerade parallel zu dieser Achse – dann trägst du – ein."),
-    "tut_calc_lines": _t("               x1-axis            x2-axis\nC1 Buns        500 ÷ 1 = 500      500 ÷ 1 = 500\nC2 Meat        105 ÷ 0.1 = 1,050  105 ÷ 0.3 = 350\nC3 Vegetables  60 ÷ 0.1 = 600     60 ÷ 0.15 = 400",
-                         "               x1-Achse           x2-Achse\nNB1 Brötchen   500 ÷ 1 = 500      500 ÷ 1 = 500\nNB2 Fleisch    105 ÷ 0,1 = 1.050  105 ÷ 0,3 = 350\nNB3 Gemüse     60 ÷ 0,1 = 600     60 ÷ 0,15 = 400"),
-    "tut_coach_region": _t("Test with (0 | 0): 0 ≤ 500, 0 ≤ 105 and 0 ≤ 60 all hold – so for all three the side with the origin is feasible. To check a point, put it into every constraint; one violated constraint is enough for “infeasible”.",
-                           "Teste mit (0 | 0): 0 ≤ 500, 0 ≤ 105 und 0 ≤ 60 stimmen – bei allen drei ist also die Seite mit dem Ursprung zulässig. Einen Punkt prüfst du, indem du ihn in jede Nebenbedingung einsetzt; eine verletzte genügt für „unzulässig“."),
-    "tut_calc_region": _t("P2 (400 | 200)\nC1: 400 + 200 = 600 ≤ 500  ✗ → infeasible\n\nP4 (100 | 350)\nC1: 100 + 350 = 450 ≤ 500  ✓\nC2: 0.1·100 + 0.3·350 = 115 ≤ 105  ✗ → infeasible",
-                          "P2 (400 | 200)\nNB1: 400 + 200 = 600 ≤ 500  ✗ → unzulässig\n\nP4 (100 | 350)\nNB1: 100 + 350 = 450 ≤ 500  ✓\nNB2: 0,1·100 + 0,3·350 = 115 ≤ 105  ✗ → unzulässig"),
-    "tut_coach_corner": _t("Move the green line in parallel up and to the right until it just touches the region. That happens at the corner of C1 (buns) and C3 (vegetables). The corner of C2 and C3 is close by – when in doubt, compare F at both corners:",
-                           "Verschiebe die grüne Gerade parallel nach rechts oben, bis sie den Bereich gerade noch berührt. Das passiert in der Ecke von NB1 (Brötchen) und NB3 (Gemüse). Die Ecke von NB2 und NB3 liegt knapp daneben – im Zweifel vergleichst du F in beiden Ecken:"),
-    "tut_calc_corner": _t("Read off the graph:\nCorner C1/C3 ≈ (300 | 200): F ≈ 4.5·300 + 6·200 = 2,550  ← better\nCorner C2/C3 ≈ (150 | 300): F ≈ 4.5·150 + 6·300 = 2,475\n\nThe corner has whole numbers – so it is also the best plan with whole burgers.",
-                          "Aus der Grafik abgelesen:\nEcke NB1/NB3 ≈ (300 | 200): F ≈ 4,5·300 + 6·200 = 2.550  ← besser\nEcke NB2/NB3 ≈ (150 | 300): F ≈ 4,5·150 + 6·300 = 2.475\n\nDie Ecke hat ganze Zahlen – sie ist also auch der beste Plan mit ganzen Burgern."),
-    "tut_coach_optimum": _t("Now calculate the corner exactly: multiply the vegetables equation by 10 and subtract the buns equation. Then put the point into F.",
-                            "Jetzt rechnest du die Ecke genau aus: Multipliziere die Gemüse-Gleichung mit 10 und ziehe die Brötchen-Gleichung ab. Den Punkt setzt du dann in F ein."),
-    "tut_calc_optimum": _t("C1: x1 + x2 = 500\nC3: 0.1·x1 + 0.15·x2 = 60   | ·10\n →  x1 + 1.5·x2 = 600\nC3·10 − C1: 0.5·x2 = 100 → x2 = 200\nx1 = 500 − 200 = 300\nF = 4.5·300 + 6·200 = 2,550",
-                           "NB1: x1 + x2 = 500\nNB3: 0,1·x1 + 0,15·x2 = 60   | ·10\n  →  x1 + 1,5·x2 = 600\nNB3·10 − NB1: 0,5·x2 = 100 → x2 = 200\nx1 = 500 − 200 = 300\nF = 4,5·300 + 6·200 = 2.550"),
-    "tut_coach_slack": _t("Put (300 | 200) into every constraint. 15 kg of meat are left over – not binding. Buns and vegetables are used up completely – binding. These are exactly the two lines of your corner.",
-                          "Setze (300 | 200) in jede Nebenbedingung ein. Beim Fleisch bleiben 15 kg übrig – nicht bindend. Brötchen und Gemüse sind ganz aufgebraucht – bindend. Das sind genau die zwei Geraden deiner Ecke."),
-    "tut_calc_slack": _t("C1 Buns:       300 + 200 = 500 of 500 → slack 0, binding\nC2 Meat:       0.1·300 + 0.3·200 = 90 of 105 → slack 15, not binding\nC3 Vegetables: 0.1·300 + 0.15·200 = 60 of 60 → slack 0, binding",
-                         "NB1 Brötchen: 300 + 200 = 500 von 500 → Schlupf 0, bindend\nNB2 Fleisch:  0,1·300 + 0,3·200 = 90 von 105 → Schlupf 15, nicht bindend\nNB3 Gemüse:   0,1·300 + 0,15·200 = 60 von 60 → Schlupf 0, bindend"),
-    "tut_coach_interpret": _t("In words: the maximum revenue is €2,550. This requires 300 standard burgers and 200 luxury burgers to be produced and sold. 15 kg of meat are left over; buns and vegetables are used up completely. Here the optimal corner already has whole numbers. If it had not, rounding would not be enough – you would compare the whole-number points nearby.",
-                              "In Worten: Der maximale Umsatz beträgt 2.550 €. Dafür werden 300 Standard- und 200 Luxusburger hergestellt und verkauft. Es bleiben 15 kg Fleisch übrig, Brötchen und Gemüse werden vollständig verbraucht. Hier hat die optimale Ecke schon ganze Zahlen. Wäre das nicht so, reicht Runden nicht – dann vergleichst du die ganzzahligen Punkte in der Nähe."),
+    "tut_calc_lines": _t("               x1-axis            x2-axis\nC1 Pita bread  300 ÷ 1 = 300      300 ÷ 1 = 300\nC2 Meat        40 ÷ 0.1 = 400     40 ÷ 0.2 = 200\nC3 Vegetables  27 ÷ 0.1 = 270     27 ÷ 0.05 = 540",
+                         "                x1-Achse           x2-Achse\nNB1 Fladenbrot  300 ÷ 1 = 300      300 ÷ 1 = 300\nNB2 Fleisch     40 ÷ 0,1 = 400     40 ÷ 0,2 = 200\nNB3 Gemüse      27 ÷ 0,1 = 270     27 ÷ 0,05 = 540"),
+    "tut_coach_region": _t("Test with (0 | 0): 0 ≤ 300, 0 ≤ 40 and 0 ≤ 27 all hold – so for all three the side with the origin is feasible. To check a point, put it into every constraint; one violated constraint is enough for “infeasible”.",
+                           "Teste mit (0 | 0): 0 ≤ 300, 0 ≤ 40 und 0 ≤ 27 stimmen – bei allen drei ist also die Seite mit dem Ursprung zulässig. Einen Punkt prüfst du, indem du ihn in jede Nebenbedingung einsetzt; eine verletzte genügt für „unzulässig“."),
+    "tut_calc_region": _t("P2 (250 | 100)\nC1: 250 + 100 = 350 ≤ 300  ✗ → infeasible\n\nP4 (50 | 200)\nC1: 50 + 200 = 250 ≤ 300  ✓\nC2: 0.1·50 + 0.2·200 = 45 ≤ 40  ✗ → infeasible",
+                          "P2 (250 | 100)\nNB1: 250 + 100 = 350 ≤ 300  ✗ → unzulässig\n\nP4 (50 | 200)\nNB1: 50 + 200 = 250 ≤ 300  ✓\nNB2: 0,1·50 + 0,2·200 = 45 ≤ 40  ✗ → unzulässig"),
+    "tut_coach_corner": _t("Move the green line in parallel up and to the right until it just touches the region. That happens at the corner of C1 (pita bread) and C2 (meat). The corner of C1 and C3 is close by – when in doubt, compare F at both corners:",
+                           "Verschiebe die grüne Gerade parallel nach rechts oben, bis sie den Bereich gerade noch berührt. Das passiert in der Ecke von NB1 (Fladenbrot) und NB2 (Fleisch). Die Ecke von NB1 und NB3 liegt knapp daneben – im Zweifel vergleichst du F in beiden Ecken:"),
+    "tut_calc_corner": _t("Read off the graph:\nCorner C1/C2 ≈ (200 | 100): F ≈ 80·200 + 100·100 = 26,000  ← better\nCorner C1/C3 ≈ (240 | 60): F ≈ 80·240 + 100·60 = 25,200\n\nThe corner has whole numbers – so it is also the best plan with whole shawarmas.",
+                          "Aus der Grafik abgelesen:\nEcke NB1/NB2 ≈ (200 | 100): F ≈ 80·200 + 100·100 = 26.000  ← besser\nEcke NB1/NB3 ≈ (240 | 60): F ≈ 80·240 + 100·60 = 25.200\n\nDie Ecke hat ganze Zahlen – sie ist also auch der beste Plan mit ganzen Shawarmas."),
+    "tut_coach_optimum": _t("Now calculate the corner exactly: multiply the meat equation by 10 and subtract the pita bread equation. Then put the point into F.",
+                            "Jetzt rechnest du die Ecke genau aus: Multipliziere die Fleisch-Gleichung mit 10 und ziehe die Fladenbrot-Gleichung ab. Den Punkt setzt du dann in F ein."),
+    "tut_calc_optimum": _t("C1: x1 + x2 = 300\nC2: 0.1·x1 + 0.2·x2 = 40   | ·10\n →  x1 + 2·x2 = 400\nC2·10 − C1: x2 = 100\nx1 = 300 − 100 = 200\nF = 80·200 + 100·100 = 26,000",
+                           "NB1: x1 + x2 = 300\nNB2: 0,1·x1 + 0,2·x2 = 40   | ·10\n  →  x1 + 2·x2 = 400\nNB2·10 − NB1: x2 = 100\nx1 = 300 − 100 = 200\nF = 80·200 + 100·100 = 26.000"),
+    "tut_coach_slack": _t("Put (200 | 100) into every constraint. 2 kg of vegetables are left over – not binding. Pita bread and meat are used up completely – binding. These are exactly the two lines of your corner.",
+                          "Setze (200 | 100) in jede Nebenbedingung ein. Beim Gemüse bleiben 2 kg übrig – nicht bindend. Fladenbrot und Fleisch sind ganz aufgebraucht – bindend. Das sind genau die zwei Geraden deiner Ecke."),
+    "tut_calc_slack": _t("C1 Pita bread: 200 + 100 = 300 of 300 → slack 0, binding\nC2 Meat:       0.1·200 + 0.2·100 = 40 of 40 → slack 0, binding\nC3 Vegetables: 0.1·200 + 0.05·100 = 25 of 27 → slack 2, not binding",
+                         "NB1 Fladenbrot: 200 + 100 = 300 von 300 → Schlupf 0, bindend\nNB2 Fleisch:    0,1·200 + 0,2·100 = 40 von 40 → Schlupf 0, bindend\nNB3 Gemüse:     0,1·200 + 0,05·100 = 25 von 27 → Schlupf 2, nicht bindend"),
+    "tut_coach_interpret": _t("In words: the maximum revenue is ₱26,000. This requires 200 regular and 100 special shawarmas to be made and sold. 2 kg of vegetables are left over; pita bread and meat are used up completely. Here the optimal corner already has whole numbers. If it had not, rounding would not be enough – you would compare the whole-number points nearby.",
+                              "In Worten: Der maximale Umsatz beträgt 26.000\u00a0₱. Dafür werden 200 normale und 100 Spezial-Shawarmas gemacht und verkauft. Es bleiben 2 kg Gemüse übrig, Fladenbrot und Fleisch werden vollständig verbraucht. Hier hat die optimale Ecke schon ganze Zahlen. Wäre das nicht so, reicht Runden nicht – dann vergleichst du die ganzzahligen Punkte in der Nähe."),
     "tut_calc_interpret": _t("", ""),
+    # ------------------------------------------------------------------ practice task “Burger” (tasks.py, ILP-2-BURGER)
+    # Prof. Koot's burger diner in Aalen, as in the lecture and the example of “Model & solution” – the guided task
+    # until 2026-11-17. Prices in dollars in both languages (Robin, 2026-11-17): students in the Philippines know the
+    # dollar, not the euro of the slides.
+    "burger_title": _t("Burger diner: standard and luxury burgers", "Burger-Diner: Standard- und Luxusburger"),
+    "burger_intro": _t("Michael runs a small burger diner in the city center of Aalen that is regularly sold out in the evening. He could sell more – but his suppliers only deliver limited quantities per day. He sets up his daily production plan so that the revenue is as large as possible.",
+                    "Michael betreibt in der Aalener Innenstadt ein kleines Burger-Diner, das abends regelmäßig ausverkauft ist. Mehr verkaufen könnte er schon – aber seine Lieferanten liefern nur begrenzte Mengen pro Tag. Er plant sein tägliches Produktionsprogramm so, dass der Umsatz möglichst groß wird."),
+    "burger_var1": _t("number of standard burgers per day", "Anzahl Standardburger pro Tag"),
+    "burger_var2": _t("number of luxury burgers per day", "Anzahl Luxusburger pro Tag"),
+    "burger_obj": _t("Prices: $4.50 per standard burger, $6.00 per luxury burger.", "Preise: 4,50 $ je Standardburger, 6,00 $ je Luxusburger."),
+    "burger_fname": _t("Revenue",
+                    "Umsatz"),
+    "burger_row1": _t("Buns: the supplier delivers at most 500 buns per day – every burger needs one.",
+                   "Brötchen: Der Lieferant liefert höchstens 500 Brötchen pro Tag – jeder Burger braucht eines."),
+    "burger_row2": _t("Meat: 100 g per standard burger, 300 g per luxury burger – at most 105 kg per day.",
+                   "Fleisch: 100 g je Standardburger, 300 g je Luxusburger – höchstens 105 kg pro Tag."),
+    "burger_row3": _t("Vegetables: 100 g per standard burger, 150 g per luxury burger – at most 60 kg per day.",
+                   "Gemüse: 100 g je Standardburger, 150 g je Luxusburger – höchstens 60 kg pro Tag."),
+    "burger_domain": _t("Burgers are only sold whole: x1 and x2 are whole numbers (integer).", "Burger gibt es nur am Stück: x1 und x2 sind ganze Zahlen (ganzzahlig)."),
+    "burger_q": _t("Which production plan gives the maximum revenue?", "Welches Produktionsprogramm führt zum maximalen Umsatz?"),
+    "burger_rn1": _t("Buns", "Brötchen"),
+    "burger_rn2": _t("Meat", "Fleisch"),
+    "burger_rn3": _t("Vegetables", "Gemüse"),
     # ------------------------------------------------------------------ handing in and evaluation
     "submit_title": _t("Submit the task?", "Aufgabe abgeben?"),
     "submit_text": _t("Afterwards you see your evaluation and can no longer change anything.",
@@ -836,6 +878,11 @@ def _mixed(spec):
         out[order] = ctx
     return out
 
+
+# the topics added on 2026-11-17 (topics.py), so that every list of practice tasks has 15 different names
+_CONTEXTS.update(_MORE_CONTEXTS)
+_MIXED.update(_MORE_MIXED)
+_L.update({f"topic_{k}": v for k, v in _MORE_LABELS.items()})
 
 LEARN = {"tab_learn": _t("Learn & practice", "Lernen & Üben")}
 LEARN.update({f"learn_{k}": v for k, v in _L.items()})

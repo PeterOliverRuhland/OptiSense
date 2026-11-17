@@ -19,6 +19,7 @@ import numpy as np
 from scipy.optimize import Bounds, LinearConstraint, milp
 
 from .tasks import POOL
+from .topics import KINDS as MORE_TOPICS
 
 EPS = 1e-7
 KINDS = ("LP", "ILP", "MILP1", "MILP2")
@@ -34,12 +35,14 @@ TOPICS = {
     "farming": ("con", True), "juice": ("con", False), "coffee": ("con", False), "feed": ("con", True),
     "bakery": ("mix", False), "canteen": ("mix", True), "radio": ("mix", True),
 }
+TOPICS.update(MORE_TOPICS)   # 15 per variable type (topics.py, 2026-11-17): one for every task of a list
 MIN_TOPICS = tuple(t for t, (_, costs) in TOPICS.items() if costs)
 TOPIC_TYPE = {"LP": "con", "ILP": "int", "MILP": "mix", "MILP1": "mix", "MILP2": "mix"}
 WEIGHTS = {"objective": 10, "constraints": 15, "lines": 15, "region": 10, "corner": 15, "optimum": 25,
            "slack": 15, "interpret": 5}
 # generated tasks: continuous, integer or mixed (MILP: x1 or x2 integer, chosen at random)
-OPTIONS = {"mode": ("practice", "exam"), "form": ("text", "math"), "difficulty": ("easy", "medium"), "kind": ("LP", "ILP", "MILP")}
+# the first value is the default: integer first (Robin, 2026-11-17)
+OPTIONS = {"mode": ("practice", "exam"), "form": ("text", "math"), "difficulty": ("easy", "medium"), "kind": ("ILP", "LP", "MILP")}
 MAX_ROWS = 8
 
 
@@ -268,22 +271,39 @@ def topics_for(kind):
     return [t for t, (vt, _) in TOPICS.items() if vt == TOPIC_TYPE[kind]]
 
 
+def task_name(task):
+    """The name of a practice task: its own story (burger, shawarma) or its topic – texts task_* / topic_*."""
+    return task.get("story") or task["topic"]
+
+
+def task_list():
+    """The 15 practice tasks for the start page, integer first: [{name, kind, levels: {difficulty: id}}]. A name has a
+    task on both levels – Burger and Shawarma only on level 2. The page shows all 15 and lets the learner pick those
+    of the chosen variable type (Robin, 2026-11-17)."""
+    out = {}
+    for kind in OPTIONS["kind"]:
+        for difficulty in OPTIONS["difficulty"]:
+            for t in POOL[(difficulty, kind)]:
+                out.setdefault(task_name(t), {"name": task_name(t), "kind": kind, "levels": {}})["levels"][difficulty] = t["id"]
+    return list(out.values())
+
+
 def generate(options, avoid=()):
-    """One of the fixed tasks (tasks.py) for the chosen level and variable type, picked at random – if possible none
-    of `avoid` (the last tasks of this session) – told with a topic that fits the variable type. Minimisation only
-    with topics that make sense as costs."""
+    """The chosen task (by name) of the level and variable type, or one picked at random – if possible none of `avoid`
+    (the last tasks of this session). Every task is told with its own topic (tasks.py) or its own story."""
     rng = random.Random(options.get("seed"))
-    fitting = topics_for(options["kind"])
-    topic = options.get("topic") if options.get("topic") in fitting else None
-    tasks = [t for t in POOL[(options["difficulty"], options["kind"])] if t["sense"] == "max" or topic in (None, *MIN_TOPICS)]
-    if not tasks:
-        raise LearnError("err_generate")
-    task = rng.choice([t for t in tasks if t["id"] not in avoid] or tasks)
-    topic = topic or rng.choice([t for t in fitting if task["sense"] == "max" or t in MIN_TOPICS])
+    pool = POOL[(options["difficulty"], options["kind"])]
+    task = next((t for t in pool if task_name(t) == options.get("task")), None)
+    if task is None:
+        task = rng.choice([t for t in pool if t["id"] not in avoid] or pool)
+    topic = task.get("topic")
     roles = ("r1", "r2", "total")
     m = validate({"c": list(task["c"]), "sense": task["sense"], "kind": task["kind"],
                   "rows": [{"a": [a1, a2], "op": op, "b": b, "role": roles[i]} for i, (a1, a2, op, b) in enumerate(task["rows"])]})
-    return m, {"source": "generated", "topic": topic, "task": task["id"]}, solve(m)
+    info = {"source": "generated", "topic": topic, "task": task["id"]}
+    if task.get("story"):
+        info["story"] = task["story"]
+    return m, info, solve(m)
 
 
 # ---------------------------------------------------------------------------------------------- exercise
@@ -291,7 +311,9 @@ def normalize_options(raw):
     """The learner's choices from the start page, reduced to known values."""
     raw = raw if isinstance(raw, dict) else {}
     opts = {k: raw.get(k) if raw.get(k) in allowed else allowed[0] for k, allowed in OPTIONS.items()}
-    opts["topic"] = raw.get("topic") if raw.get("topic") in topics_for(opts["kind"]) else "random"   # must fit the variable type
+    # one task (by name) of the chosen level and variable type, or chance; its topic comes with it
+    names = [task_name(t) for t in POOL[(opts["difficulty"], opts["kind"])]]
+    opts["task"] = raw.get("task") if raw.get("task") in names else "random"
     return opts
 
 
@@ -396,10 +418,10 @@ def make_exercise(options, custom=None, info=None, points=None, avoid=()):
     qs = [question(f"side{i}", side_answer(r, p), ("in", "out", "line")) for i, (r, p) in enumerate(zip(m["rows"], test_points))]
     qs += [question(f"p{n}", "yes" if feasible(m, p) else "no", ("yes", "no")) for n, p in enumerate(region_points)]
     add("region", qs)
-    if m["kind"] == "LP" or info["source"] == "tutorial":
+    if m["kind"] == "LP" or info["source"] == "tutorial" or info.get("story"):
         # first find the optimal corner with the objective line, then calculate it; integer optima lie on lattice points.
-        # The guided task is integer, but its optimal corner (300 | 200) is already whole – it keeps the method
-        # of the lecture.
+        # The guided task and the tasks with a story of their own (burger, shawarma) are integer, but their optimal
+        # corners are already whole – they keep the method of the lecture.
         idx = [str(i) for i in range(len(boundaries(m)))]
         add("corner", [question("boundary1", None, idx), question("boundary2", None, idx)])
     add("optimum", [question("x", sol["x"][0]), question("y", sol["x"][1]), question("z", sol["z"])])

@@ -64,8 +64,9 @@ class AppContext:
     def load_problem(self, obj, cons, var_types):
         """Replace the whole problem (example, import)."""
         lc = self.lang()
+        # note: the example's story line of a row (pages/work/example.py); imported files have none
         self.objectives.set([dict(id=self.next_id(), name=obj.get("name") or "F", c1=obj["c1"], c2=obj["c2"],
-                                  sense=obj["sense"], active=True)])
+                                  sense=obj["sense"], active=True, note=obj.get("note"))])
         new_cons, names = [], set()
         for i, con in enumerate(cons):
             name = con.get("name") or DEFAULT_NAMES["constraint"][lc].format(n=i + 1)
@@ -73,7 +74,7 @@ class AppContext:
                 name = f"{name}_{i + 1}"
             names.add(name)
             new_cons.append(dict(id=self.next_id(), name=name, a1=con["a1"], a2=con["a2"], op=con["op"], b=con["b"],
-                                 active=True, color_index=i))
+                                 active=True, color_index=i, note=con.get("note")))
         self.constraints.set(new_cons)
         self.set_var_types(var_types)
 
