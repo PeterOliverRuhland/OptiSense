@@ -86,7 +86,8 @@
     ownOpts: { mode: "practice" },
     more: false, own: null,
     ex: null, step: 0, answers: {}, feedback: {}, hints: {}, solutions: {}, solWay: {}, result: null,
-    activeRow: 0, level: null, help: false, sidebar: true, busy: null
+    activeRow: 0, level: null, help: false, sidebar: true, busy: null,
+    saved: false   // the evaluation was saved as a PDF (no warning when the page is reloaded)
   };
 
   // steps of the exercise; the first one ("task", added in the browser) only shows the task and has no points
@@ -1181,7 +1182,7 @@
       if (!ok) return;
       // tz: minutes behind UTC – the PDF of the evaluation shows the time of handing in as the learner's local time
       busy("finish", call("submit", { answers: S.answers, tz: new Date().getTimezoneOffset() })).then(function (r) {
-        S.result = r; S.view = "result";
+        S.result = r; S.saved = false; S.view = "result";
         render();
         window.scrollTo(0, 0);
         var el = root(); if (el) el.scrollTop = 0;
@@ -1275,6 +1276,7 @@
       a.href = href; a.download = "OptiSense-" + L("res_title").replace(/\s+/g, "-") + ".pdf";
       document.body.appendChild(a); a.click(); a.remove();
       setTimeout(function () { URL.revokeObjectURL(href); }, 1000);
+      S.saved = true;
       paintBusy();
     }, function () {});
   }
@@ -1417,9 +1419,15 @@
     var phoneQuery = window.matchMedia(PHONE), onPhoneChange = function () { if (S.view === "work") refresh(); };
     if (phoneQuery.addEventListener) phoneQuery.addEventListener("change", onPhoneChange); else phoneQuery.addListener(onPhoneChange);
   }
-  window.addEventListener("beforeunload", function (ev) {
-    if (S.view === "work" && steps().some(function (s) { return filled(s) > 0; })) { ev.preventDefault(); ev.returnValue = ""; }
-  });
+  // reloading or closing the page loses the task and its evaluation (both live in the Shiny session), so the browser
+  // asks first: while a step has an entry, and on the evaluation until it was saved. The browser shows its own text;
+  // Safari on iPhone and iPad never asks. Without a connection the session is gone already and there is nothing to keep.
+  function unsaved() {
+    if (!(window.Shiny && Shiny.shinyapp && Shiny.shinyapp.isConnected())) return false;
+    if (S.view === "work") return steps().some(function (s) { return filled(s) > 0; });
+    return S.view === "result" && !S.saved;
+  }
+  window.addEventListener("beforeunload", function (ev) { if (unsaved()) { ev.preventDefault(); ev.returnValue = ""; } });
 
   document.addEventListener("DOMContentLoaded", function () {
     render();

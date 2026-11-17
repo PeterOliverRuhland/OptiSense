@@ -76,6 +76,14 @@
     if (native) new MutationObserver(syncSidebarBtn).observe(native, { attributes: true, attributeFilter: ["aria-expanded"] });
   });
 
+  // reloading or closing the page loses the model (it lives in the Shiny session), so the browser asks first while
+  // the list in step 1 has an entry. The browser shows its own text; Safari on iPhone and iPad never asks.
+  // Without a connection the session is gone already and there is nothing to keep.
+  window.addEventListener("beforeunload", function (ev) {
+    var connected = window.Shiny && Shiny.shinyapp && Shiny.shinyapp.isConnected();
+    if (connected && document.querySelector("#problem_list .os-row")) { ev.preventDefault(); ev.returnValue = ""; }
+  });
+
   if (window.Shiny) {
     $(document).on("shiny:connected", function () {
       Shiny.addCustomMessageHandler("os-btn-state", function (s) {
