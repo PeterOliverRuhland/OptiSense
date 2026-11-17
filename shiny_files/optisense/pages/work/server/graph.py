@@ -31,7 +31,14 @@ def register(ctx):
             phone = bool(input.ui_phone())
         except Exception:  # noqa: BLE001 - not sent yet
             phone = False
-        return make_figure(compact=phone)
+        # draw at the size Shiny will save (the container), so that the line labels can avoid each other
+        try:
+            w, h = float(input[".clientdata_output_plot_width"]()), float(input[".clientdata_output_plot_height"]())
+            dpi = plotting.plt.rcParams["figure.dpi"]
+            figsize = (w / dpi, h / dpi) if w > 50 and h > 50 else None
+        except Exception:  # noqa: BLE001 - not sent yet
+            figsize = None
+        return make_figure(figsize=figsize, compact=phone)
 
     @reactive.effect
     @reactive.event(input.btn_png)

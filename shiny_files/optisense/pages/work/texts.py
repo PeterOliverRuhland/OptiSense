@@ -101,15 +101,15 @@ TEXT = {
     "no_intercept": {"en": "nowhere", "de": "nirgends"},
     "desc_region": {"en": "The gray area is the feasible region: every point there satisfies all active constraints and x1, x2 ≥ 0.",
                     "de": "Die graue Fläche ist der zulässige Bereich: Jeder Punkt dort erfüllt alle aktiven Nebenbedingungen und x1, x2 ≥ 0."},
-    "desc_region_int": {"en": "The gray points (or lines) are the feasible solutions: they satisfy all active constraints and the chosen integer conditions.",
-                        "de": "Die grauen Punkte (bzw. Linien) sind die zulässigen Lösungen: Sie erfüllen alle aktiven Nebenbedingungen und die gewählten Ganzzahligkeitsbedingungen."},
+    "desc_region_int": {"en": "The gray points (or lines) form the feasible region: they satisfy all active constraints and the chosen integer conditions.",
+                        "de": "Die grauen Punkte (bzw. Linien) bilden den zulässigen Bereich: Sie erfüllen alle aktiven Nebenbedingungen und die gewählten Ganzzahligkeitsbedingungen."},
     "desc_thinned": {"en": "The range is large, so only every n-th integer value is drawn.",
                      "de": "Der Bereich ist groß, daher wird nur jeder n-te ganzzahlige Wert gezeichnet."},
     "desc_heading_functions": {"en": "Functions in the graph", "de": "Funktionen im Graphen"},
     "desc_heading_solution": {"en": "Optimum", "de": "Optimum"},
     # ------------------------------------------------------------------ plot
     "plot_region": {"en": "Feasible region", "de": "Zulässiger Bereich"},
-    "plot_points": {"en": "Feasible solutions", "de": "Zulässige Lösungen"},
+    "plot_points": {"en": "Feasible region", "de": "Zulässiger Bereich"},   # integer: points or lines – still a region (Robin, 2026-11-17)
     "plot_optimum": {"en": "Optimum", "de": "Optimum"},
     "plot_dummy": {"en": "{name} (dummy)", "de": "{name} (Dummy)"},   # the objective line before it is moved to the optimum
     "plot_optimized": {"en": "{name} (optimized)", "de": "{name} (optimiert)"},

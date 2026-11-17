@@ -150,7 +150,8 @@
   .os-credit-end { display: block; padding-top: 0.25rem; }
   .os-sidebar-btn[data-sidebar-toggle] { display: none; }
   .os-main { gap: 0.75rem; }
-  .os-graph { height: min(122vw, 36rem) !important; min-height: 0; }
+  /* tall enough for the axes and the one-column legend below them (plotting.draw, compact) */
+  .os-graph { height: min(160vw, 44rem) !important; min-height: 0; }
   .os-results > .card { min-height: 0; }
   .os-results .card-body { overflow-x: auto; }
   .os-results .os-table { font-size: 0.8125rem; }

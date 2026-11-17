@@ -31,6 +31,22 @@ def plot_bounds(objective, constraints, solution=None):
     return _nice_ceil(xmax * 1.1), _nice_ceil(ymax * 1.1)
 
 
+def zoom_bounds(objective, constraints, solution=None):
+    """Axis limits for narrow screens: the feasible region and the optimum with 10 % room instead of every axis
+    intercept – the burger example shows 600 | 400 instead of 1,200 | 600, so the region is not squeezed into a corner.
+    The usual limits when the region reaches their edge (unbounded) or is empty."""
+    xmax, ymax = plot_bounds(objective, constraints, solution)
+    poly = feasible_polygon(constraints, xmax, ymax)
+    if not poly:
+        return xmax, ymax
+    px, py = max(p[0] for p in poly), max(p[1] for p in poly)
+    if px >= xmax * (1 - 1e-6) or py >= ymax * (1 - 1e-6):
+        return xmax, ymax
+    if solution and solution.get("status") == "optimal":
+        px, py = max(px, solution["x1"]), max(py, solution["x2"])
+    return min(xmax, _nice_ceil(px * 1.1)), min(ymax, _nice_ceil(py * 1.1))
+
+
 def _nice_ceil(v):
     if v <= 0:
         return 10.0
